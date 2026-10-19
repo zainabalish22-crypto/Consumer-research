@@ -289,6 +289,59 @@ export function newBlock(type: BlockType, config: StudyConfig): Block {
         autoplay: false,
         showControls: true,
       } as unknown as Block; // Valid once the researcher adds at least one item.
+    case "ad_exposure":
+      return {
+        ...base,
+        type,
+        heading: T("", ""),
+        intro: T("", ""),
+        ads: [],
+        order: { mode: "listed" },
+        rules: { version: { mode: "fixed", key: "authentic" }, disclosure: { showFor: "none", conditions: [] } },
+        minViewSeconds: 0,
+        requireEnd: false,
+        autoplay: false,
+        showControls: true,
+      } as unknown as Block; // Valid once the researcher adds ads.
+    case "store_choice":
+      return {
+        ...base,
+        type,
+        variable: nextVariable(usedVariables(config), "choice"),
+        heading: T("", ""),
+        prompt: T("Where would you buy?", "من أين ستشتري؟"),
+        stores: [],
+        storeOrder: { mode: "listed" },
+        offers: { mode: "none" },
+        currency: "BHD",
+        showProducts: true,
+        allowNone: false,
+        noneLabel: T("None of these", "لا شيء مما سبق"),
+      } as unknown as Block;
+    case "village":
+      return {
+        ...base,
+        type,
+        variable: nextVariable(usedVariables(config), "village"),
+        heading: T("", ""),
+        instructions: T(
+          "Walk along the street with the arrows (or by dragging), go into any shop, and buy what you would normally buy. Press Finish when you are done.",
+          "تجوّل في الشارع باستخدام الأسهم (أو بالسحب)، وادخل أي متجر، واشترِ ما كنت ستشتريه عادةً. اضغط «إنهاء» عند الانتهاء.",
+        ),
+        stores: [],
+        storeOrder: { mode: "listed" },
+        offers: { mode: "none" },
+        currency: "BHD",
+        theme: "minimal",
+        layout: "street",
+        productOrder: "listed",
+        ads: { version: { mode: "fixed", key: "authentic" }, disclosure: { showFor: "none", conditions: [] } },
+        approachDistance: 120,
+        approachSeconds: 1,
+        mustEnterStores: 0,
+        minPurchases: 0,
+        maxPurchases: 10,
+      } as unknown as Block;
     case "debrief":
       return {
         ...base,
@@ -363,7 +416,7 @@ export function normalizeDraft(raw: unknown): StudyConfig {
       allowResume: s.allowResume ?? true,
       theme: "neutral",
       usesDeception: s.usesDeception ?? false,
-      events: s.events ?? { navigation: true, media: true },
+      events: { navigation: true, media: true, environment: true, ...(s.events ?? {}) },
       dismissedWarnings: s.dismissedWarnings ?? [],
     },
     design: { ...EMPTY_DESIGN, ...(c.design ?? {}) },
@@ -388,7 +441,7 @@ export function startingConfig(kind: StartingPoint, languages: Language[] = ["en
       allowResume: true,
       theme: "neutral",
       usesDeception: false,
-      events: { navigation: true, media: true },
+      events: { navigation: true, media: true, environment: true },
       dismissedWarnings: [],
     },
     design: structuredClone(EMPTY_DESIGN),

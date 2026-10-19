@@ -4,6 +4,8 @@ import Link from "next/link";
 import { getSession, getStudy } from "@/lib/data";
 import { StudyConfig } from "@/lib/study/schema";
 import { signMedia } from "@/lib/study/media";
+import { loadLibrary } from "@/lib/library/load";
+import { buildSnapshot } from "@/lib/library/rows";
 import { StudyRunner } from "@/components/participant/StudyRunner";
 import { participantMessages } from "@/lib/participant-messages";
 import { Alert } from "@/components/ui";
@@ -40,7 +42,10 @@ export default async function PreviewPage({
     );
   }
   const { supabase } = await getSession();
-  const mediaUrls = await signMedia(supabase, parsed.data);
+  // Preview uses the current library (publishing snapshots it into the version).
+  const { lib } = await loadLibrary(supabase, data.project.workspace_id);
+  const config = { ...parsed.data, library: buildSnapshot(parsed.data, lib).snapshot };
+  const mediaUrls = await signMedia(supabase, config);
   const previewLanguage = lang === "ar" || lang === "en" ? lang : undefined;
   return (
     <div className="-mx-4 -my-6">
@@ -52,10 +57,10 @@ export default async function PreviewPage({
       </div>
       <StudyRunner
         mode="preview"
-        config={parsed.data}
+        config={config}
         messages={participantMessages}
         initialMediaUrls={mediaUrls}
-        previewLanguage={previewLanguage && parsed.data.settings.languages.includes(previewLanguage) ? previewLanguage : undefined}
+        previewLanguage={previewLanguage && config.settings.languages.includes(previewLanguage) ? previewLanguage : undefined}
       />
     </div>
   );

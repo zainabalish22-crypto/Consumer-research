@@ -19,6 +19,9 @@ export default async function StudioLayout({ children }: { children: React.React
             <Link href="/studio" className="rounded-md px-2.5 py-1.5 hover:bg-paper">
               {t("dashboard")}
             </Link>
+            <Link href="/studio/library" className="rounded-md px-2.5 py-1.5 hover:bg-paper">
+              {t("library")}
+            </Link>
             <Link href="/studio/media" className="rounded-md px-2.5 py-1.5 hover:bg-paper">
               {t("media")}
             </Link>

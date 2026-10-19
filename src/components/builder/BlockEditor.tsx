@@ -9,6 +9,7 @@ import { useTranslations } from "next-intl";
 import type { Block, BlockType, Language, Logic, MediaRef, Question, QuestionType, StudyConfig } from "@/lib/study/schema";
 import { BLOCK_ROLES, QUESTION_TYPES } from "@/lib/study/schema";
 import { LogicEditor } from "./LogicEditor";
+import { AdExposureEditor, StoreChoiceEditor, VillageEditor } from "./EnvironmentEditors";
 import { newQuestion, nextVariable, usedVariables, shortId } from "@/lib/study/factories";
 import { Button, Select } from "@/components/ui";
 import { LocalizedField } from "./LocalizedField";
@@ -362,6 +363,9 @@ function ExclusionCheckEditor({ block, languages, onChange }: EditorProps<"exclu
 }
 
 const EDITORS: { [K in BlockType]: (p: EditorProps<K>) => React.ReactNode } = {
+  ad_exposure: AdExposureEditor,
+  store_choice: StoreChoiceEditor,
+  village: VillageEditor,
   welcome: WelcomeEditor,
   consent: ConsentEditor,
   screening: ScreeningEditor,
@@ -378,7 +382,7 @@ const EDITORS: { [K in BlockType]: (p: EditorProps<K>) => React.ReactNode } = {
 function DisplayLogic({ block, config, onChange }: { block: Block; config: StudyConfig; onChange: (b: Block) => void }) {
   const t = useTranslations("builder.display");
   const d = config.design;
-  const fixed = block.type === "consent" || block.type === "end";
+  const fixed = block.type === "consent" || block.type === "end" || block.type === "village" || block.type === "store_choice";
   const summary = [
     block.showTo.length ? t("summaryConditions", { list: block.showTo.join(", ") }) : null,
     block.showIf ? t("summaryRule") : null,

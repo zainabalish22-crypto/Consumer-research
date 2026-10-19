@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { StudyConfig } from "@/lib/study/schema";
-import type { ExportExtras, MediaSummary, SessionRecord } from "./columns";
+import type { EnvSummary, ExportExtras, MediaSummary, SessionRecord } from "./columns";
 
 const PAGE = 1000;
 
@@ -73,11 +73,11 @@ export async function loadExportData(supabase: SupabaseClient, studyId: string, 
     return q;
   });
 
-  const responses = await all<{ session_id: string; block_key: string; answers: Record<string, unknown>; entered_at: string | null; submitted_at: string }>(
+  const responses = await all<{ session_id: string; block_key: string; block_type: string; answers: Record<string, unknown>; entered_at: string | null; submitted_at: string }>(
     (from, to) =>
       supabase
         .from("responses")
-        .select("session_id, block_key, answers, entered_at, submitted_at")
+        .select("session_id, block_key, block_type, answers, entered_at, submitted_at")
         .eq("study_id", studyId)
         .order("submitted_at")
         .range(from, to),
@@ -94,6 +94,17 @@ export async function loadExportData(supabase: SupabaseClient, studyId: string, 
       .order("id")
       .range(from, to),
   );
+
+  const envEvents = await all<{ session_id: string; type: string; block_key: string | null; data: Record<string, unknown> }>((from, to) =>
+    supabase
+      .from("events")
+      .select("session_id, type, block_key, data")
+      .eq("study_id", studyId)
+      .in("type", ["store_approach", "store_enter", "store_leave", "store_pass", "product_view", "product_detail"])
+      .order("id")
+      .range(from, to),
+  );
+  const villageDone: { session_id: string; block_id: string }[] = [];
 
   const bySession = new Map<string, SessionRecord>();
   const paramKeys = new Set<string>();
@@ -122,11 +133,13 @@ export async function loadExportData(supabase: SupabaseClient, studyId: string, 
       answers: {},
       blockSeconds: {},
       media: {},
+      env: {},
     });
   }
   for (const r of responses) {
     const s = bySession.get(r.session_id);
     if (!s) continue;
+    if (r.block_type === "village") villageDone.push({ session_id: r.session_id, block_id: r.block_key });
     const level = r.block_key.includes("#") ? r.block_key.split("#")[1] : null;
     for (const [k, v] of Object.entries(r.answers ?? {})) s.answers[level ? `${k}_${level}` : k] = v;
     if (r.entered_at) {
@@ -139,16 +152,39 @@ export async function loadExportData(supabase: SupabaseClient, studyId: string, 
   }
   for (const e of mediaEvents) {
     const s = bySession.get(e.session_id);
-    const asset = typeof e.data?.asset === "string" ? e.data.asset : null;
-    if (!s || !asset) continue;
-    const m: MediaSummary = (s.media[asset] ??= { visibleMs: 0, maxPct: 0, plays: 0, completed: false });
-    if (e.type === "media_visible") m.visibleMs += Number(e.data.ms) || 0;
-    else if (e.type.endsWith("_play")) m.plays += 1;
-    else if (e.type.endsWith("_progress")) m.maxPct = Math.max(m.maxPct, Number(e.data.pct) || 0);
-    else if (e.type.endsWith("_complete")) {
-      m.maxPct = 100;
-      m.completed = true;
+    if (!s) continue;
+    // Aggregate per asset, and per ad when the event came from an ad creative.
+    const keys = [e.data?.asset, typeof e.data?.ad === "string" ? `ad:${e.data.ad}` : null].filter((k): k is string => typeof k === "string");
+    for (const key of keys) {
+      const m: MediaSummary = (s.media[key] ??= { visibleMs: 0, maxPct: 0, plays: 0, completed: false });
+      if (e.type === "media_visible") m.visibleMs += Number(e.data.ms) || 0;
+      else if (e.type.endsWith("_play")) m.plays += 1;
+      else if (e.type.endsWith("_progress")) m.maxPct = Math.max(m.maxPct, Number(e.data.pct) || 0);
+      else if (e.type.endsWith("_complete")) {
+        m.maxPct = 100;
+        m.completed = true;
+      }
     }
+  }
+  for (const e of envEvents) {
+    const s = bySession.get(e.session_id);
+    if (!s || !e.block_key) continue;
+    const env: EnvSummary = (s.env[e.block_key.split("#")[0]] ??= { stores: {}, productsViewed: 0, details: 0 });
+    const store = typeof e.data?.store === "string" ? e.data.store : null;
+    const st = store ? (env.stores[store] ??= { approached: false, entered: false, dwellMs: 0, views: 0, passes: 0 }) : null;
+    if (e.type === "store_approach" && st) st.approached = true;
+    else if (e.type === "store_enter" && st) st.entered = st.approached = true;
+    else if (e.type === "store_leave" && st) st.dwellMs += Number(e.data.ms) || 0;
+    else if (e.type === "store_pass" && st) st.passes += 1;
+    else if (e.type === "product_view") {
+      env.productsViewed += 1;
+      if (st) st.views += 1;
+    } else if (e.type === "product_detail") env.details += 1;
+  }
+  // A session that finished a village block but logged no environment events gets zeros, not blanks.
+  for (const { session_id, block_id } of villageDone) {
+    const s = bySession.get(session_id);
+    if (s && !s.env[block_id]) s.env[block_id] = { stores: {}, productsViewed: 0, details: 0 };
   }
 
   const configs = (versions ?? []).map((v) => v.config as StudyConfig);

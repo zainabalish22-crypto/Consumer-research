@@ -36,6 +36,7 @@ const session = (patch: Partial<SessionRecord>): SessionRecord => ({
   answers: {},
   blockSeconds: {},
   media: {},
+  env: {},
   ...patch,
 });
 

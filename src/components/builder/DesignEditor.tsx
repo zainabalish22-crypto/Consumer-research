@@ -3,8 +3,10 @@
  * Experimental design: between-subject conditions, assigned factors (within-subject
  * variables and counterbalancing) and block order groups.
  */
-import { useTranslations } from "next-intl";
-import type { Design, Factor, Language, StudyConfig } from "@/lib/study/schema";
+import { useLocale, useTranslations } from "next-intl";
+import { REF_KINDS, type Design, type Factor, type Language, type StudyConfig } from "@/lib/study/schema";
+import { lt } from "@/lib/study/text";
+import { useLibrary } from "./LibraryContext";
 import { newCondition, newFactor, newOrderGroup, shortId, usedVariables } from "@/lib/study/factories";
 import { Button, Card, Select } from "@/components/ui";
 import { LocalizedField } from "./LocalizedField";
@@ -168,17 +170,60 @@ function FactorEditor({
   onRemove: () => void;
 }) {
   const t = useTranslations("builder.design");
+  const lib = useLibrary();
+  const locale = useLocale() as Language;
   const methods: Factor["method"][] = f.kind === "pick" ? ["balanced", "random", "fixed"] : ["latin", "permutation", "random", "fixed"];
+  const refKindSelect = (key: "refKind" | "targetRefKind") => (
+    <div className="flex flex-col gap-1">
+      <label className="text-sm font-medium" htmlFor={`${key}-${f.id}`}>
+        {t(key === "refKind" ? "refKind" : "targetRefKind")}
+      </label>
+      <Select id={`${key}-${f.id}`} value={f[key] ?? ""} onChange={(e) => onChange({ ...f, [key]: (e.target.value || undefined) as Factor["refKind"] })}>
+        <option value="">{t("refNone")}</option>
+        {REF_KINDS.map((k) => (
+          <option key={k} value={k}>
+            {t(`refKinds.${k}`)}
+          </option>
+        ))}
+      </Select>
+    </div>
+  );
   const listEditor = (key: "levels" | "targets") => {
     const list = f[key];
+    const refKind = key === "levels" ? f.refKind : f.targetRefKind;
+    const refItems = refKind ? Object.values(lib[`${refKind}s` as keyof typeof lib]) : [];
+    const fillFromLibrary = () =>
+      onChange({
+        ...f,
+        [key]: refItems.slice(0, 12).map((x) => ({ id: shortId(key === "levels" ? "l" : "t"), value: x.code, label: x.name, ref: x.id })),
+      });
     return (
       <div className="flex flex-col gap-2">
         <p className="text-sm font-medium">{t(key === "levels" ? "levels" : "targets")}</p>
+        {refKind && refItems.length >= 2 && (
+          <Button variant="secondary" size="sm" className="self-start" onClick={fillFromLibrary}>
+            {t("fillFromLibrary", { n: Math.min(12, refItems.length) })}
+          </Button>
+        )}
         {list.map((l, i) => (
           <div key={l.id} className="flex flex-col gap-2 rounded-lg border border-line p-2 sm:flex-row sm:items-start">
             <TextField label={t("value")} className="sm:w-28" value={l.value} dir="ltr" mono onChange={(v) => onChange({ ...f, [key]: list.map((x, k) => (k === i ? { ...x, value: codeOnly(v) } : x)) })} />
-            <div className="flex-1">
+            <div className="flex flex-1 flex-col gap-2">
               <LocalizedField label={t("levelLabel")} value={l.label} languages={languages} onChange={(v) => onChange({ ...f, [key]: list.map((x, k) => (k === i ? { ...x, label: v } : x)) })} />
+              {refKind && (
+                <Select
+                  aria-label={t("linkedItem")}
+                  value={l.ref ?? ""}
+                  onChange={(e) => onChange({ ...f, [key]: list.map((x, k) => (k === i ? { ...x, ref: e.target.value || undefined } : x)) })}
+                >
+                  <option value="">{t("linkedNone")}</option>
+                  {refItems.map((x) => (
+                    <option key={x.id} value={x.id}>
+                      {x.code} · {lt(x.name, locale, "en")}
+                    </option>
+                  ))}
+                </Select>
+              )}
             </div>
             <div className="flex sm:flex-col">
               <IconButton label={t("moveUp")} disabled={i === 0} onClick={() => onChange({ ...f, [key]: moveItem(list, i, i - 1) })}>
@@ -259,6 +304,11 @@ function FactorEditor({
           </Select>
         </div>
       )}
+      <div className="grid gap-3 sm:grid-cols-2">
+        {refKindSelect("refKind")}
+        {f.kind === "mapping" && refKindSelect("targetRefKind")}
+      </div>
+      <p className="-mt-1 text-xs text-muted">{t("refHint")}</p>
       {hasConditions && f.method !== "fixed" && f.method !== "random" && (
         <Checkbox label={t("balanceWithinCondition")} checked={f.balanceWithinCondition} onChange={(v) => onChange({ ...f, balanceWithinCondition: v })} />
       )}

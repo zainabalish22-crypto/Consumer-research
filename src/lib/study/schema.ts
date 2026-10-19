@@ -6,34 +6,19 @@
  * components live in src/components/blocks and are looked up by `type`.
  */
 import { z } from "zod";
+import { LANGUAGES, LocalizedText, MediaRef, type Language } from "./schema-base";
+import { LibrarySnapshot } from "./library";
 
-export const LANGUAGES = ["en", "ar"] as const;
-export type Language = (typeof LANGUAGES)[number];
+export { LANGUAGES, LocalizedText, MediaRef };
+export type { Language };
 
 /** Codes written to the data for the optional special answers. */
 export const SPECIAL_CODES = { notSure: -98, preferNot: -99 } as const;
-
-const MAX_TEXT = 20_000;
-
-export const LocalizedText = z.object({
-  en: z.string().max(MAX_TEXT).optional(),
-  ar: z.string().max(MAX_TEXT).optional(),
-});
-export type LocalizedText = z.infer<typeof LocalizedText>;
 
 const id = z.string().regex(/^[A-Za-z0-9_-]{1,40}$/, "Use letters, numbers, - or _ (max 40)");
 export const variableName = z
   .string()
   .regex(/^[A-Za-z][A-Za-z0-9_]{0,63}$/, "Start with a letter; letters, numbers and _ only (max 64)");
-
-export const MediaRef = z.object({
-  assetId: z.string().uuid(),
-  storagePath: z.string().min(1).max(400),
-  kind: z.enum(["image", "video", "audio"]),
-  mimeType: z.string().max(100),
-  alt: LocalizedText.default({}),
-});
-export type MediaRef = z.infer<typeof MediaRef>;
 
 export const ChoiceOption = z.object({
   id,
@@ -186,8 +171,10 @@ export const Condition = z.object({
 });
 export type Condition = z.infer<typeof Condition>;
 
-export const FactorLevel = z.object({ id, value: code, label: LocalizedText });
+/** `ref` optionally links a level to a library object (a brand, store, offer, product or ad). */
+export const FactorLevel = z.object({ id, value: code, label: LocalizedText, ref: z.string().uuid().optional() });
 export type FactorLevel = z.infer<typeof FactorLevel>;
+export const REF_KINDS = ["brand", "store", "offer", "product", "ad"] as const;
 
 /**
  * A variable assigned per participant and stored with the session.
@@ -201,7 +188,10 @@ export const Factor = z.object({
   name: z.string().max(120).default(""),
   kind: z.enum(["pick", "order", "mapping"]),
   levels: z.array(FactorLevel).min(2).max(12),
-  targets: z.array(z.object({ id, value: code, label: LocalizedText })).max(12).default([]),
+  targets: z.array(FactorLevel).max(12).default([]),
+  /** What level refs point to (e.g. offers), and target refs for mappings (e.g. stores). */
+  refKind: z.enum(REF_KINDS).optional(),
+  targetRefKind: z.enum(REF_KINDS).optional(),
   method: z.enum(["random", "balanced", "latin", "permutation", "fixed"]),
   /** pick + fixed: the level value everyone gets. */
   fixedValue: z.string().max(20).optional(),
@@ -363,7 +353,108 @@ export const ExclusionCheckBlock = BlockBase.extend({
   excludedMessage: LocalizedText,
 });
 
+// ---------------------------------------------------------------------------
+// Environment and advertising blocks (Phase 3)
+// ---------------------------------------------------------------------------
+
+/** How to order library items (stores, ads) for a participant. */
+export const ItemOrder = z.object({
+  mode: z.enum(["listed", "random", "factor"]).default("listed"),
+  /** An order factor whose level refs point to the items (or to their brands). */
+  factorId: id.optional(),
+});
+export type ItemOrder = z.infer<typeof ItemOrder>;
+
+/** Which ad version each participant sees, and when the disclosure label is shown. */
+export const AdRules = z.object({
+  version: z.discriminatedUnion("mode", [
+    z.object({ mode: z.literal("fixed"), key: code }),
+    /** The ad whose brand is the participant's level of `factorId` shows `targetKey`; others show `otherKey`. */
+    z.object({ mode: z.literal("targeted"), factorId: id, targetKey: code, otherKey: code }),
+  ]),
+  disclosure: z
+    .object({
+      showFor: z.enum(["none", "targeted", "all"]).default("none"),
+      /** Conditions that see the label (empty = everyone). */
+      conditions: z.array(code).max(20).default([]),
+    })
+    .default({ showFor: "none", conditions: [] }),
+});
+export type AdRules = z.infer<typeof AdRules>;
+
+export const OfferRule = z.discriminatedUnion("mode", [
+  z.object({ mode: z.literal("none") }),
+  z.object({ mode: z.literal("fixed"), byStore: z.record(z.string().uuid(), z.string().uuid()).default({}) }),
+  /** A mapping factor whose targets ref stores and levels ref offers. */
+  z.object({ mode: z.literal("factor"), factorId: id }),
+]);
+export type OfferRule = z.infer<typeof OfferRule>;
+
+const DEFAULT_AD_RULES: AdRules = { version: { mode: "fixed", key: "main" }, disclosure: { showFor: "none", conditions: [] } };
+
+export const AdExposureBlock = BlockBase.extend({
+  type: z.literal("ad_exposure"),
+  heading: LocalizedText.optional(),
+  intro: LocalizedText.optional(),
+  ads: z.array(z.string().uuid()).min(1).max(30),
+  order: ItemOrder.default({ mode: "listed" }),
+  rules: AdRules.default(DEFAULT_AD_RULES),
+  minViewSeconds: z.number().int().min(0).max(3600).default(0),
+  requireEnd: z.boolean().default(false),
+  autoplay: z.boolean().default(false),
+  showControls: z.boolean().default(true),
+});
+
+const storeSet = {
+  /** Prefix for this block's export variables, e.g. "fc" → fc_S1_entered. */
+  variable: variableName,
+  stores: z.array(z.string().uuid()).min(1).max(60),
+  storeOrder: ItemOrder.default({ mode: "listed" }),
+  offers: OfferRule.default({ mode: "none" }),
+  currency: z.string().regex(/^[A-Z]{3}$/).default("BHD"),
+};
+
+/** Choice task: pick one store (or none) from cards showing each store's offer. */
+export const StoreChoiceBlock = BlockBase.extend({
+  type: z.literal("store_choice"),
+  ...storeSet,
+  heading: LocalizedText.optional(),
+  prompt: LocalizedText,
+  showProducts: z.boolean().default(true),
+  allowNone: z.boolean().default(false),
+  noneLabel: LocalizedText.default({ en: "None of these", ar: "لا شيء مما سبق" }),
+});
+
+/** Walkable 2D shopping street (or food court) with enterable stores. */
+export const VillageBlock = BlockBase.extend({
+  type: z.literal("village"),
+  ...storeSet,
+  heading: LocalizedText.optional(),
+  instructions: LocalizedText.default({}),
+  theme: z.enum(["minimal", "neutral"]).default("minimal"),
+  layout: z.enum(["street", "foodcourt"]).default("street"),
+  productOrder: z.enum(["listed", "random"]).default("listed"),
+  ads: AdRules.default(DEFAULT_AD_RULES),
+  /** Distance (in street units) that counts as standing in front of a store. */
+  approachDistance: z.number().int().min(40).max(400).default(120),
+  /** Seconds the participant must stay that close for an "approach" to count. */
+  approachSeconds: z.number().min(0).max(10).default(1),
+  mustEnterStores: z.number().int().min(0).max(60).default(0),
+  minPurchases: z.number().int().min(0).max(50).default(0),
+  maxPurchases: z.number().int().min(1).max(100).default(10),
+  budget: z.number().min(0).max(1_000_000).optional(),
+  timeLimitSec: z.number().int().min(10).max(7200).optional(),
+  /** Optional yes/no question when leaving a store, e.g. "Would you consider buying here?" */
+  considerationPrompt: LocalizedText.optional(),
+});
+export type VillageBlock = z.infer<typeof VillageBlock>;
+export type StoreChoiceBlock = z.infer<typeof StoreChoiceBlock>;
+export type AdExposureBlock = z.infer<typeof AdExposureBlock>;
+
 export const Block = z.discriminatedUnion("type", [
+  AdExposureBlock,
+  StoreChoiceBlock,
+  VillageBlock,
   WelcomeBlock,
   ConsentBlock,
   ScreeningBlock,
@@ -396,8 +487,8 @@ export const StudySettings = z.object({
   usesDeception: z.boolean().default(false),
   /** Which behavioural events to record. Nothing invasive is ever recorded. */
   events: z
-    .object({ navigation: z.boolean().default(true), media: z.boolean().default(true) })
-    .default({ navigation: true, media: true }),
+    .object({ navigation: z.boolean().default(true), media: z.boolean().default(true), environment: z.boolean().default(true) })
+    .default({ navigation: true, media: true, environment: true }),
   /** Methodological warnings the researcher chose to dismiss. */
   dismissedWarnings: z.array(z.string().max(120)).max(100).default([]),
 });
@@ -415,6 +506,8 @@ export const StudyConfig = z
     settings: StudySettings,
     design: Design.default({ conditions: [], assignment: "balanced", factors: [], orderGroups: [] }),
     blocks: z.array(Block).max(300),
+    /** Snapshot of the library objects this study uses, filled in at publish time. */
+    library: LibrarySnapshot.optional(),
   })
   .superRefine((cfg, ctx) => {
     if (!cfg.settings.languages.includes(cfg.settings.defaultLanguage)) {
@@ -427,6 +520,7 @@ export const StudyConfig = z
     validateDesign(cfg, ctx);
     const blockIds = new Set<string>();
     const variables = new Map<string, string>();
+    const prefixes: string[] = [];
     // Design variables occupy names in the export too.
     for (const f of cfg.design.factors) variables.set(f.variable.toLowerCase(), `factor ${f.name || f.id}`);
     variables.set("condition", "the condition column");
@@ -447,9 +541,28 @@ export const StudyConfig = z
       if (b.repeat && !repeatFactor) {
         ctx.addIssue({ code: "custom", path: ["blocks", bi, "repeat"], message: "Repeat uses a factor that does not exist" });
       }
-      if (b.type === "consent" || b.type === "end") {
+      if (b.type === "consent" || b.type === "end" || b.type === "village" || b.type === "store_choice") {
         if (b.repeat) ctx.addIssue({ code: "custom", path: ["blocks", bi, "repeat"], message: "This block cannot be repeated" });
       }
+      const factorOf = (fid: string | undefined, kinds: string[], path: string, what: string) => {
+        const f = cfg.design.factors.find((x) => x.id === fid);
+        if (!f || !kinds.includes(f.kind)) {
+          ctx.addIssue({ code: "custom", path: ["blocks", bi, path], message: `Choose a ${kinds.join(" or ")} factor for ${what}` });
+        }
+      };
+      if (b.type === "village" || b.type === "store_choice") {
+        const prefix = b.variable.toLowerCase();
+        if (variables.has(prefix)) {
+          ctx.addIssue({ code: "custom", path: ["blocks", bi, "variable"], message: `Variable prefix "${b.variable}" is already used by ${variables.get(prefix)}` });
+        }
+        variables.set(prefix, `${b.id} (prefix)`);
+        prefixes.push(prefix);
+        if (b.storeOrder.mode === "factor") factorOf(b.storeOrder.factorId, ["order"], "storeOrder", "the store order");
+        if (b.offers.mode === "factor") factorOf(b.offers.factorId, ["mapping"], "offers", "the offers");
+      }
+      if (b.type === "ad_exposure" && b.order.mode === "factor") factorOf(b.order.factorId, ["order"], "order", "the ad order");
+      const adRules = b.type === "ad_exposure" ? b.rules : b.type === "village" ? b.ads : null;
+      if (adRules?.version.mode === "targeted") factorOf(adRules.version.factorId, ["pick"], "rules", "the targeted ad version");
       if (!isQuestionBlock(b)) return;
       const repeatLevels = repeatFactor ? repeatFactor.levels.map((l) => l.value) : null;
       const qIds = new Set<string>();
@@ -497,6 +610,11 @@ export const StudyConfig = z
     });
     if (!cfg.blocks.some((b) => b.type === "end")) {
       ctx.addIssue({ code: "custom", path: ["blocks"], message: "The study needs an End block" });
+    }
+    // Environment blocks generate prefix_* columns; nothing else may use that namespace.
+    for (const [name, owner] of variables) {
+      const clash = prefixes.find((p) => name !== p && name.startsWith(`${p}_`));
+      if (clash) ctx.addIssue({ code: "custom", path: ["blocks"], message: `Variable "${name}" (${owner}) uses the reserved prefix "${clash}_"` });
     }
   });
 export type StudyConfig = z.infer<typeof StudyConfig>;

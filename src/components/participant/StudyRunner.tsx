@@ -25,6 +25,10 @@ import { QuestionView } from "./QuestionView";
 import { MediaView } from "./MediaView";
 import { makeTr, type ParticipantMessages, type Tr } from "./i18n";
 import { EventLogger, type EventData, type EventType } from "./events";
+import { AdExposureView } from "./environment/AdExposureView";
+import { StoreChoiceView } from "./environment/StoreChoiceView";
+import { VillageView } from "./environment/VillageView";
+import { validateStoreChoice, validateVillageAnswer } from "@/lib/study/envAnswers";
 
 type Mode = "live" | "test" | "preview";
 type Phase = "loading" | "language" | "block" | "declined" | "withdrawn" | "screened" | "completed" | "error";
@@ -289,10 +293,16 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
     setPhase("screened");
   };
 
-  const submitBlock = async () => {
+  const submitBlock = async (envValue?: unknown) => {
     if (!block || !step) return;
     setProblem(null);
     let payload: Record<string, unknown> = {};
+    if (block.type === "village" || block.type === "store_choice") {
+      const v =
+        block.type === "village" ? validateVillageAnswer(block, config, assignment, envValue) : validateStoreChoice(block, envValue);
+      if (!v.ok) return setErrors({ [block.variable]: v.error as AnswerError });
+      payload = { [block.variable]: v.value };
+    }
     if (isQuestionBlock(block)) {
       const v = validateBlockAnswers(block, answers[step.key] ?? {});
       if (!v.ok) {
@@ -509,7 +519,7 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
 
   const nextButton = (label = tr("next"), disabled = false) => (
     <div className="flex justify-end">
-      <Button onClick={submitBlock} disabled={busy || disabled} className="min-w-32 py-3 text-base">
+      <Button onClick={() => void submitBlock()} disabled={busy || disabled} className="min-w-32 py-3 text-base">
         {busy ? tr("saving") : label}
       </Button>
     </div>
@@ -648,6 +658,68 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
       );
       break;
     }
+    case "ad_exposure":
+      body = (
+        <AdExposureView
+          key={step.key}
+          block={block}
+          config={config}
+          assignment={assignment}
+          seed={seed}
+          lang={lang}
+          fallback={fallback}
+          mediaUrls={mediaUrls}
+          tr={tr}
+          t={t}
+          log={logEvent}
+          busy={busy}
+          onDone={() => void submitBlock()}
+          heading={heading}
+        />
+      );
+      break;
+    case "store_choice":
+      body = (
+        <StoreChoiceView
+          key={step.key}
+          block={block}
+          config={config}
+          assignment={assignment}
+          seed={seed}
+          lang={lang}
+          fallback={fallback}
+          mediaUrls={mediaUrls}
+          tr={tr}
+          t={t}
+          log={logEvent}
+          busy={busy}
+          error={errors[block.variable]}
+          onSubmit={(v) => void submitBlock(v)}
+          heading={heading}
+        />
+      );
+      break;
+    case "village":
+      body = (
+        <VillageView
+          key={step.key}
+          block={block}
+          config={config}
+          assignment={assignment}
+          seed={seed}
+          lang={lang}
+          fallback={fallback}
+          mediaUrls={mediaUrls}
+          tr={tr}
+          t={t}
+          log={logEvent}
+          busy={busy}
+          error={errors[block.variable]}
+          onSubmit={(v) => void submitBlock(v)}
+          heading={heading}
+        />
+      );
+      break;
     case "end":
       body = (
         <section className="flex flex-col gap-4">

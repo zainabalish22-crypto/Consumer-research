@@ -19,7 +19,35 @@ export type EventType =
   | "audio_progress"
   | "audio_complete"
   | "page_hidden"
-  | "page_visible";
+  | "page_visible"
+  | "ad_impression"
+  | "env_enter"
+  | "store_approach"
+  | "store_pass"
+  | "store_enter"
+  | "store_leave"
+  | "product_view"
+  | "product_detail"
+  | "bag_add"
+  | "bag_remove"
+  | "checkout"
+  | "consideration"
+  | "choice_select";
+
+const ENVIRONMENT_TYPES = new Set<EventType>([
+  "env_enter",
+  "store_approach",
+  "store_pass",
+  "store_enter",
+  "store_leave",
+  "product_view",
+  "product_detail",
+  "bag_add",
+  "bag_remove",
+  "checkout",
+  "consideration",
+  "choice_select",
+]);
 
 export type EventData = Record<string, string | number | boolean | null>;
 interface PendingEvent {
@@ -42,6 +70,7 @@ const MEDIA_TYPES = new Set<EventType>([
   "audio_pause",
   "audio_progress",
   "audio_complete",
+  "ad_impression",
 ]);
 
 export class EventLogger {
@@ -52,7 +81,7 @@ export class EventLogger {
 
   constructor(
     private session: { id: string; token: string },
-    private enabled: { navigation: boolean; media: boolean },
+    private enabled: { navigation: boolean; media: boolean; environment: boolean },
   ) {
     this.storageKey = `rp:events:${session.id}`;
     try {
@@ -79,7 +108,8 @@ export class EventLogger {
   }
 
   log(type: EventType, block?: string, data?: EventData) {
-    if (MEDIA_TYPES.has(type) ? !this.enabled.media : !this.enabled.navigation) return;
+    const on = MEDIA_TYPES.has(type) ? this.enabled.media : ENVIRONMENT_TYPES.has(type) ? this.enabled.environment : this.enabled.navigation;
+    if (!on) return;
     this.queue.push({ id: crypto.randomUUID(), type, block, at: new Date().toISOString(), data });
     this.persist();
     if (this.queue.length >= 20) void this.flush();

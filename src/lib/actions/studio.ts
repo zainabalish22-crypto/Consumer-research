@@ -5,6 +5,11 @@ import { z } from "zod";
 import { requireUser } from "@/lib/supabase/server";
 import { StudyConfig } from "@/lib/study/schema";
 import { startingConfig } from "@/lib/study/factories";
+import { loadLibrary } from "@/lib/library/load";
+import { TABLES, buildSnapshot, toRow } from "@/lib/library/rows";
+import { mediaIssues } from "@/lib/library/checks";
+import { LIBRARY_KINDS, type LibraryKind } from "@/lib/study/library";
+import { buildTemplate, type TemplateKind } from "@/lib/templates";
 
 export type ActionResult = { ok: true } | { ok: false; error: string; issues?: { path: string; message: string }[] };
 
@@ -176,6 +181,59 @@ export async function createStudy(projectId: string, form: FormData): Promise<Ac
   redirect(`/studio/studies/${data.id}`);
 }
 
+/**
+ * Create a study from a template. The template's brands, stores, products, offers
+ * and ads are inserted into the researcher's library like any other objects,
+ * then a normal study draft is created that references them.
+ */
+export async function createFromTemplate(projectId: string, template: TemplateKind): Promise<ActionResult> {
+  if (!uuid.safeParse(projectId).success || !["foodcourt", "deepfake"].includes(template)) return { ok: false, error: "invalidInput" };
+  const { supabase, user } = await requireUser();
+  const { data: project } = await supabase.from("projects").select("workspace_id").eq("id", projectId).single();
+  if (!project) return { ok: false, error: "notFound" };
+  const ws = project.workspace_id as string;
+
+  const taken = new Set<string>();
+  for (const kind of LIBRARY_KINDS) {
+    const { data } = await supabase.from(TABLES[kind]).select("code").eq("workspace_id", ws);
+    (data ?? []).forEach((r) => taken.add(`${kind}:${String(r.code).toLowerCase()}`));
+  }
+  // Codes are unique per library table; add a suffix when the wanted code is taken.
+  const code = (kind: LibraryKind, wanted: string) => {
+    let c = wanted;
+    for (let i = 2; taken.has(`${kind}:${c.toLowerCase()}`); i++) c = `${wanted}_${i}`.slice(0, 20);
+    taken.add(`${kind}:${c.toLowerCase()}`);
+    return c;
+  };
+  const result = buildTemplate(template, { newId: () => crypto.randomUUID(), code });
+
+  const insert = async (kind: LibraryKind, items: { id: string }[]) => {
+    if (!items.length) return null;
+    const rows = items.map((o) => ({ ...toRow(kind, o as unknown as Record<string, unknown>), id: o.id, workspace_id: ws, folder: result.title.slice(0, 120), tags: ["template"] }));
+    const { error } = await supabase.from(TABLES[kind]).insert(rows);
+    return error;
+  };
+  for (const [kind, items] of [
+    ["brand", result.library.brands],
+    ["product", result.library.products],
+    ["offer", result.library.offers],
+    ["ad", result.library.ads],
+    ["store", result.library.stores],
+  ] as const) {
+    const error = await insert(kind, items);
+    if (error) return { ok: false, error: "saveFailed" };
+  }
+
+  const { data, error } = await supabase
+    .from("studies")
+    .insert({ project_id: projectId, title: result.title, draft_config: result.config, created_by: user.id })
+    .select("id")
+    .single();
+  if (error || !data) return { ok: false, error: "saveFailed" };
+  await audit(supabase, user.id, ws, "study.created_from_template", "study", data.id, { template });
+  redirect(`/studio/studies/${data.id}`);
+}
+
 export async function renameStudy(studyId: string, title: string): Promise<ActionResult> {
   const t = z.string().trim().min(1).max(200).safeParse(title);
   if (!t.success || !uuid.safeParse(studyId).success) return { ok: false, error: "invalidInput" };
@@ -223,8 +281,19 @@ export async function publishStudy(studyId: string): Promise<ActionResult & { ve
       issues: parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
     };
   }
+  // Copy the library objects this study uses into the version, so later library edits never change it.
+  const ws = await studyWorkspace(supabase, studyId);
+  if (!ws) return { ok: false, error: "notFound" };
+  const { lib } = await loadLibrary(supabase, ws);
+  const { snapshot, missing } = buildSnapshot(parsed.data, lib);
+  const issues = [
+    ...missing.map((id) => ({ path: "library", message: `A referenced library item no longer exists (${id})` })),
+    ...mediaIssues(parsed.data, snapshot),
+  ];
+  if (issues.length) return { ok: false, error: "invalidConfig", issues };
+  const finalConfig = { ...parsed.data, library: snapshot };
   // Store the normalised config (defaults filled) so the published version is self-describing.
-  await supabase.from("studies").update({ draft_config: parsed.data }).eq("id", studyId);
+  await supabase.from("studies").update({ draft_config: finalConfig }).eq("id", studyId);
   const { data, error } = await supabase.rpc("publish_study", { p_study_id: studyId });
   if (error) return { ok: false, error: "publishFailed" };
   revalidatePath(`/studio/studies/${studyId}`);

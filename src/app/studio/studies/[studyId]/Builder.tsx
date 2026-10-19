@@ -22,6 +22,8 @@ import { BlockEditor } from "@/components/builder/BlockEditor";
 import { Checkbox, moveItem } from "@/components/builder/controls";
 import { DesignEditor } from "@/components/builder/DesignEditor";
 import { activeWarnings } from "@/lib/study/warnings";
+import { LibraryProvider } from "@/components/builder/LibraryContext";
+import type { LibrarySnapshot } from "@/lib/study/library";
 import { StatusBadge } from "../../StatusBadge";
 
 const ADDABLE: BlockType[] = [
@@ -32,6 +34,9 @@ const ADDABLE: BlockType[] = [
   "instructions",
   "questionnaire",
   "media",
+  "ad_exposure",
+  "store_choice",
+  "village",
   "demographics",
   "debrief",
   "end",
@@ -41,11 +46,20 @@ interface Props {
   study: { id: string; title: string; status: StudyStatus; slug: string; projectId: string; projectName: string };
   initialConfig: StudyConfig;
   versions: { id: string; version_number: number; locked: boolean; published_at: string }[];
+  library: LibrarySnapshot;
 }
 
 type SaveState = "saved" | "dirty" | "saving" | "error";
 
-export function Builder({ study, initialConfig, versions }: Props) {
+export function Builder(props: Props) {
+  return (
+    <LibraryProvider value={props.library}>
+      <BuilderInner {...props} />
+    </LibraryProvider>
+  );
+}
+
+function BuilderInner({ study, initialConfig, versions }: Props) {
   const t = useTranslations("builder");
   const te = useTranslations("errors");
   const locale = useLocale() as Language;
@@ -438,6 +452,7 @@ function SettingsTab({ config, onChange }: { config: StudyConfig; onChange: (c: 
         <legend className="mb-1 text-sm font-medium">{t("events")}</legend>
         <Checkbox label={t("eventsNavigation")} hint={t("eventsNavigationHint")} checked={s.events.navigation} onChange={(v) => set({ events: { ...s.events, navigation: v } })} />
         <Checkbox label={t("eventsMedia")} hint={t("eventsMediaHint")} checked={s.events.media} onChange={(v) => set({ events: { ...s.events, media: v } })} />
+        <Checkbox label={t("eventsEnvironment")} hint={t("eventsEnvironmentHint")} checked={s.events.environment} onChange={(v) => set({ events: { ...s.events, environment: v } })} />
         <p className="text-xs text-muted">{t("eventsNever")}</p>
       </fieldset>
       <p className="text-xs text-muted">{t("themeNote")}</p>

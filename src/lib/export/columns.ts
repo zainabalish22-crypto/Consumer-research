@@ -13,6 +13,10 @@ import {
   type StudyConfig,
 } from "@/lib/study/schema";
 import { likertValues } from "@/lib/study/answers";
+import type { Assignment } from "@/lib/study/flow";
+import { libraryOf, offerForStore, orderItems, resolveAd } from "@/lib/study/environment";
+import { basketValue } from "@/lib/study/envAnswers";
+import { lt } from "@/lib/study/text";
 
 export type ValueLabel = { value: number; en: string; ar: string };
 export type ColumnType = "numeric" | "string" | "date" | "datetime";
@@ -48,8 +52,16 @@ export interface SessionRecord {
   answers: Record<string, unknown>;
   /** Seconds per step key (block id or block#level). */
   blockSeconds: Record<string, number>;
-  /** Computed from events, per media asset id. */
+  /** Computed from events, per media asset id (and "ad:<id>" per ad). */
   media: Record<string, MediaSummary>;
+  /** Computed from environment events, per block id and store id. */
+  env: Record<string, EnvSummary>;
+}
+
+export interface EnvSummary {
+  stores: Record<string, { approached: boolean; entered: boolean; dwellMs: number; views: number; passes: number }>;
+  productsViewed: number;
+  details: number;
 }
 
 export interface Column {
@@ -401,6 +413,176 @@ function designColumns(cfg: StudyConfig): Column[] {
   return out;
 }
 
+const assignmentOf = (s: SessionRecord): Assignment => ({
+  condition: s.condition,
+  factors: s.factors as Assignment["factors"],
+  groups: s.groups,
+});
+
+/** Columns for shopping-environment and ad blocks, computed from answers, events and the assignment. */
+function environmentColumns(cfg: StudyConfig): Column[] {
+  const lib = libraryOf(cfg);
+  const out: Column[] = [];
+  const col = (c: Omit<Column, "measure" | "questionType"> & { measure?: Measure }): Column => ({ measure: "scale", questionType: "computed", ...c });
+
+  for (const b of cfg.blocks) {
+    if (b.type === "village" || b.type === "store_choice") {
+      const P = b.variable;
+      const order = (s: SessionRecord) => orderItems(b.stores, b.storeOrder, cfg, assignmentOf(s), `${s.id}:${b.id}`);
+      const offerCode = (s: SessionRecord, sid: string) => offerForStore(b.offers, sid, cfg, assignmentOf(s))?.code ?? null;
+      const answer = (s: SessionRecord) => s.answers[P] as Record<string, unknown> | undefined;
+      for (const sid of b.stores) {
+        const st = lib.stores[sid];
+        if (!st) continue;
+        const name = lt(st.name, "en") || st.code;
+        const nameAr = lt(st.name, "ar") || name;
+        const base = { sourceBlock: b.id };
+        out.push(
+          col({ ...base, name: `${P}_${st.code}_pos`, label: { en: `${name}: position shown`, ar: `${nameAr}: موضع العرض` }, type: "numeric", measure: "ordinal", rule: `1 = first store shown (store id ${sid})`, cell: (s) => order(s).indexOf(sid) + 1 || null }),
+          col({ ...base, name: `${P}_${st.code}_offer`, label: { en: `${name}: offer shown`, ar: `${nameAr}: العرض المقدم` }, type: "string", measure: "nominal", rule: "Offer code from the library (empty = no offer)", cell: (s) => offerCode(s, sid) }),
+        );
+        if (b.type === "village") {
+          const env = (s: SessionRecord) => s.env[b.id]?.stores[sid];
+          const basket = (s: SessionRecord) => ((answer(s)?.basket as { store: string; qty: number }[] | undefined) ?? null);
+          out.push(
+            col({ ...base, name: `${P}_${st.code}_approached`, label: { en: `${name}: stopped in front`, ar: `${nameAr}: توقف أمامه` }, type: "numeric", measure: "nominal", valueLabels: yesNo, rule: `1 if the participant stayed within ${b.approachDistance} units for ${b.approachSeconds}s (store_approach event)`, cell: (s) => (s.env[b.id] ? (env(s)?.approached ? 1 : 0) : null) }),
+            col({ ...base, name: `${P}_${st.code}_entered`, label: { en: `${name}: entered`, ar: `${nameAr}: دخل المتجر` }, type: "numeric", measure: "nominal", valueLabels: yesNo, rule: "1 if a store_enter event exists", cell: (s) => (s.env[b.id] ? (env(s)?.entered ? 1 : 0) : null) }),
+            col({ ...base, name: `${P}_${st.code}_dwell_sec`, label: { en: `${name}: seconds inside`, ar: `${nameAr}: ثوانٍ داخل المتجر` }, type: "numeric", rule: "Sum of store_leave durations", cell: (s) => (s.env[b.id] ? Math.round((env(s)?.dwellMs ?? 0) / 100) / 10 : null) }),
+            col({ ...base, name: `${P}_${st.code}_views`, label: { en: `${name}: products viewed`, ar: `${nameAr}: منتجات تمت مشاهدتها` }, type: "numeric", rule: "Count of product_view events in this store", cell: (s) => (s.env[b.id] ? (env(s)?.views ?? 0) : null) }),
+            col({
+              ...base,
+              name: `${P}_${st.code}_items`,
+              label: { en: `${name}: items bought`, ar: `${nameAr}: عدد القطع المشتراة` },
+              type: "numeric",
+              rule: "Quantity in the final basket from this store",
+              cell: (s) => {
+                const bk = basket(s);
+                return bk ? bk.filter((l) => l.store === sid).reduce((n, l) => n + l.qty, 0) : null;
+              },
+            }),
+          );
+          if (b.considerationPrompt) {
+            out.push(
+              col({
+                ...base,
+                name: `${P}_${st.code}_consider`,
+                label: { en: `${name}: would consider buying`, ar: `${nameAr}: سيفكر في الشراء` },
+                type: "numeric",
+                measure: "nominal",
+                valueLabels: yesNo,
+                rule: "Answer to the question asked when leaving the store (empty = never entered)",
+                cell: (s) => {
+                  const c = answer(s)?.consideration as Record<string, number> | undefined;
+                  return c && c[sid] !== undefined ? c[sid] : null;
+                },
+              }),
+            );
+          }
+        }
+      }
+      if (b.type === "store_choice") {
+        const chosen = (s: SessionRecord) => (answer(s) ? ((answer(s)!.store as string | null) ?? null) : undefined);
+        out.push(
+          col({ sourceBlock: b.id, name: `${P}_store`, label: { en: "Chosen store", ar: "المتجر المختار" }, type: "string", measure: "nominal", rule: "Store code (empty = none chosen or not answered)", cell: (s) => { const c = chosen(s); return c ? (lib.stores[c]?.code ?? c) : null; } }),
+          col({ sourceBlock: b.id, name: `${P}_offer`, label: { en: "Offer at the chosen store", ar: "العرض في المتجر المختار" }, type: "string", measure: "nominal", cell: (s) => { const c = chosen(s); return c ? offerCode(s, c) : null; } }),
+          col({ sourceBlock: b.id, name: `${P}_pos`, label: { en: "Position of the chosen store", ar: "موضع المتجر المختار" }, type: "numeric", measure: "ordinal", cell: (s) => { const c = chosen(s); return c ? order(s).indexOf(c) + 1 || null : null; } }),
+        );
+      } else {
+        const blk = b;
+        const bk = (s: SessionRecord) => (answer(s)?.basket as { store: string; product: string; qty: number }[] | undefined) ?? null;
+        // The "chosen" store is the one with most items; ties go to the first added.
+        const chosenStore = (s: SessionRecord) => {
+          const lines = bk(s);
+          if (!lines?.length) return null;
+          const byStore = new Map<string, number>();
+          lines.forEach((l) => byStore.set(l.store, (byStore.get(l.store) ?? 0) + l.qty));
+          return [...byStore.entries()].sort((x, y) => y[1] - x[1])[0][0];
+        };
+        out.push(
+          col({ sourceBlock: b.id, name: `${P}_items`, label: { en: "Items in final basket", ar: "عدد القطع في السلة النهائية" }, type: "numeric", cell: (s) => { const l = bk(s); return l ? l.reduce((n, x) => n + x.qty, 0) : null; } }),
+          col({ sourceBlock: b.id, name: `${P}_value`, label: { en: `Basket value (${b.currency})`, ar: `قيمة السلة (${b.currency})` }, type: "numeric", rule: "Sum of line totals after offers (simulated spend)", cell: (s) => { const l = bk(s); return l ? basketValue(blk, cfg, assignmentOf(s), l) : null; } }),
+          col({ sourceBlock: b.id, name: `${P}_choice_store`, label: { en: "Chosen store (most items)", ar: "المتجر المختار (أكثر القطع)" }, type: "string", measure: "nominal", rule: "Store code with the most items in the final basket", cell: (s) => { const c = chosenStore(s); return c ? (lib.stores[c]?.code ?? c) : null; } }),
+          col({ sourceBlock: b.id, name: `${P}_choice_offer`, label: { en: "Offer at the chosen store", ar: "العرض في المتجر المختار" }, type: "string", measure: "nominal", cell: (s) => { const c = chosenStore(s); return c ? offerCode(s, c) : null; } }),
+          col({ sourceBlock: b.id, name: `${P}_choice_product`, label: { en: "First product in basket", ar: "أول منتج في السلة" }, type: "string", measure: "nominal", cell: (s) => { const l = bk(s); return l?.length ? (lib.products[l[0].product]?.code ?? l[0].product) : null; } }),
+          col({ sourceBlock: b.id, name: `${P}_stores_entered`, label: { en: "Number of stores entered", ar: "عدد المتاجر التي دخلها" }, type: "numeric", cell: (s) => (s.env[b.id] ? Object.values(s.env[b.id].stores).filter((x) => x.entered).length : null) }),
+          col({ sourceBlock: b.id, name: `${P}_products_viewed`, label: { en: "Product views (all stores)", ar: "مشاهدات المنتجات (كل المتاجر)" }, type: "numeric", cell: (s) => s.env[b.id]?.productsViewed ?? null }),
+          col({ sourceBlock: b.id, name: `${P}_details_opened`, label: { en: "Product details opened", ar: "مرات فتح تفاصيل المنتج" }, type: "numeric", cell: (s) => s.env[b.id]?.details ?? null }),
+          col({ sourceBlock: b.id, name: `${P}_timed_out`, label: { en: "Time limit reached", ar: "انتهى الوقت المحدد" }, type: "numeric", measure: "nominal", valueLabels: yesNo, cell: (s) => (answer(s) ? (answer(s)!.timedOut ? 1 : 0) : null) }),
+        );
+      }
+    }
+    if (b.type === "ad_exposure") {
+      const order = (s: SessionRecord) => orderItems(b.ads, b.order, cfg, assignmentOf(s), `${s.id}:${b.id}`);
+      for (const adId of b.ads) {
+        const ad = lib.ads[adId];
+        if (!ad) continue;
+        const shown = (s: SessionRecord) => resolveAd(ad, b.rules, cfg, assignmentOf(s));
+        const m = (s: SessionRecord) => s.media[`ad:${adId}`];
+        const base = { sourceBlock: b.id };
+        const n = lt(ad.name, "en") || ad.code;
+        out.push(
+          col({ ...base, name: `ad_${ad.code}_version`, label: { en: `${n}: version shown`, ar: `${lt(ad.name, "ar") || n}: النسخة المعروضة` }, type: "string", measure: "nominal", rule: `Version key from the library (${ad.versions.map((v) => v.key).join(", ")})`, cell: (s) => shown(s).versionKey }),
+          col({ ...base, name: `ad_${ad.code}_disclosed`, label: { en: `${n}: disclosure label shown`, ar: `${lt(ad.name, "ar") || n}: ظهرت علامة الإفصاح` }, type: "numeric", measure: "nominal", valueLabels: yesNo, cell: (s) => (shown(s).disclosed ? 1 : 0) }),
+          col({ ...base, name: `ad_${ad.code}_pos`, label: { en: `${n}: position shown`, ar: `${lt(ad.name, "ar") || n}: موضع العرض` }, type: "numeric", measure: "ordinal", cell: (s) => order(s).indexOf(adId) + 1 || null }),
+          col({ ...base, name: `ad_${ad.code}_visible_sec`, label: { en: `${n}: seconds visible`, ar: `${lt(ad.name, "ar") || n}: ثوانٍ ظاهرة` }, type: "numeric", rule: "Sum of media_visible durations for this ad (any placement)", cell: (s) => (m(s) ? Math.round(m(s)!.visibleMs / 100) / 10 : null) }),
+          col({ ...base, name: `ad_${ad.code}_pct`, label: { en: `${n}: furthest point played (%)`, ar: `${lt(ad.name, "ar") || n}: أبعد نقطة تشغيل (%)` }, type: "numeric", rule: "Highest progress quartile reached (0, 25, 50, 75, 100)", cell: (s) => (m(s) ? m(s)!.maxPct : null) }),
+        );
+      }
+    }
+  }
+  return out;
+}
+
+/**
+ * For blocks repeated over a factor whose levels match a "pick" factor (e.g. brands
+ * and target_brand), add the value for the participant's target level and the mean
+ * of the other levels, so within-participant comparisons are one subtraction away.
+ */
+function targetColumns(cfg: StudyConfig, perLevel: Map<string, { factorId: string; byLevel: Map<string, Column> }>): Column[] {
+  const out: Column[] = [];
+  for (const [baseName, { factorId, byLevel }] of perLevel) {
+    const rf = cfg.design.factors.find((f) => f.id === factorId);
+    if (!rf) continue;
+    const levels = new Set((rf.kind === "mapping" ? rf.targets : rf.levels).map((l) => l.value));
+    const sample = [...byLevel.values()][0];
+    if (!sample || sample.type !== "numeric") continue;
+    for (const pf of cfg.design.factors.filter((f) => f.kind === "pick")) {
+      const pv = new Set(pf.levels.map((l) => l.value));
+      if (pv.size !== levels.size || ![...pv].every((v) => levels.has(v))) continue;
+      const target = (s: SessionRecord) => (typeof s.factors[pf.variable] === "string" ? (s.factors[pf.variable] as string) : null);
+      out.push(
+        {
+          ...sample,
+          name: `${baseName}_target`,
+          label: { en: `${sample.label.en} — ${pf.variable} level`, ar: `${sample.label.ar} — مستوى ${pf.variable}` },
+          questionType: "computed",
+          rule: `Value of ${baseName}_<level> for the participant's ${pf.variable}`,
+          cell: (s) => {
+            const tl = target(s);
+            return tl && byLevel.get(tl) ? byLevel.get(tl)!.cell(s) : null;
+          },
+        },
+        {
+          ...sample,
+          name: `${baseName}_nontarget_mean`,
+          label: { en: `${sample.label.en} — mean of other levels`, ar: `${sample.label.ar} — متوسط المستويات الأخرى` },
+          valueLabels: undefined,
+          measure: "scale",
+          questionType: "computed",
+          rule: `Mean of ${baseName}_<level> over levels other than ${pf.variable} (answered levels only)`,
+          cell: (s) => {
+            const tl = target(s);
+            if (!tl) return null;
+            const vals = [...byLevel.entries()].filter(([lv]) => lv !== tl).map(([, c]) => c.cell(s)).filter((v): v is number => typeof v === "number" && v >= 0);
+            return vals.length ? Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 1000) / 1000 : null;
+          },
+        },
+      );
+    }
+  }
+  return out;
+}
+
 /** Build columns for a set of configs (newest first). Columns are merged by name. */
 export function buildColumns(configsNewestFirst: StudyConfig[], extras: ExportExtras = { paramKeys: [], assets: [] }): Column[] {
   const byName = new Set<string>();
@@ -431,8 +613,12 @@ export function buildColumns(configsNewestFirst: StudyConfig[], extras: ExportEx
   const timing: Column[] = [];
   const attention: { q: Question & { attentionCheck?: { expected: number } }; block: Block; key: string; name: string }[] = [];
 
+  const env: Column[] = [];
+  const targets: Column[] = [];
   for (const cfg of configsNewestFirst) {
     add(design, designColumns(cfg));
+    add(env, environmentColumns(cfg));
+    const perLevel = new Map<string, { factorId: string; byLevel: Map<string, Column> }>();
     for (const block of cfg.blocks) {
       const factor = block.repeat ? cfg.design.factors.find((f) => f.id === block.repeat!.factorId) : undefined;
       const levels = factor ? (factor.kind === "mapping" ? factor.targets : factor.levels) : [undefined];
@@ -457,7 +643,15 @@ export function buildColumns(configsNewestFirst: StudyConfig[], extras: ExportEx
         }
         if (!isQuestionBlock(block)) continue;
         for (const q of block.questions) {
-          add(questions, questionColumns(q, block, level));
+          const cols = questionColumns(q, block, level);
+          add(questions, cols);
+          if (factor && level) {
+            questionColumns(q, block).forEach((bc, i) => {
+              const e = perLevel.get(bc.name) ?? { factorId: factor.id, byLevel: new Map<string, Column>() };
+              e.byLevel.set(level.value, cols[i]);
+              perLevel.set(bc.name, e);
+            });
+          }
           if ("attentionCheck" in q && q.attentionCheck) {
             const key = level ? `${q.variable}_${level.value}` : q.variable;
             if (!attention.some((a) => a.key === key)) attention.push({ q: q as Question & { attentionCheck: { expected: number } }, block, key, name: `${key}_attn_pass` });
@@ -465,6 +659,7 @@ export function buildColumns(configsNewestFirst: StudyConfig[], extras: ExportEx
         }
       }
     }
+    add(targets, targetColumns(cfg, perLevel));
   }
 
   const attentionCols: Column[] = attention.map(({ q, block, key, name }) => ({
@@ -539,5 +734,5 @@ export function buildColumns(configsNewestFirst: StudyConfig[], extras: ExportEx
     return cols;
   });
 
-  return [...base, ...design, ...attentionSummary, ...questions, ...attentionCols, ...media, ...timing];
+  return [...base, ...design, ...attentionSummary, ...questions, ...targets, ...attentionCols, ...env, ...media, ...timing];
 }
