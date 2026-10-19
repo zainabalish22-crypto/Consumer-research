@@ -55,10 +55,10 @@ A free, bilingual (Arabic/English) platform for consumer-behaviour research: bui
 2. Copy `.env.example` to `.env.local` and fill in your Supabase URL and publishable key.
 
 3. Apply the database migrations in `supabase/migrations/` in filename order. Either:
-   - paste each file into **Supabase Dashboard â†’ SQL Editor** and run it, or
+   - paste each file into **Supabase Dashboard → SQL Editor** and run it, or
    - use the Supabase CLI: `npx supabase link --project-ref YOUR-REF` then `npx supabase db push`.
 
-4. In **Supabase â†’ Authentication â†’ URL Configuration**, set the Site URL to where the app runs (e.g. `http://localhost:3000`) and add `http://localhost:3000/auth/callback` to the redirect URLs.
+4. In **Supabase → Authentication → URL Configuration**, set the Site URL to where the app runs (e.g. `http://localhost:3000`) and add `http://localhost:3000/auth/callback` to the redirect URLs.
 
 5. Run the app:
 
@@ -70,7 +70,7 @@ A free, bilingual (Arabic/English) platform for consumer-behaviour research: bui
 
 ### Email confirmation
 
-Supabase cloud sends confirmation emails from a shared server limited to a few emails per hour. For real use, add your own SMTP server under **Authentication â†’ Emails â†’ SMTP Settings**, or (for local testing only) turn off "Confirm email".
+Supabase cloud sends confirmation emails from a shared server limited to a few emails per hour. For real use, add your own SMTP server under **Authentication → Emails → SMTP Settings**, or (for local testing only) turn off "Confirm email".
 
 ## Tests
 
