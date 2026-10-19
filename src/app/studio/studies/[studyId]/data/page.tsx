@@ -34,18 +34,31 @@ export default async function DataPage({
   function base() {
     return supabase.from("participant_sessions").select("id", { count: "exact", head: true }).eq("study_id", studyId);
   }
-  const [real, completed, test, excluded, declined, withdrawn] = await Promise.all([
+  const [real, completed, test, excluded, declined, withdrawn, screened] = await Promise.all([
     count((q) => q.eq("is_test", false)),
     count((q) => q.eq("is_test", false).eq("status", "completed")),
     count((q) => q.eq("is_test", true)),
     count((q) => q.eq("is_test", false).eq("excluded", true)),
     count((q) => q.eq("is_test", false).eq("status", "declined")),
     count((q) => q.eq("is_test", false).eq("status", "withdrawn")),
+    count((q) => q.eq("is_test", false).eq("status", "screened_out")),
   ]);
+  const current = data.versions[0];
+  const { data: currentVersion } = current
+    ? await supabase.from("study_versions").select("config").eq("id", current.id).single()
+    : { data: null };
+  const conditions = ((currentVersion?.config as { design?: { conditions?: { id: string; label?: string }[] } } | null)?.design?.conditions ?? []);
+  const perCondition = await Promise.all(
+    conditions.map(async (c) => ({
+      ...c,
+      started: await count((q) => q.eq("is_test", false).eq("condition", c.id)),
+      completed: await count((q) => q.eq("is_test", false).eq("condition", c.id).eq("status", "completed")),
+    })),
+  );
 
   let q = supabase
     .from("participant_sessions")
-    .select("id, status, is_test, excluded, exclusion_reason, language, device_class, started_at, ended_at, study_version_id", { count: "exact" })
+    .select("id, status, is_test, excluded, exclusion_reason, language, device_class, started_at, ended_at, study_version_id, condition", { count: "exact" })
     .eq("study_id", studyId)
     .order("started_at", { ascending: false })
     .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
@@ -65,6 +78,7 @@ export default async function DataPage({
     { k: "completed", v: completed },
     { k: "completionRate", v: real ? `${Math.round((completed / real) * 100)}%` : "–" },
     { k: "declined", v: declined },
+    { k: "screened", v: screened },
     { k: "withdrawn", v: withdrawn },
     { k: "excluded", v: excluded },
     { k: "test", v: test },
@@ -82,7 +96,7 @@ export default async function DataPage({
         <StatusBadge status={data.study.status} />
       </div>
 
-      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7" aria-label={t("summary")}>
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8" aria-label={t("summary")}>
         {stats.map((s) => (
           <Card key={s.k} className="p-4">
             <p className="text-xs text-muted">{t(`stats.${s.k}`)}</p>
@@ -91,6 +105,30 @@ export default async function DataPage({
         ))}
       </section>
       <p className="-mt-3 text-xs text-muted">{t("statsNote")}</p>
+
+      {perCondition.length > 1 && (
+        <Card className="flex flex-col gap-2">
+          <h2 className="font-semibold">{t("byCondition")}</h2>
+          <table className="w-full max-w-lg text-sm">
+            <thead className="text-xs text-muted">
+              <tr>
+                <th scope="col" className="py-1 text-start font-medium">{t("cols.condition")}</th>
+                <th scope="col" className="py-1 text-start font-medium">{t("stats.started")}</th>
+                <th scope="col" className="py-1 text-start font-medium">{t("stats.completed")}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line">
+              {perCondition.map((c) => (
+                <tr key={c.id}>
+                  <td className="py-1.5" dir="auto">{c.label || c.id}</td>
+                  <td className="py-1.5 tabular-nums">{c.started}</td>
+                  <td className="py-1.5 tabular-nums">{c.completed}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Card>
+      )}
 
       <Card className="flex flex-col gap-3">
         <h2 className="font-semibold">{t("export.title")}</h2>
@@ -120,7 +158,7 @@ export default async function DataPage({
             <table className="w-full text-sm">
               <thead className="bg-paper text-xs text-muted">
                 <tr>
-                  {["session", "version", "status", "language", "device", "started", "duration", "flags"].map((h) => (
+                  {["session", "version", "condition", "status", "language", "device", "started", "duration", "flags"].map((h) => (
                     <th key={h} scope="col" className="px-3 py-2 text-start font-medium">
                       {t(`cols.${h}`)}
                     </th>
@@ -134,6 +172,7 @@ export default async function DataPage({
                       {s.id.slice(0, 8)}
                     </td>
                     <td className="px-3 py-2">{versionNo.get(s.study_version_id) ?? "–"}</td>
+                    <td className="px-3 py-2 font-mono text-xs" dir="ltr">{s.condition ?? "–"}</td>
                     <td className="px-3 py-2">
                       <Badge tone={s.status === "completed" ? "ok" : s.status === "in_progress" ? "neutral" : "warn"}>{t(`sessionStatus.${s.status}`)}</Badge>
                     </td>

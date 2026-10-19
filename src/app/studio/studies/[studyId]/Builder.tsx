@@ -9,6 +9,7 @@ import {
   deleteStudy,
   duplicateStudy,
   lockVersion,
+  logWarningDismissal,
   publishStudy,
   renameStudy,
   saveDraft,
@@ -19,9 +20,22 @@ import { Alert, Badge, Button, Card, Field, Input, Select, cx } from "@/componen
 import { FlowList } from "@/components/builder/FlowList";
 import { BlockEditor } from "@/components/builder/BlockEditor";
 import { Checkbox, moveItem } from "@/components/builder/controls";
+import { DesignEditor } from "@/components/builder/DesignEditor";
+import { activeWarnings } from "@/lib/study/warnings";
 import { StatusBadge } from "../../StatusBadge";
 
-const ADDABLE: BlockType[] = ["welcome", "consent", "instructions", "questionnaire", "media", "demographics", "end"];
+const ADDABLE: BlockType[] = [
+  "welcome",
+  "consent",
+  "screening",
+  "exclusion_check",
+  "instructions",
+  "questionnaire",
+  "media",
+  "demographics",
+  "debrief",
+  "end",
+];
 
 interface Props {
   study: { id: string; title: string; status: StudyStatus; slug: string; projectId: string; projectName: string };
@@ -38,7 +52,7 @@ export function Builder({ study, initialConfig, versions }: Props) {
   const router = useRouter();
   const [config, setConfig] = useState<StudyConfig>(initialConfig);
   const [selectedId, setSelectedId] = useState<string | null>(initialConfig.blocks[0]?.id ?? null);
-  const [tab, setTab] = useState<"flow" | "settings" | "share">("flow");
+  const [tab, setTab] = useState<"flow" | "design" | "settings" | "share">("flow");
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [publishMsg, setPublishMsg] = useState<{ tone: "ok" | "danger" | "neutral"; text: string; issues?: { path: string; message: string }[] } | null>(null);
   const [pending, start] = useTransition();
@@ -52,6 +66,16 @@ export function Builder({ study, initialConfig, versions }: Props) {
 
   // Live validation against the full schema (publishing requires it to pass).
   const validation = useMemo(() => StudyConfig.safeParse(config), [config]);
+  // Methodological warnings use the normalised config when it is valid.
+  const warnings = useMemo(() => (validation.success ? activeWarnings(validation.data) : []), [validation]);
+  const dismissWarning = (id: string) => {
+    update({ ...config, settings: { ...config.settings, dismissedWarnings: [...config.settings.dismissedWarnings, id] } });
+    void logWarningDismissal(study.id, id);
+  };
+  const restoreWarnings = () => {
+    for (const id of config.settings.dismissedWarnings) void logWarningDismissal(study.id, id, true);
+    update({ ...config, settings: { ...config.settings, dismissedWarnings: [] } });
+  };
   const issues = validation.success ? [] : validation.error.issues;
   const issuesByBlock = useMemo(() => {
     const out: Record<string, number> = {};
@@ -210,7 +234,7 @@ export function Builder({ study, initialConfig, versions }: Props) {
       )}
 
       <div role="tablist" className="flex gap-1 border-b border-line">
-        {(["flow", "settings", "share"] as const).map((k) => (
+        {(["flow", "design", "settings", "share"] as const).map((k) => (
           <button
             key={k}
             role="tab"
@@ -221,6 +245,7 @@ export function Builder({ study, initialConfig, versions }: Props) {
           >
             {t(`tabs.${k}`)}
             {k === "flow" && issues.length > 0 && <span className="ms-1.5 rounded-full bg-danger-soft px-1.5 text-xs text-danger">{issues.length}</span>}
+            {k === "flow" && warnings.length > 0 && <span className="ms-1 rounded-full bg-warn-soft px-1.5 text-xs text-warn">{warnings.length}</span>}
           </button>
         ))}
       </div>
@@ -280,6 +305,35 @@ export function Builder({ study, initialConfig, versions }: Props) {
                 </ul>
               </Card>
             )}
+            {(warnings.length > 0 || config.settings.dismissedWarnings.length > 0) && (
+              <Card className="p-3">
+                <p className="mb-1 text-sm font-medium text-warn">{t("warnings.title", { n: warnings.length })}</p>
+                <p className="mb-2 text-xs text-muted">{t("warnings.hint")}</p>
+                <ul className="flex flex-col gap-2 text-xs">
+                  {warnings.map((w) => (
+                    <li key={w.id} className="rounded-md bg-warn-soft p-2">
+                      <p className="font-medium text-warn">{t(`warnings.rules.${w.rule}.title`, w.params ?? {})}</p>
+                      <p className="mt-0.5 text-ink">{t(`warnings.rules.${w.rule}.why`, w.params ?? {})}</p>
+                      <div className="mt-1 flex gap-3">
+                        {w.blockId && (
+                          <button type="button" className="underline" onClick={() => setSelectedId(w.blockId!)}>
+                            {t("warnings.show")}
+                          </button>
+                        )}
+                        <button type="button" className="underline" onClick={() => dismissWarning(w.id)}>
+                          {t("warnings.dismiss")}
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                {config.settings.dismissedWarnings.length > 0 && (
+                  <button type="button" className="mt-2 text-xs underline" onClick={restoreWarnings}>
+                    {t("warnings.restore", { n: config.settings.dismissedWarnings.length })}
+                  </button>
+                )}
+              </Card>
+            )}
           </section>
           <section aria-label={t("editor")} className="min-w-0">
             {selected ? (
@@ -301,9 +355,11 @@ export function Builder({ study, initialConfig, versions }: Props) {
         </div>
       )}
 
+      {tab === "design" && <DesignEditor config={config} onChange={update} />}
+
       {tab === "settings" && <SettingsTab config={config} onChange={update} />}
 
-      {tab === "share" && <ShareTab study={study} versions={versions} />}
+      {tab === "share" && <ShareTab study={study} versions={versions} conditions={config.design.conditions.map((c) => ({ id: c.id, label: c.label }))} />}
     </div>
   );
 }
@@ -377,6 +433,13 @@ function SettingsTab({ config, onChange }: { config: StudyConfig; onChange: (c: 
       )}
       <Checkbox label={t("showProgress")} checked={s.showProgress} onChange={(v) => set({ showProgress: v })} />
       <Checkbox label={t("allowResume")} hint={t("allowResumeHint")} checked={s.allowResume} onChange={(v) => set({ allowResume: v })} />
+      <Checkbox label={t("usesDeception")} hint={t("usesDeceptionHint")} checked={s.usesDeception} onChange={(v) => set({ usesDeception: v })} />
+      <fieldset className="flex flex-col gap-2">
+        <legend className="mb-1 text-sm font-medium">{t("events")}</legend>
+        <Checkbox label={t("eventsNavigation")} hint={t("eventsNavigationHint")} checked={s.events.navigation} onChange={(v) => set({ events: { ...s.events, navigation: v } })} />
+        <Checkbox label={t("eventsMedia")} hint={t("eventsMediaHint")} checked={s.events.media} onChange={(v) => set({ events: { ...s.events, media: v } })} />
+        <p className="text-xs text-muted">{t("eventsNever")}</p>
+      </fieldset>
       <p className="text-xs text-muted">{t("themeNote")}</p>
     </Card>
   );
@@ -408,11 +471,20 @@ function CopyField({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ShareTab({ study, versions }: { study: Props["study"]; versions: Props["versions"] }) {
+function ShareTab({
+  study,
+  versions,
+  conditions,
+}: {
+  study: Props["study"];
+  versions: Props["versions"];
+  conditions: { id: string; label: string }[];
+}) {
   const t = useTranslations("builder.share");
   const te = useTranslations("errors");
   const locale = useLocale();
   const [origin, setOrigin] = useState("");
+  const [testCondition, setTestCondition] = useState("");
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState("");
@@ -435,7 +507,19 @@ function ShareTab({ study, versions }: { study: Props["study"]; versions: Props[
           <>
             <CopyField label={t("publicLink")} value={url} />
             <p className="text-xs text-muted">{t("paramsHint")}</p>
-            <CopyField label={t("testLink")} value={`${url}?test=1`} />
+            {conditions.length > 1 && (
+              <Field label={t("testCondition")} htmlFor="test-cond">
+                <Select id="test-cond" value={testCondition} onChange={(e) => setTestCondition(e.target.value)}>
+                  <option value="">{t("testConditionRandom")}</option>
+                  {conditions.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.label || c.id}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            )}
+            <CopyField label={t("testLink")} value={`${url}?test=1${testCondition ? `&condition=${testCondition}` : ""}`} />
             <p className="text-xs text-muted">{t("testHint")}</p>
           </>
         )}

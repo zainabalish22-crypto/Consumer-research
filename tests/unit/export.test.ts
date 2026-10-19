@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildColumns, type SessionRecord } from "@/lib/export/columns";
-import { BOM, codebookCsv, csvCell, wideCsv } from "@/lib/export/csv";
+import { BOM, codebookCsv, csvCell, eventLogCsv, wideCsv } from "@/lib/export/csv";
+import { spssSyntax } from "@/lib/export/spss";
 import { newBlock, newQuestion, startingConfig } from "@/lib/study/factories";
 import type { Question, StudyConfig } from "@/lib/study/schema";
 
@@ -24,9 +25,17 @@ const session = (patch: Partial<SessionRecord>): SessionRecord => ({
   device_class: "mobile",
   started_at: "2026-10-19T10:00:00.000Z",
   ended_at: "2026-10-19T10:05:30.000Z",
+  last_activity_at: "2026-10-19T10:05:30.000Z",
+  screen_reason: null,
   consent: "given",
+  condition: null,
+  factors: {},
+  groups: {},
+  params: {},
+  completion_code: null,
   answers: {},
   blockSeconds: {},
+  media: {},
   ...patch,
 });
 
@@ -117,6 +126,80 @@ describe("wide export", () => {
     expect(trust[5]).toContain("1=Strongly disagree");
     expect(trust[6]).toContain("1=أعارض بشدة");
     expect(trust[7]).toBe("b_q");
+  });
+
+  it("exports design, repeated-block, parameter and media columns", () => {
+    const cfg = studyWith([newQuestion("likert", "att")]);
+    cfg.design.conditions = [
+      { id: "none", label: "No label", weight: 1 },
+      { id: "label", label: "Label", weight: 1 },
+    ];
+    const lv = (v: string) => ({ id: v, value: v, label: { en: `Brand ${v}`, ar: `علامة ${v}` } });
+    cfg.design.factors = [
+      { id: "fb", variable: "target_brand", name: "", kind: "pick", method: "balanced", balanceWithinCondition: true, levels: [lv("A"), lv("B")], targets: [] },
+      { id: "fo", variable: "ad_order", name: "", kind: "order", method: "latin", balanceWithinCondition: true, levels: [lv("A"), lv("B")], targets: [] },
+      { id: "fm", variable: "offer", name: "", kind: "mapping", method: "latin", balanceWithinCondition: true, levels: [lv("X"), lv("Y")], targets: [lv("S1"), lv("S2")] },
+    ];
+    const qb = cfg.blocks.find((b) => b.id === "b_q")!;
+    qb.repeat = { factorId: "fo", order: "assigned" };
+    const asset = "0f0e0d0c-1111-4222-8333-444455556666";
+    const cols = buildColumns([cfg], { paramKeys: ["PROLIFIC_PID"], assets: [{ id: asset, kind: "video", label: "ad.mp4" }] });
+    const names = cols.map((c) => c.name);
+    for (const n of ["condition", "target_brand", "ad_order", "ad_order_pos_A", "offer_S1", "offer_S2", "att_A", "att_B", "time_b_q_A", "param_PROLIFIC_PID", "media_0f0e0d0c_pct", "media_0f0e0d0c_visible_sec", "completion_code", "abandoned"]) {
+      expect(names).toContain(n);
+    }
+    expect(names).not.toContain("att");
+
+    const s = session({
+      condition: "label",
+      factors: { target_brand: "B", ad_order: ["B", "A"], offer: { S1: "Y", S2: "X" } },
+      params: { PROLIFIC_PID: "abc" },
+      answers: { att_A: 2, att_B: 5 },
+      blockSeconds: { "b_q#A": 12 },
+      media: { [asset]: { visibleMs: 30500, maxPct: 75, plays: 2, completed: false } },
+    });
+    const [header, row] = parseCsv(wideCsv(cols, [s]));
+    const get = (n: string) => row[header.indexOf(n)];
+    expect(get("condition")).toBe("label");
+    expect(get("ad_order")).toBe("B>A");
+    expect(get("ad_order_pos_A")).toBe("2");
+    expect(get("offer_S1")).toBe("Y");
+    expect(get("att_B")).toBe("5");
+    expect(get("time_b_q_A")).toBe("12");
+    expect(get("param_PROLIFIC_PID")).toBe("abc");
+    expect(get("media_0f0e0d0c_pct")).toBe("75");
+    expect(get("media_0f0e0d0c_visible_sec")).toBe("30.5");
+    expect(get("media_0f0e0d0c_plays")).toBe("2");
+  });
+
+  it("writes SPSS syntax with labels in either language", () => {
+    const cols = buildColumns([cfg]);
+    const en = spssSyntax(cols, "study_data.csv", "en");
+    expect(en).toContain("GET DATA");
+    expect(en).toContain("/FILE='study_data.csv'");
+    expect(en).toContain("trust F12.2");
+    expect(en).toContain("comment A4000");
+    expect(en).toContain("1 'Strongly disagree'");
+    expect(en).toMatch(/VARIABLE LEVEL [^\n]*trust[^\n]*\(ORDINAL\)/);
+    const ar = spssSyntax(cols, "study_data.csv", "ar");
+    expect(ar).toContain("1 'أعارض بشدة'");
+    // Single quotes inside labels are escaped for SPSS.
+    const tricky = buildColumns([studyWith([{ ...newQuestion("numeric", "n1"), text: { en: "Participant's age" } }])]);
+    expect(spssSyntax(tricky, "x.csv", "en")).toContain("'Participant''s age'");
+  });
+
+  it("writes the event log in long format", () => {
+    const csv = eventLogCsv([
+      { id: 1, session_id: "s1", type: "video_progress", block_key: "ads#B", client_at: "2026-10-20T10:00:00Z", created_at: "2026-10-20T10:00:01Z", data: { asset: "a1", pct: 50 } },
+      { id: 2, session_id: "s1", type: "session_start", block_key: null, client_at: null, created_at: "2026-10-20T09:59:00Z", data: { version: 2 } },
+    ]);
+    const [header, r1, r2] = parseCsv(csv);
+    const get = (r: string[], n: string) => r[header.indexOf(n)];
+    expect(get(r1, "block_id")).toBe("ads");
+    expect(get(r1, "iteration")).toBe("B");
+    expect(get(r1, "progress_pct")).toBe("50");
+    expect(get(r1, "asset_id")).toBe("a1");
+    expect(get(r2, "other")).toBe('{"version":2}');
   });
 
   it("merges columns across versions", () => {

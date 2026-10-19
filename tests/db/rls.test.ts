@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "vitest";
+﻿import { beforeAll, describe, expect, it } from "vitest";
 import type { PGlite } from "@electric-sql/pglite";
 import { freshDb, createUser, as } from "./harness";
 import { startingConfig } from "@/lib/study/factories";
@@ -179,27 +179,22 @@ describe("participant sessions", () => {
     });
   });
 
-  it("cannot skip ahead past unanswered blocks (e.g. consent)", async () => {
+  it("cannot skip past consent", async () => {
     const q = qBlock() as { id: string; questions: { variable: string }[] };
     await as(db, null, async () => {
-      await expect(
-        db.query("select record_consent($1, $2, $3, 'given')", [sessionId, token, consentBlock().id]),
-      ).rejects.toThrow(/not reached/);
       const welcome = config.blocks[0];
-      const r = await one<{ n: number }>("select submit_block($1, $2, $3, '{}'::jsonb, now()) as n", [sessionId, token, welcome.id]);
+      const r = await one<{ n: number }>("select submit_block($1, $2, $3, '{}'::jsonb, now(), 1) as n", [sessionId, token, welcome.id]);
       expect(r.n).toBe(1);
       await expect(
-        db.query("select submit_block($1, $2, $3, '{}'::jsonb, now())", [sessionId, token, q.id]),
-      ).rejects.toThrow(/not reached/);
-      await expect(
-        db.query("select complete_session($1, $2)", [sessionId, token]),
-      ).rejects.toThrow(/end block not reached/);
+        db.query("select submit_block($1, $2, $3, '{}'::jsonb, now(), 3)", [sessionId, token, q.id]),
+      ).rejects.toThrow(/consent required/);
+      await expect(db.query("select complete_session($1, $2)", [sessionId, token])).rejects.toThrow(/consent required/);
     });
   });
 
   it("records consent with the text snapshotted from the server config", async () => {
     await as(db, null, () =>
-      db.query("select record_consent($1, $2, $3, 'given')", [sessionId, token, consentBlock().id]),
+      db.query("select record_consent($1, $2, $3, 'given', 2)", [sessionId, token, consentBlock().id]),
     );
     const c = await one<{ consent_text: unknown; decision: string }>(
       "select consent_text, decision from consent_records where session_id = $1",
@@ -214,15 +209,15 @@ describe("participant sessions", () => {
     const v = q.questions[0].variable;
     await as(db, null, async () => {
       await expect(
-        db.query("select submit_block($1, 'wrong', $2, $3, now())", [sessionId, q.id, JSON.stringify({ [v]: 3 })]),
+        db.query("select submit_block($1, 'wrong', $2, $3, now(), 3)", [sessionId, q.id, JSON.stringify({ [v]: 3 })]),
       ).rejects.toThrow(/invalid session/);
       await expect(
-        db.query("select submit_block($1, $2, 'nope', '{}'::jsonb, now())", [sessionId, token]),
+        db.query("select submit_block($1, $2, 'nope', '{}'::jsonb, now(), 3)", [sessionId, token]),
       ).rejects.toThrow(/unknown block/);
       await expect(
-        db.query("select submit_block($1, $2, $3, $4, now())", [sessionId, token, q.id, JSON.stringify({ evil: 1 })]),
+        db.query("select submit_block($1, $2, $3, $4, now(), 3)", [sessionId, token, q.id, JSON.stringify({ evil: 1 })]),
       ).rejects.toThrow(/unknown variable/);
-      await db.query("select submit_block($1, $2, $3, $4, now())", [sessionId, token, q.id, JSON.stringify({ [v]: 4 })]);
+      await db.query("select submit_block($1, $2, $3, $4, now(), 3)", [sessionId, token, q.id, JSON.stringify({ [v]: 4 })]);
     });
     const r = await one<{ answers: Record<string, number> }>(
       "select answers from responses where session_id = $1 and block_key = $2",
@@ -258,10 +253,10 @@ describe("participant sessions", () => {
     const q = qBlock();
     const demo = config.blocks.find((b) => b.type === "demographics")!;
     await as(db, null, async () => {
-      await db.query("select submit_block($1, $2, $3, '{}'::jsonb, now())", [sessionId, token, demo.id]);
+      await db.query("select submit_block($1, $2, $3, '{}'::jsonb, now(), 4)", [sessionId, token, demo.id]);
       await db.query("select complete_session($1, $2)", [sessionId, token]);
       await expect(
-        db.query("select submit_block($1, $2, $3, '{}'::jsonb, now())", [sessionId, token, q.id]),
+        db.query("select submit_block($1, $2, $3, '{}'::jsonb, now(), 4)", [sessionId, token, q.id]),
       ).rejects.toThrow(/not in progress/);
     });
   });
@@ -269,8 +264,8 @@ describe("participant sessions", () => {
   it("declining consent ends the session", async () => {
     await as(db, null, async () => {
       const r = await one<{ s: { session_id: string; resume_token: string } }>("select start_session($1, 'en') as s", [slug]);
-      await db.query("select submit_block($1, $2, $3, '{}'::jsonb, now())", [r.s.session_id, r.s.resume_token, config.blocks[0].id]);
-      await db.query("select record_consent($1, $2, $3, 'declined')", [r.s.session_id, r.s.resume_token, consentBlock().id]);
+      await db.query("select submit_block($1, $2, $3, '{}'::jsonb, now(), 4)", [r.s.session_id, r.s.resume_token, config.blocks[0].id]);
+      await db.query("select record_consent($1, $2, $3, 'declined', 2)", [r.s.session_id, r.s.resume_token, consentBlock().id]);
       const s = await one<{ s: { status: string } }>("select load_session($1, $2) as s", [r.s.session_id, r.s.resume_token]);
       expect(s.s.status).toBe("declined");
     });
@@ -282,9 +277,9 @@ describe("participant sessions", () => {
     await as(db, null, async () => {
       const r = await one<{ s: { session_id: string; resume_token: string } }>("select start_session($1, 'en') as s", [slug]);
       sid = r.s.session_id;
-      await db.query("select submit_block($1, $2, $3, '{}'::jsonb, now())", [sid, r.s.resume_token, config.blocks[0].id]);
-      await db.query("select record_consent($1, $2, $3, 'given')", [sid, r.s.resume_token, consentBlock().id]);
-      await db.query("select submit_block($1, $2, $3, $4, now())", [
+      await db.query("select submit_block($1, $2, $3, '{}'::jsonb, now(), 4)", [sid, r.s.resume_token, config.blocks[0].id]);
+      await db.query("select record_consent($1, $2, $3, 'given', 2)", [sid, r.s.resume_token, consentBlock().id]);
+      await db.query("select submit_block($1, $2, $3, $4, now(), 3)", [
         sid,
         r.s.resume_token,
         q.id,
@@ -331,6 +326,7 @@ describe("private media", () => {
       withMedia.blocks.splice(1, 0, {
         id: "b_media",
         name: "",
+        showTo: [],
         type: "instructions",
         heading: {},
         body: {},

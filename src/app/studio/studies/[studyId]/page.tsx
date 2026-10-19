@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getStudy } from "@/lib/data";
-import type { StudyConfig } from "@/lib/study/schema";
+import { normalizeDraft } from "@/lib/study/factories";
 import { Builder } from "./Builder";
 
 export default async function StudyPage({ params }: { params: Promise<{ studyId: string }> }) {
@@ -18,8 +18,8 @@ export default async function StudyPage({ params }: { params: Promise<{ studyId:
         projectId: project.id,
         projectName: project.name,
       }}
-      // Drafts may be incomplete; the builder validates live and shows issues.
-      initialConfig={study.draft_config as StudyConfig}
+      // Drafts may be incomplete or from an older version; defaults are filled and the builder validates live.
+      initialConfig={normalizeDraft(study.draft_config)}
       versions={versions}
     />
   );

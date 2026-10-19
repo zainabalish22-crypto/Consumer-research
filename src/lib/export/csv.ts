@@ -33,6 +33,34 @@ export function wideCsv(columns: Column[], sessions: SessionRecord[]): string {
   return toCsv([header, ...body], columns.map((c) => c.type === "string"));
 }
 
+/** Long-format event log: one row per event, with the ids involved as separate columns. */
+export function eventLogCsv(
+  events: { id: number; session_id: string; type: string; block_key: string | null; client_at: string | null; created_at: string; data: Record<string, unknown> }[],
+): string {
+  const header = ["event_id", "session_id", "type", "step_key", "block_id", "iteration", "client_time_utc", "server_time_utc", "asset_id", "media_time_sec", "progress_pct", "duration_ms", "other"];
+  const known = new Set(["asset", "t", "pct", "ms"]);
+  const rows = events.map((e) => {
+    const [blockId, iteration] = (e.block_key ?? "").split("#");
+    const other = Object.fromEntries(Object.entries(e.data ?? {}).filter(([k]) => !known.has(k)));
+    return [
+      e.id,
+      e.session_id,
+      e.type,
+      e.block_key,
+      blockId || null,
+      iteration ?? null,
+      e.client_at,
+      e.created_at,
+      (e.data?.asset as string) ?? null,
+      typeof e.data?.t === "number" ? (e.data.t as number) : null,
+      typeof e.data?.pct === "number" ? (e.data.pct as number) : null,
+      typeof e.data?.ms === "number" ? (e.data.ms as number) : null,
+      Object.keys(other).length ? JSON.stringify(other) : null,
+    ];
+  });
+  return toCsv([header, ...rows]);
+}
+
 export function codebookCsv(columns: Column[]): string {
   const header = [
     "variable",

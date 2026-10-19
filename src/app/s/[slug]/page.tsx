@@ -54,9 +54,20 @@ export default async function ParticipantPage({
   if (!parsed.success) return <Notice en={m.en.apiError_configInvalid} ar={m.ar.apiError_configInvalid} />;
 
   // Recruitment parameters (e.g. a panel participant ID) are passed through into the data.
+  // On test links, ?condition=x and ?f_<variable>=value (comma-separated for orders) force an assignment.
   const recruitment: Record<string, string> = {};
+  const overrides: { condition?: string; factors: Record<string, string | string[]> } = { factors: {} };
   for (const [k, v] of Object.entries(sp)) {
     if (RESERVED.has(k) || typeof v !== "string") continue;
+    if (wantsTest && k === "condition") {
+      overrides.condition = v.slice(0, 20);
+      continue;
+    }
+    if (wantsTest && k.startsWith("f_")) {
+      const f = parsed.data.design.factors.find((x) => x.variable === k.slice(2));
+      if (f) overrides.factors[f.variable] = f.kind === "pick" ? v.slice(0, 20) : v.split(",").map((x) => x.slice(0, 20)).slice(0, 12);
+      continue;
+    }
     if (/^[A-Za-z0-9_]{1,64}$/.test(k)) recruitment[k] = v.slice(0, 200);
   }
 
@@ -67,6 +78,7 @@ export default async function ParticipantPage({
       config={parsed.data}
       messages={participantMessages}
       params={recruitment}
+      overrides={wantsTest ? overrides : undefined}
     />
   );
 }

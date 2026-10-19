@@ -43,6 +43,23 @@ Reasonable, reversible defaults chosen where the brief left room. Newest at the 
 - **Test sessions** are excluded unless "Include test sessions" is ticked.
 - **SPSS syntax and the event log** are Phase 2 (as in the roadmap).
 
+## Phase 2: experimental design engine
+
+- **Assignment happens in the database** (`assign_design`, called inside `start_session`), never in the browser, so participants cannot choose their condition. Test links may force a condition or factor values; real participants' overrides are ignored.
+- **Balanced = permuted blocks** driven by atomic per-study counters (`assignment_counters`). Within every block of size *sum of weights*, each condition appears exactly by its weight, in a seeded random order. Abandoned sessions still use their slot (standard for block randomisation).
+- **Quotas count completed, non-test sessions.** A full condition stops receiving people; when all are full the study answers "full". In-progress sessions are not counted, so a condition can slightly overshoot its quota.
+- **Factors**: *pick* (one level; balanced/random/fixed), *order* (all levels; balanced Latin square, full permutation, random, fixed), *mapping* (levels onto targets one-to-one, e.g. offers onto stores). Latin squares are Williams designs (n rows for even n, 2n for odd n), so positions and first-order carry-over are balanced. Balancing is per condition by default.
+- **Block order groups** reuse the same methods; blocks keep their slots and are filled in the participant's order.
+- **Repetition per stimulus**: a block can repeat once per level of a factor (assigned order, listed, or random). Responses are stored under `blockId#level` and exported as `variable_level`. `{{stimulus}}` and `{{factor:variable}}` are piped into text.
+- **Skip/branch logic** is a small rule language (all/any of: earlier answer, condition, factor, URL parameter, current repetition × equals/in/greater-than/answered…). It is evaluated by one shared TypeScript module in the browser, preview and server route. The database still enforces token, consent-before-content and allowed variables; the full flow order is enforced by the app server (see Known limitations in the README).
+- **Screening** blocks end the session politely when the eligibility rule fails; answers are kept and the session is `screened_out` with a reason.
+- **Cross-study exclusion** stores only `sha256(salt + normalised identifier)` in lists private to the workspace; salts and hashes are never readable by researchers or participants. Test sessions never write to lists.
+- **Unique completion codes** are generated at completion and stored with the session. Redirect URLs can contain `{code}`, `{session}` and any link parameter.
+- **Events** are batched in the browser (UUID per event, so retries never duplicate), kept in localStorage while offline, and flushed on page hide. Only coarse events are allowed by the database (an allow-list); no keystrokes, pointer paths, camera, microphone or location. Withdrawal deletes a participant's events as well as answers.
+- **Computed variables** (Phase 2): per media asset, seconds visible (≥50% in view), furthest progress quartile, number of plays.
+- **SPSS syntax** reads the wide CSV in Unicode mode and applies variable labels, value labels, measurement levels and −98/−99 as user-missing, with English or Arabic labels.
+- **Methodological warnings** never block publishing; dismissals are stored in the draft and written to the audit log.
+
 ## Hosting region
 
 - The hosted instance uses a Supabase project in **eu-central-1 (Frankfurt)** (`research-platform-eu`). Some ethics committees and data-protection laws (e.g. Bahrain's PDPL) care where data is stored; EU storage under GDPR is generally the easiest location to justify, and Supabase has no Gulf region. An earlier empty project in Tokyo (ap-northeast-1) is not used. This is not legal advice: check any storage-location rule your institution has.

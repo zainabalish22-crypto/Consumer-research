@@ -6,28 +6,38 @@ A free, bilingual (Arabic/English) platform for consumer-behaviour research: bui
 
 ## Status
 
-**Phase 1 (foundation and questionnaires): built and tested locally.**
+**Phase 1 (foundation and questionnaires) and Phase 2 (experimental engine): built, tested locally, schema applied to the hosted project.** Not yet exercised end to end by a signed-in researcher (see `KNOWN_ISSUES.md`).
 
 | Area | State |
 |---|---|
 | Bilingual interface (AR/EN, RTL/LTR) | Done |
-| Sign-up / sign-in, personal workspace | Done |
+| Sign-up / sign-in, personal workspace | Done (see known issue 1) |
 | Projects: create, edit, duplicate, archive, delete | Done |
-| Studies: create from blank / questionnaire / media starting point, rename, duplicate, delete | Done |
+| Studies: blank / questionnaire / media / experiment starting points, rename, duplicate, delete | Done |
 | Block flow editor: add, remove, duplicate, drag-and-drop + arrow reordering, live validation | Done |
-| Blocks: welcome, consent, instructions, questionnaire, demographics, media exposure, end | Done |
+| Blocks: welcome, consent, screening, repeat-participant check, instructions, questionnaire, demographics, media, debrief, end | Done |
 | 12 question types, required, randomised options, "not sure"/"prefer not to say", attention checks | Done |
 | Media library: upload with progress, type/size checks, optional image compression, folders, tags | Done |
-| Publish â†’ immutable versions, lock, public link, test link, pause/close | Done |
-| Participant renderer: language choice, consent, resume after refresh, withdrawal, completion code, redirect | Done |
-| Preview (draft, nothing saved) and flagged test sessions | Done |
-| Wide CSV + bilingual codebook + config snapshot export; test data excluded by default | Done |
-| Session list, exclusion flags, delete test sessions, basic counts | Done |
+| Publish → immutable versions, lock, public link, test link, pause/close | Done |
+| Conditions: balanced (permuted blocks) or random, weights, quotas | Done |
+| Factors: pick / order / mapping; balanced, Latin square, full permutation, random, fixed | Done |
+| Block order groups, repetition per stimulus, `{{stimulus}}` piping | Done |
+| Skip/branch logic on answers, condition, factors, URL parameters | Done |
+| Cross-study exclusion with salted hashes | Done |
+| Unique completion codes, redirect URL placeholders | Done |
+| Behavioural events (navigation, media exposure), offline-tolerant batching | Done |
+| Methodological warnings (dismissible, audit-logged) | Done |
+| Preview as any condition / factor level; test links with forced condition | Done |
+| Exports: wide CSV, codebook, event log, SPSS syntax (EN/AR labels), config snapshot | Done |
 | Account deletion | Done |
 | Seed script with labelled sample data | Not yet |
-| Methodological warnings, conditions, factors, branching, SPSS syntax, event log | Phase 2 |
-| Shopping village, online shop | Phases 3â€“4 |
-| Docker self-hosting guide | Phase 5 |
+| Shopping village (Phase 3), online shop (Phase 4) | Not started |
+| Analytics dashboard, Docker self-hosting guide (Phase 5) | Not started |
+
+### Known limitations
+
+- The database enforces session tokens, consent-before-content, allowed variables and assignment. The *order* of blocks (skip logic, repetition) is enforced by the app server; someone calling the database functions directly could submit blocks out of order for their own session. A stricter server-only mode (using a service key) is a possible hardening step.
+- Rate limiting is per server instance (see `docs/LIMITS.md`).
 
 ## Requirements
 

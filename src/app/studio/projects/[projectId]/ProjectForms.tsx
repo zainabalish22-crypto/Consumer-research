@@ -109,7 +109,7 @@ export function NewStudyForm({ projectId }: { projectId: string }) {
       </Field>
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-1 text-sm font-medium">{t("startingPoint")}</legend>
-        {(["blank", "questionnaire", "media"] as const).map((k, i) => (
+        {(["blank", "questionnaire", "media", "experiment"] as const).map((k, i) => (
           <label key={k} className="flex cursor-pointer items-start gap-2 rounded-lg border border-line p-3 has-[:checked]:border-accent has-[:checked]:bg-accent-soft">
             <input type="radio" name="start" value={k} defaultChecked={i === 1} className="mt-1" />
             <span>

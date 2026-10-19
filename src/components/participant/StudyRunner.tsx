@@ -1,20 +1,33 @@
 "use client";
 /**
  * Renders a study for participants (live / test) and for researcher preview.
- * The flow is driven entirely by the study configuration.
+ * The flow is driven entirely by the study configuration and the participant's
+ * assignment (condition, factors, block orders), resolved by lib/study/flow.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { StudyConfig, isQuestionBlock, type Block, type Language } from "@/lib/study/schema";
 import { validateBlockAnswers, type AnswerError } from "@/lib/study/answers";
 import { dirFor, lt } from "@/lib/study/text";
+import {
+  EMPTY_ASSIGNMENT,
+  contextFor,
+  evalLogic,
+  nextStepIndex,
+  pipe,
+  previewAssignment,
+  resolveSteps,
+  type Assignment,
+  type Step,
+} from "@/lib/study/flow";
 import { seededShuffle } from "@/lib/random";
 import { Alert, Button, cx } from "@/components/ui";
 import { QuestionView } from "./QuestionView";
 import { MediaView } from "./MediaView";
-import { makeTr, type ParticipantMessages } from "./i18n";
+import { makeTr, type ParticipantMessages, type Tr } from "./i18n";
+import { EventLogger, type EventData, type EventType } from "./events";
 
 type Mode = "live" | "test" | "preview";
-type Phase = "loading" | "language" | "block" | "declined" | "withdrawn" | "completed" | "error";
+type Phase = "loading" | "language" | "block" | "declined" | "withdrawn" | "screened" | "completed" | "error";
 
 interface Props {
   mode: Mode;
@@ -24,18 +37,20 @@ interface Props {
   messages: Record<Language, ParticipantMessages>;
   params?: Record<string, string>;
   initialMediaUrls?: Record<string, string>;
-  /** Preview only: start at this language/block. */
+  /** Test links / preview: force a condition or factor values. */
+  overrides?: Partial<Assignment>;
   previewLanguage?: Language;
 }
 
 type Answers = Record<string, Record<string, unknown>>;
+type ApiResult<T> = T & { ok: boolean; error?: string; errors?: Record<string, AnswerError> };
 
 function deviceClass(): "mobile" | "tablet" | "desktop" {
   const w = window.innerWidth;
   return w < 640 ? "mobile" : w < 1024 ? "tablet" : "desktop";
 }
 
-async function api<T>(action: string, body: unknown): Promise<T & { ok: boolean; error?: string; errors?: Record<string, AnswerError> }> {
+async function api<T>(action: string, body: unknown): Promise<ApiResult<T>> {
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const res = await fetch(`/api/p/${action}`, {
@@ -43,39 +58,63 @@ async function api<T>(action: string, body: unknown): Promise<T & { ok: boolean;
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),
       });
-      const json = await res.json();
-      return json;
+      return await res.json();
     } catch {
-      if (attempt === 1) return { ok: false, error: "network" } as T & { ok: boolean; error: string };
+      if (attempt === 1) break;
       await new Promise((r) => setTimeout(r, 800));
     }
   }
-  return { ok: false, error: "network" } as T & { ok: boolean; error: string };
+  return { ok: false, error: "network" } as ApiResult<T>;
 }
 
-export function StudyRunner({ mode, slug, config: initialConfig, messages, params = {}, initialMediaUrls = {}, previewLanguage }: Props) {
+function fillRedirect(url: string, vars: Record<string, string>) {
+  return url.replace(/\{([A-Za-z0-9_]+)\}/g, (m, k: string) => (k in vars ? encodeURIComponent(vars[k]) : m));
+}
+
+export function StudyRunner({ mode, slug, config: initialConfig, messages, params: initialParams = {}, initialMediaUrls = {}, overrides, previewLanguage }: Props) {
   const storageKey = slug ? `rp:${slug}:${mode}` : "";
+  const isPreview = mode === "preview";
   const [config, setConfig] = useState(initialConfig);
   const langs = config.settings.languages;
   const [lang, setLang] = useState<Language>(previewLanguage ?? config.settings.defaultLanguage);
   const fallback = langs.find((l) => l !== lang) ?? lang;
   const tr = useMemo(() => makeTr(messages[lang]), [messages, lang]);
 
-  const [phase, setPhase] = useState<Phase>(mode === "preview" ? "block" : "loading");
-  const [index, setIndex] = useState(0);
+  const [previewOverrides, setPreviewOverrides] = useState<Partial<Assignment>>({});
+  const [assignment, setAssignment] = useState<Assignment>(() =>
+    isPreview ? previewAssignment(initialConfig, "preview") : EMPTY_ASSIGNMENT,
+  );
+  const [params, setParams] = useState<Record<string, string>>(initialParams);
+  const [session, setSession] = useState<{ id: string; token: string; isTest: boolean } | null>(null);
+  const seed = session?.id ?? "preview";
+  const steps = useMemo(() => resolveSteps(config, assignment, seed), [config, assignment, seed]);
+
+  const [phase, setPhase] = useState<Phase>(isPreview ? "block" : "loading");
+  const [index, setIndex] = useState(() => (isPreview ? Math.max(0, nextStepIndex(initialConfig, resolveSteps(initialConfig, previewAssignment(initialConfig, "preview"), "preview"), -1, previewAssignment(initialConfig, "preview"), {}, initialParams)) : 0));
   const [answers, setAnswers] = useState<Answers>({});
   const [errors, setErrors] = useState<Record<string, AnswerError>>({});
-  const [session, setSession] = useState<{ id: string; token: string; isTest: boolean } | null>(null);
+  const [identifier, setIdentifier] = useState("");
   const [mediaUrls, setMediaUrls] = useState<Record<string, string>>(initialMediaUrls);
+  const [completionCode, setCompletionCode] = useState<string | null>(null);
+  const [screenMessage, setScreenMessage] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
   const [confirmWithdraw, setConfirmWithdraw] = useState(false);
   const enteredAt = useRef<string>(new Date().toISOString());
+  const enteredPerf = useRef<number>(0);
   const completedRef = useRef(false);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const logger = useRef<EventLogger | null>(null);
 
-  const block: Block | undefined = config.blocks[index];
-  const seed = session?.id ?? "preview";
+  const step: Step | undefined = steps[index];
+  const block: Block | undefined = step ? config.blocks.find((b) => b.id === step.blockId) : undefined;
+  const ctx = useMemo(() => contextFor(assignment, answers, params, step), [assignment, answers, params, step]);
+  const t = useCallback((x: Parameters<typeof lt>[0]) => pipe(lt(x, lang, fallback), config, assignment, step, lang, fallback), [lang, fallback, config, assignment, step]);
+
+  const logEvent = useCallback(
+    (type: EventType, data?: EventData) => logger.current?.log(type, step?.key, data),
+    [step?.key],
+  );
 
   const save = useCallback(
     (s: { id: string; token: string; isTest: boolean } | null) => {
@@ -90,14 +129,27 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
     [storageKey],
   );
 
+  const attachLogger = (s: { id: string; token: string }, cfg: StudyConfig) => {
+    logger.current?.stop();
+    logger.current = new EventLogger(s, cfg.settings.events);
+    logger.current.start();
+  };
+  useEffect(() => () => logger.current?.stop(), []);
+
   const startSession = useCallback(
     async (language: Language) => {
       setBusy(true);
       setProblem(null);
-      const r = await api<{ sessionId: string; token: string; isTest: boolean; config: unknown; mediaUrls: Record<string, string> }>(
-        "start",
-        { slug, language, test: mode === "test", params, device: deviceClass() },
-      );
+      const r = await api<{
+        sessionId: string;
+        token: string;
+        isTest: boolean;
+        config: unknown;
+        assignment: Assignment;
+        params: Record<string, string>;
+        index: number;
+        mediaUrls: Record<string, string>;
+      }>("start", { slug, language, test: mode === "test", params: initialParams, device: deviceClass(), overrides: overrides ?? {} });
       setBusy(false);
       if (!r.ok) {
         setProblem(r.error ?? "network");
@@ -105,22 +157,27 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
         return;
       }
       const parsed = StudyConfig.safeParse(r.config);
-      if (parsed.success) setConfig(parsed.data);
+      const cfg = parsed.success ? parsed.data : initialConfig;
+      setConfig(cfg);
       const s = { id: r.sessionId, token: r.token, isTest: r.isTest };
       setSession(s);
-      if (parsed.success && parsed.data.settings.allowResume) save(s);
+      setAssignment(r.assignment);
+      setParams(r.params ?? {});
+      if (cfg.settings.allowResume) save(s);
+      attachLogger(s, cfg);
       setMediaUrls(r.mediaUrls);
       setLang(language);
-      setIndex(0);
+      setIndex(r.index);
       enteredAt.current = new Date().toISOString();
       setPhase("block");
     },
-    [mode, params, save, slug],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [mode, initialParams, overrides, save, slug, initialConfig],
   );
 
   // Initial load: resume an existing session or start / ask for language.
   useEffect(() => {
-    if (mode === "preview") return;
+    if (isPreview) return;
     let cancelled = false;
     (async () => {
       let stored: { id: string; token: string; isTest: boolean } | null = null;
@@ -135,29 +192,35 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
           language: Language;
           index: number;
           config: unknown;
+          assignment: Assignment;
+          params: Record<string, string>;
           responses: Answers;
+          completionCode: string | null;
           mediaUrls: Record<string, string>;
         }>("resume", { sessionId: stored.id, token: stored.token });
         if (cancelled) return;
-        if (r.ok && (r.status === "in_progress" || r.status === "completed")) {
-          const parsed = StudyConfig.safeParse(r.config);
-          if (parsed.success) {
-            setConfig(parsed.data);
-            setLang(r.language);
-            setSession(stored);
-            setAnswers(r.responses ?? {});
-            setMediaUrls(r.mediaUrls ?? {});
-            if (r.status === "completed") {
-              completedRef.current = true;
-              setIndex(Math.max(0, parsed.data.blocks.findIndex((b) => b.type === "end")));
-              setPhase("completed");
-            } else {
-              setIndex(Math.min(r.index, parsed.data.blocks.length - 1));
-              enteredAt.current = new Date().toISOString();
-              setPhase("block");
-            }
-            return;
+        const parsed = r.ok ? StudyConfig.safeParse(r.config) : null;
+        if (parsed?.success && (r.status === "in_progress" || r.status === "completed")) {
+          setConfig(parsed.data);
+          setLang(r.language);
+          setSession(stored);
+          setAssignment(r.assignment);
+          setParams(r.params ?? {});
+          setAnswers(r.responses ?? {});
+          setMediaUrls(r.mediaUrls ?? {});
+          const st = resolveSteps(parsed.data, r.assignment, stored.id);
+          if (r.status === "completed") {
+            completedRef.current = true;
+            setCompletionCode(r.completionCode);
+            setIndex(Math.max(0, st.findIndex((x) => parsed.data.blocks.find((b) => b.id === x.blockId)?.type === "end")));
+            setPhase("completed");
+          } else {
+            attachLogger(stored, parsed.data);
+            setIndex(Math.min(r.index, st.length - 1));
+            enteredAt.current = new Date().toISOString();
+            setPhase("block");
           }
+          return;
         }
         save(null);
       }
@@ -172,46 +235,66 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Move focus to the new block heading for screen-reader and keyboard users.
+  // Each new step: focus its heading, note the time, log block_enter.
   useEffect(() => {
-    if (phase === "block") headingRef.current?.focus();
-  }, [index, phase]);
+    if (phase !== "block" || !step) return;
+    headingRef.current?.focus();
+    enteredPerf.current = performance.now();
+    logger.current?.log("block_enter", step.key, { index });
+  }, [index, phase, step]);
 
   // Completing happens when the End block is shown.
   useEffect(() => {
     if (phase !== "block" || block?.type !== "end" || completedRef.current) return;
     completedRef.current = true;
-    if (mode === "preview" || !session) return;
+    if (isPreview || !session) return;
     void (async () => {
-      const r = await api("complete", { sessionId: session.id, token: session.token });
+      const r = await api<{ completionCode: string | null }>("complete", { sessionId: session.id, token: session.token });
       if (!r.ok) {
         completedRef.current = false;
         setProblem(r.error ?? "network");
+        return;
       }
+      setCompletionCode(r.completionCode);
+      await logger.current?.flush();
     })();
-  }, [phase, block, mode, session]);
+  }, [phase, block, isPreview, session]);
+
+  const code = block?.type === "end" ? (block.uniqueCode ? completionCode : (block.completionCode ?? null)) : null;
 
   // Optional redirect from the End block (e.g. back to a participant panel).
   useEffect(() => {
-    if (block?.type !== "end" || !block.redirectUrl || mode === "preview") return;
+    if (block?.type !== "end" || !block.redirectUrl || isPreview) return;
     if (!(phase === "block" || phase === "completed")) return;
-    const t = setTimeout(() => window.location.assign(block.redirectUrl!), 4000);
-    return () => clearTimeout(t);
-  }, [block, phase, mode]);
+    if (block.uniqueCode && !completionCode) return;
+    const url = fillRedirect(block.redirectUrl, { ...params, session: session?.id ?? "", code: code ?? "" });
+    const timer = setTimeout(() => window.location.assign(url), 4000);
+    return () => clearTimeout(timer);
+  }, [block, phase, isPreview, params, session, code, completionCode]);
 
-  const advanceLocal = (next?: number) => {
+  const goTo = (next: number) => {
     setErrors({});
-    setIndex((i) => Math.min(next ?? i + 1, config.blocks.length - 1));
+    setIdentifier("");
+    setIndex(next < 0 ? Math.max(0, steps.length - 1) : next);
     enteredAt.current = new Date().toISOString();
     window.scrollTo({ top: 0 });
   };
 
+  const leave = () => logger.current?.log("block_leave", step?.key, { ms: Math.round(performance.now() - enteredPerf.current) });
+
+  const screenOut = (b: Block) => {
+    setScreenMessage(b.type === "screening" ? t(b.screenedOutMessage) : b.type === "exclusion_check" ? t(b.excludedMessage) : "");
+    save(null);
+    void logger.current?.flush();
+    setPhase("screened");
+  };
+
   const submitBlock = async () => {
-    if (!block) return;
+    if (!block || !step) return;
     setProblem(null);
     let payload: Record<string, unknown> = {};
     if (isQuestionBlock(block)) {
-      const v = validateBlockAnswers(block, answers[block.id] ?? {});
+      const v = validateBlockAnswers(block, answers[step.key] ?? {});
       if (!v.ok) {
         setErrors(v.errors);
         const first = block.questions.find((q) => v.errors[q.variable]);
@@ -220,13 +303,25 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
       }
       payload = v.answers;
     }
-    if (mode === "preview" || !session) return advanceLocal();
+    if (block.type === "exclusion_check") {
+      const ok = block.inputKind === "email" ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier.trim()) : identifier.trim().length >= 3;
+      if (!ok) return setErrors({ identifier: "invalid" });
+    }
+    const nextAnswers = { ...answers, [step.key]: payload };
+
+    if (isPreview || !session) {
+      if (block.type === "screening" && !evalLogic(block.eligibleIf, contextFor(assignment, nextAnswers, params, step))) return screenOut(block);
+      setAnswers(nextAnswers);
+      return goTo(nextStepIndex(config, steps, index, assignment, nextAnswers, params));
+    }
     setBusy(true);
-    const r = await api<{ index: number }>("submit", {
+    leave();
+    const r = await api<{ index: number; screenedOut?: boolean }>("submit", {
       sessionId: session.id,
       token: session.token,
-      blockId: block.id,
+      stepKey: step.key,
       answers: payload,
+      identifier: block.type === "exclusion_check" ? identifier.trim() : undefined,
       enteredAt: enteredAt.current,
     });
     setBusy(false);
@@ -235,42 +330,59 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
       else setProblem(r.error ?? "network");
       return;
     }
-    advanceLocal(r.index);
+    setAnswers(nextAnswers);
+    if (r.screenedOut) return screenOut(block);
+    goTo(r.index);
   };
 
   const consent = async (decision: "given" | "declined") => {
-    if (!block) return;
-    if (mode === "preview" || !session) {
+    if (!block || !step) return;
+    if (isPreview || !session) {
       if (decision === "declined") setPhase("declined");
-      else advanceLocal();
+      else goTo(nextStepIndex(config, steps, index, assignment, answers, params));
       return;
     }
     setBusy(true);
     setProblem(null);
-    const r = await api<{ index: number }>("consent", { sessionId: session.id, token: session.token, blockId: block.id, decision });
+    leave();
+    const r = await api<{ index: number }>("consent", { sessionId: session.id, token: session.token, stepKey: step.key, decision });
     setBusy(false);
     if (!r.ok) return setProblem(r.error ?? "network");
     if (decision === "declined") {
       save(null);
+      void logger.current?.flush();
       setPhase("declined");
-    } else advanceLocal(r.index);
+    } else goTo(r.index);
   };
 
   const withdraw = async () => {
-    if (mode !== "preview" && session) {
+    if (!isPreview && session) {
       setBusy(true);
       const r = await api("withdraw", { sessionId: session.id, token: session.token });
       setBusy(false);
       if (!r.ok) return setProblem(r.error ?? "network");
+      logger.current?.stop();
+      logger.current = null;
     }
     save(null);
     setConfirmWithdraw(false);
     setPhase("withdrawn");
   };
 
-  const t = (x: Parameters<typeof lt>[0]) => lt(x, lang, fallback);
-  const total = config.blocks.length;
-  const consentIndex = config.blocks.findIndex((b) => b.type === "consent");
+  const [previewSeed, setPreviewSeed] = useState("preview");
+  const applyPreview = (o: Partial<Assignment>, newSeed?: string) => {
+    const merged = { ...previewOverrides, ...o, factors: { ...previewOverrides.factors, ...o.factors } };
+    setPreviewOverrides(merged);
+    const a = previewAssignment(config, newSeed ?? previewSeed, merged);
+    setAssignment(a);
+    setAnswers({});
+    completedRef.current = false;
+    setPhase("block");
+    setIndex(Math.max(0, nextStepIndex(config, resolveSteps(config, a, "preview"), -1, a, {}, params)));
+  };
+
+  const total = steps.length;
+  const consentIndex = steps.findIndex((s) => config.blocks.find((b) => b.id === s.blockId)?.type === "consent");
   const canWithdraw = phase === "block" && block?.type !== "end" && (consentIndex < 0 || index > consentIndex);
 
   // ---------------------------------------------------------------------------
@@ -278,16 +390,24 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
   const shell = (content: React.ReactNode) => (
     <div lang={lang} dir={dirFor(lang)} className="min-h-screen bg-paper">
       {mode !== "live" && (
-        <div className={cx("px-4 py-2 text-center text-sm", mode === "preview" ? "bg-warn-soft text-warn" : "bg-accent-soft text-accent-strong")}>
-          {mode === "preview" ? tr("previewBanner") : tr("testBanner")}
+        <div className={cx("px-4 py-2 text-center text-sm", isPreview ? "bg-warn-soft text-warn" : "bg-accent-soft text-accent-strong")}>
+          {isPreview ? tr("previewBanner") : tr("testBanner")}
         </div>
       )}
-      {mode === "preview" && (
+      {isPreview && (
         <PreviewBar
           config={config}
+          steps={steps}
+          assignment={assignment}
           lang={lang}
           index={index}
           onLang={setLang}
+          onAssign={applyPreview}
+          onReshuffle={() => {
+            const s = crypto.randomUUID();
+            setPreviewSeed(s);
+            applyPreview({}, s);
+          }}
           onJump={(i) => {
             completedRef.current = false;
             setPhase("block");
@@ -306,13 +426,15 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
     </div>
   );
 
+  const apiMessage = (p: string | null) => (tr(`apiError_${p}`) === `apiError_${p}` ? tr("apiError_network") : tr(`apiError_${p}`));
+
   if (phase === "loading") return shell(<p className="text-center text-muted" role="status">{tr("loading")}</p>);
 
   if (phase === "error") {
     return shell(
       <div className="flex flex-col gap-4">
-        <Alert tone="danger">{tr(`apiError_${problem}`) === `apiError_${problem}` ? tr("apiError_network") : tr(`apiError_${problem}`)}</Alert>
-        <Button onClick={() => window.location.reload()}>{tr("retry")}</Button>
+        <Alert tone="danger">{apiMessage(problem)}</Alert>
+        {problem !== "studyFull" && <Button onClick={() => window.location.reload()}>{tr("retry")}</Button>}
       </div>,
     );
   }
@@ -324,7 +446,9 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
           <h1 className="text-center text-xl font-semibold">
             <span lang="en">{messages.en.chooseLanguage}</span>
             <span className="mx-2 text-muted">·</span>
-            <span lang="ar" dir="rtl">{messages.ar.chooseLanguage}</span>
+            <span lang="ar" dir="rtl">
+              {messages.ar.chooseLanguage}
+            </span>
           </h1>
           {langs.map((l) => (
             <Button key={l} disabled={busy} onClick={() => startSession(l)} className="py-3 text-base" lang={l}>
@@ -347,6 +471,20 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
     );
   }
 
+  if (phase === "screened") {
+    return shell(
+      <section className="flex flex-col gap-3">
+        <h1 className="text-2xl font-semibold">{tr("thankYou")}</h1>
+        <p className="prose-study">{screenMessage || tr("screenedOut")}</p>
+        {isPreview && (
+          <Button variant="secondary" className="self-start" onClick={() => applyPreview({})}>
+            {tr("previewRestart")}
+          </Button>
+        )}
+      </section>,
+    );
+  }
+
   if (phase === "withdrawn") {
     return shell(
       <section className="flex flex-col gap-3">
@@ -356,10 +494,15 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
     );
   }
 
-  if (!block) return shell(<Alert tone="danger">{tr("apiError_configInvalid")}</Alert>);
+  if (!block || !step) return shell(<Alert tone="danger">{tr("apiError_configInvalid")}</Alert>);
 
   const heading = (text: string) => (
     <h1 ref={headingRef} tabIndex={-1} className="text-2xl font-semibold leading-snug outline-none">
+      {text}
+    </h1>
+  );
+  const srHeading = (text: string) => (
+    <h1 ref={headingRef} tabIndex={-1} className="sr-only">
       {text}
     </h1>
   );
@@ -391,13 +534,15 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
       );
       break;
     case "instructions":
+    case "debrief":
       body = (
         <section className="flex flex-col gap-4">
-          {t(block.heading) && heading(t(block.heading))}
+          {t(block.heading) ? heading(t(block.heading)) : srHeading(tr("questions"))}
           <div className="prose-study text-lg">{t(block.body)}</div>
-          {block.media.map((m) => (
-            <MediaView key={m.assetId} item={m} url={mediaUrls[m.storagePath]} lang={lang} fallback={fallback} />
-          ))}
+          {block.type === "instructions" &&
+            block.media.map((m) => (
+              <MediaView key={m.assetId} item={m} url={mediaUrls[m.storagePath]} lang={lang} fallback={fallback} onEvent={logEvent} />
+            ))}
           {nextButton()}
         </section>
       );
@@ -418,13 +563,45 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
         </section>
       );
       break;
+    case "exclusion_check":
+      body = (
+        <section className="flex flex-col gap-4">
+          {block.heading && t(block.heading) ? heading(t(block.heading)) : srHeading(t(block.prompt))}
+          <div className="rounded-xl border border-line bg-surface p-4 sm:p-5">
+            <label htmlFor="identifier" className="mb-1 block text-lg font-medium">
+              {t(block.prompt)}
+            </label>
+            {block.help && t(block.help) && <p className="mb-2 text-sm text-muted">{t(block.help)}</p>}
+            <input
+              id="identifier"
+              type={block.inputKind === "email" ? "email" : "text"}
+              autoComplete={block.inputKind === "email" ? "email" : "off"}
+              dir="ltr"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              aria-invalid={!!errors.identifier}
+              className="w-full rounded-lg border border-line bg-surface px-3 py-3 text-base"
+            />
+            <p className="mt-2 text-xs text-muted">{tr("identifierPrivacy")}</p>
+            {errors.identifier && (
+              <p role="alert" className="mt-2 text-sm text-danger">
+                {tr("err_invalid")}
+              </p>
+            )}
+            {isPreview && <p className="mt-2 text-xs text-warn">{tr("previewExclusion")}</p>}
+          </div>
+          {nextButton()}
+        </section>
+      );
+      break;
     case "questionnaire":
-    case "demographics": {
-      const qs = block.randomizeQuestions ? seededShuffle(block.questions, `${seed}:${block.id}`) : block.questions;
-      const blockAnswers = answers[block.id] ?? {};
+    case "demographics":
+    case "screening": {
+      const qs = block.randomizeQuestions ? seededShuffle(block.questions, `${seed}:${step.key}`) : block.questions;
+      const blockAnswers = answers[step.key] ?? {};
       body = (
         <section className="flex flex-col gap-6">
-          {block.heading && t(block.heading) ? heading(t(block.heading)) : <h1 ref={headingRef} tabIndex={-1} className="sr-only">{tr("questions")}</h1>}
+          {block.heading && t(block.heading) ? heading(t(block.heading)) : srHeading(tr("questions"))}
           {block.intro && t(block.intro) && <p className="prose-study text-muted">{t(block.intro)}</p>}
           {Object.keys(errors).length > 0 && <Alert tone="danger">{tr("fixErrors")}</Alert>}
           {qs.map((q) => (
@@ -435,13 +612,14 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
                 fallback={fallback}
                 value={blockAnswers[q.variable]}
                 onChange={(v) => {
-                  setAnswers((a) => ({ ...a, [block.id]: { ...(a[block.id] ?? {}), [q.variable]: v } }));
+                  setAnswers((a) => ({ ...a, [step.key]: { ...(a[step.key] ?? {}), [q.variable]: v } }));
                   if (errors[q.variable]) setErrors(({ [q.variable]: _, ...rest }) => rest);
                 }}
                 error={errors[q.variable]}
                 seed={seed}
                 mediaUrls={mediaUrls}
                 tr={tr}
+                pipeText={(s) => pipe(s, config, assignment, step, lang, fallback)}
               />
             </div>
           ))}
@@ -450,31 +628,52 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
       );
       break;
     }
-    case "media":
-      body = <MediaBlockView key={block.id} block={block} lang={lang} fallback={fallback} mediaUrls={mediaUrls} tr={tr} heading={heading} nextButton={nextButton} />;
+    case "media": {
+      const items = block.items.filter((item) => evalLogic(item.showIf, ctx));
+      body = (
+        <MediaBlockView
+          key={step.key}
+          block={block}
+          items={items}
+          title={t(block.heading)}
+          lang={lang}
+          fallback={fallback}
+          mediaUrls={mediaUrls}
+          tr={tr}
+          heading={heading}
+          srHeading={srHeading}
+          nextButton={nextButton}
+          onEvent={logEvent}
+        />
+      );
       break;
+    }
     case "end":
       body = (
         <section className="flex flex-col gap-4">
           {heading(t(block.heading))}
           <div className="prose-study text-lg">{t(block.body)}</div>
-          {block.completionCode && (
+          {(code || (block.uniqueCode && !isPreview)) && (
             <div className="rounded-xl border border-accent/30 bg-accent-soft p-4">
               <p className="text-sm">{tr("completionCode")}</p>
               <p className="mt-1 select-all font-mono text-2xl font-semibold tracking-wider" dir="ltr">
-                {block.completionCode}
+                {code ?? "…"}
               </p>
             </div>
           )}
-          {block.redirectUrl && mode !== "preview" && (
+          {block.uniqueCode && isPreview && <p className="text-sm text-muted">{tr("previewUniqueCode")}</p>}
+          {block.redirectUrl && !isPreview && (
             <div className="flex flex-col gap-2">
               <p className="text-sm text-muted">{tr("redirecting")}</p>
-              <a href={block.redirectUrl} className="self-start rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white">
+              <a
+                href={fillRedirect(block.redirectUrl, { ...params, session: session?.id ?? "", code: code ?? "" })}
+                className="self-start rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white"
+              >
                 {tr("continue")}
               </a>
             </div>
           )}
-          {block.redirectUrl && mode === "preview" && <p className="text-sm text-muted">{tr("previewRedirect", { url: block.redirectUrl })}</p>}
+          {block.redirectUrl && isPreview && <p className="text-sm text-muted">{tr("previewRedirect", { url: block.redirectUrl })}</p>}
         </section>
       );
       break;
@@ -482,7 +681,7 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
 
   return shell(
     <>
-      {problem && <Alert tone="danger">{tr(`apiError_${problem}`) === `apiError_${problem}` ? tr("apiError_network") : tr(`apiError_${problem}`)}</Alert>}
+      {problem && <Alert tone="danger">{apiMessage(problem)}</Alert>}
       {body}
       {canWithdraw && (
         <footer className="mt-8 border-t border-line pt-4 text-sm">
@@ -511,35 +710,42 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
 
 function MediaBlockView({
   block,
+  items,
+  title,
   lang,
   fallback,
   mediaUrls,
   tr,
   heading,
+  srHeading,
   nextButton,
+  onEvent,
 }: {
   block: Extract<Block, { type: "media" }>;
+  items: Extract<Block, { type: "media" }>["items"];
+  title: string;
   lang: Language;
   fallback: Language;
   mediaUrls: Record<string, string>;
-  tr: ReturnType<typeof makeTr>;
+  tr: Tr;
   heading: (text: string) => React.ReactNode;
+  srHeading: (text: string) => React.ReactNode;
   nextButton: (label?: string, disabled?: boolean) => React.ReactNode;
+  onEvent: (type: EventType, data?: EventData) => void;
 }) {
   const [remaining, setRemaining] = useState(block.minViewSeconds);
   const [ended, setEnded] = useState<Set<string>>(new Set());
   useEffect(() => {
     if (remaining <= 0) return;
-    const t = setTimeout(() => setRemaining((r) => r - 1), 1000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setRemaining((r) => r - 1), 1000);
+    return () => clearTimeout(timer);
   }, [remaining]);
-  const playable = block.items.filter((i) => i.kind !== "image");
+  const playable = items.filter((i) => i.kind !== "image");
   const mustWatch = block.requireVideoEnd && playable.some((i) => !ended.has(i.assetId));
-  const title = lt(block.heading, lang, fallback);
   return (
     <section className="flex flex-col gap-4">
-      {title ? heading(title) : <h1 className="sr-only">{tr("media")}</h1>}
-      {block.items.map((item) => (
+      {title ? heading(title) : srHeading(tr("media"))}
+      {items.map((item) => (
         <MediaView
           key={item.assetId}
           item={item}
@@ -549,9 +755,14 @@ function MediaBlockView({
           autoplay={block.autoplay}
           controls={block.showControls}
           onEnded={() => setEnded((s) => new Set(s).add(item.assetId))}
+          onEvent={onEvent}
         />
       ))}
-      {remaining > 0 && <p className="text-center text-sm text-muted" aria-live="polite">{tr("waitSeconds", { n: remaining })}</p>}
+      {remaining > 0 && (
+        <p className="text-center text-sm text-muted" aria-live="polite">
+          {tr("waitSeconds", { n: remaining })}
+        </p>
+      )}
       {remaining <= 0 && mustWatch && <p className="text-center text-sm text-muted">{tr("watchToEnd")}</p>}
       {nextButton(tr("next"), remaining > 0 || mustWatch)}
     </section>
@@ -560,40 +771,85 @@ function MediaBlockView({
 
 function PreviewBar({
   config,
+  steps,
+  assignment,
   lang,
   index,
   onLang,
   onJump,
+  onAssign,
+  onReshuffle,
   tr,
 }: {
   config: StudyConfig;
+  steps: Step[];
+  assignment: Assignment;
   lang: Language;
   index: number;
   onLang: (l: Language) => void;
   onJump: (i: number) => void;
-  tr: ReturnType<typeof makeTr>;
+  onAssign: (o: Partial<Assignment>) => void;
+  onReshuffle: () => void;
+  tr: Tr;
 }) {
+  const d = config.design;
+  const label = (s: Step) => {
+    const b = config.blocks.find((x) => x.id === s.blockId);
+    const name = b?.name || b?.type || s.blockId;
+    return s.iteration ? `${name} · ${lt(s.iteration.label, lang)}` : name;
+  };
+  const sel = "rounded-md border border-line bg-surface px-2 py-1";
   return (
     <div className="flex flex-wrap items-center justify-center gap-3 border-b border-line bg-surface px-4 py-2 text-sm">
       <label className="flex items-center gap-2">
         <span>{tr("previewBlock")}</span>
-        <select value={index} onChange={(e) => onJump(Number(e.target.value))} className="rounded-md border border-line px-2 py-1">
-          {config.blocks.map((b, i) => (
-            <option key={b.id} value={i}>
-              {i + 1}. {b.name || b.type}
+        <select value={index} onChange={(e) => onJump(Number(e.target.value))} className={sel}>
+          {steps.map((s, i) => (
+            <option key={s.key} value={i}>
+              {i + 1}. {label(s)}
             </option>
           ))}
         </select>
       </label>
+      {d.conditions.length > 1 && (
+        <label className="flex items-center gap-2">
+          <span>{tr("previewCondition")}</span>
+          <select value={assignment.condition ?? ""} onChange={(e) => onAssign({ condition: e.target.value })} className={sel}>
+            {d.conditions.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.label || c.id}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {d.factors
+        .filter((f) => f.kind === "pick")
+        .map((f) => (
+          <label key={f.id} className="flex items-center gap-2">
+            <span dir="ltr">{f.variable}</span>
+            <select
+              value={String(assignment.factors[f.variable] ?? "")}
+              onChange={(e) => onAssign({ factors: { [f.variable]: e.target.value } })}
+              className={sel}
+            >
+              {f.levels.map((l) => (
+                <option key={l.id} value={l.value}>
+                  {lt(l.label, lang) || l.value}
+                </option>
+              ))}
+            </select>
+          </label>
+        ))}
+      {(d.factors.some((f) => f.kind !== "pick") || d.orderGroups.length > 0) && (
+        <button type="button" className={sel} onClick={onReshuffle}>
+          {tr("previewReshuffle")}
+        </button>
+      )}
       {config.settings.languages.length > 1 && (
         <div className="flex gap-1">
           {config.settings.languages.map((l) => (
-            <button
-              key={l}
-              type="button"
-              onClick={() => onLang(l)}
-              className={cx("rounded-md px-2 py-1", l === lang ? "bg-accent text-white" : "border border-line")}
-            >
+            <button key={l} type="button" onClick={() => onLang(l)} className={cx("rounded-md px-2 py-1", l === lang ? "bg-accent text-white" : "border border-line")}>
               {l === "ar" ? "العربية" : "English"}
             </button>
           ))}

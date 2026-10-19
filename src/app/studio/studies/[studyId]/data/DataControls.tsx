@@ -20,6 +20,15 @@ export function ExportLinks({ studyId, hasVersions }: { studyId: string; hasVers
         <a className={link} href={href("codebook")} download>
           {t("codebook")}
         </a>
+        <a className={link} href={href("events")} download>
+          {t("events")}
+        </a>
+        <a className={link} href={`${href("spss")}&lang=en`} download>
+          {t("spssEn")}
+        </a>
+        <a className={link} href={`${href("spss")}&lang=ar`} download>
+          {t("spssAr")}
+        </a>
         <a className={link} href={href("config")} download>
           {t("config")}
         </a>

@@ -148,7 +148,7 @@ export async function deleteProject(projectId: string, confirmName: string): Pro
 
 const NewStudy = z.object({
   title: z.string().trim().min(1).max(200),
-  start: z.enum(["blank", "questionnaire", "media"]),
+  start: z.enum(["blank", "questionnaire", "media", "experiment"]),
   languages: z.enum(["en", "ar", "both-en", "both-ar"]),
 });
 
@@ -273,6 +273,16 @@ export async function deleteStudy(studyId: string, confirmTitle: string): Promis
   if (error) return { ok: false, error: "deleteFailed" };
   if (ws) await audit(supabase, user.id, ws, "study.deleted", "study", studyId, { title: s.title });
   redirect(`/studio/projects/${s.project_id}`);
+}
+
+/** Methodological warnings stay non-blocking; dismissals are recorded for transparency. */
+export async function logWarningDismissal(studyId: string, warningId: string, restored = false): Promise<ActionResult> {
+  if (!uuid.safeParse(studyId).success || !/^[a-z_:A-Za-z0-9-]{1,120}$/.test(warningId)) return { ok: false, error: "invalidInput" };
+  const { supabase, user } = await requireUser();
+  const ws = await studyWorkspace(supabase, studyId);
+  if (!ws) return { ok: false, error: "notFound" };
+  await audit(supabase, user.id, ws, restored ? "warning.restored" : "warning.dismissed", "study", studyId, { warning: warningId });
+  return { ok: true };
 }
 
 // ---------------------------------------------------------------------------

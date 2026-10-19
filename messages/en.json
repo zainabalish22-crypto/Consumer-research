@@ -9,11 +9,26 @@
     "lede": "Build anything from a simple questionnaire to an interactive experiment, run it with participants in Arabic or English, and export clean data for analysis. No fees, no institutional licence, no code.",
     "cta": "Create a free account",
     "features": {
-      "questionnaires": { "title": "Questionnaires", "body": "Twelve question types, attention checks and reusable blocks, arranged in any order you choose." },
-      "experiments": { "title": "Media experiments", "body": "Show images, video and audio with exposure control. Conditions, shopping environments and online shops are on the roadmap." },
-      "bilingual": { "title": "Arabic and English", "body": "Right-to-left and left-to-right done properly, for both researchers and participants." },
-      "export": { "title": "Clean exports", "body": "One row per participant, a codebook with Arabic and English labels, and the exact study version used." },
-      "free": { "title": "Free, always", "body": "No subscriptions, no paid tiers, no selling of participant data. Designed to be self-hosted by universities." }
+      "questionnaires": {
+        "title": "Questionnaires",
+        "body": "Twelve question types, attention checks and reusable blocks, arranged in any order you choose."
+      },
+      "experiments": {
+        "title": "Media experiments",
+        "body": "Show images, video and audio with exposure control. Conditions, shopping environments and online shops are on the roadmap."
+      },
+      "bilingual": {
+        "title": "Arabic and English",
+        "body": "Right-to-left and left-to-right done properly, for both researchers and participants."
+      },
+      "export": {
+        "title": "Clean exports",
+        "body": "One row per participant, a codebook with Arabic and English labels, and the exact study version used."
+      },
+      "free": {
+        "title": "Free, always",
+        "body": "No subscriptions, no paid tiers, no selling of participant data. Designed to be self-hosted by universities."
+      }
     },
     "footer": "A research tool, not a commercial product. Limits exist only to keep the free service stable and are explained in the documentation."
   },
@@ -53,7 +68,12 @@
       "title": "Dashboard",
       "subtitle": "Your projects and studies.",
       "overview": "Overview",
-      "status": { "draft": "Draft", "active": "Active", "paused": "Paused", "closed": "Closed" },
+      "status": {
+        "draft": "Draft",
+        "active": "Active",
+        "paused": "Paused",
+        "closed": "Closed"
+      },
       "participantsStarted": "Participants started",
       "participantsCompleted": "Participants completed",
       "projects": "Projects",
@@ -99,11 +119,24 @@
       "studyTitle": "Study title",
       "startingPoint": "Starting point",
       "start": {
-        "blank": { "title": "Blank", "body": "Welcome, consent and end pages only." },
-        "questionnaire": { "title": "Questionnaire", "body": "Adds a questionnaire page and optional demographics." },
-        "media": { "title": "Media experiment", "body": "Adds instructions, a media exposure page and follow-up questions." }
+        "blank": {
+          "title": "Blank",
+          "body": "Welcome, consent and end pages only."
+        },
+        "questionnaire": {
+          "title": "Questionnaire",
+          "body": "Adds a questionnaire page and optional demographics."
+        },
+        "media": {
+          "title": "Media experiment",
+          "body": "Adds instructions, a media exposure page and follow-up questions."
+        },
+        "experiment": {
+          "title": "Experiment",
+          "body": "Two conditions, screening, a stimulus per condition, attitude and manipulation-check pages, and a debrief."
+        }
       },
-      "moreStartingPointsLater": "Choice experiments, the shopping village and the online shop arrive in later phases.",
+      "moreStartingPointsLater": "The shopping village and the online shop arrive in later phases.",
       "studyLanguages": "Study languages",
       "langs": {
         "bothEn": "Arabic and English (English first)",
@@ -129,19 +162,29 @@
     "crumbDashboard": "Dashboard",
     "published": "Published version {n}. Participants now see this version.",
     "unchanged": "No changes since version {n}, so no new version was created.",
-    "save": { "saved": "All changes saved", "dirty": "Unsaved changes", "saving": "Saving…", "error": "Saving failed" },
+    "save": {
+      "saved": "All changes saved",
+      "dirty": "Unsaved changes",
+      "saving": "Saving…",
+      "error": "Saving failed"
+    },
     "saveNow": "Save",
     "preview": "Preview",
     "data": "Participants & data",
     "publishChanges": "Publish changes",
     "publish": "Publish",
-    "tabs": { "flow": "Flow", "settings": "Settings", "share": "Share & versions" },
+    "tabs": {
+      "flow": "Flow",
+      "settings": "Settings",
+      "share": "Share & versions",
+      "design": "Design"
+    },
     "flow": {
       "label": "Study flow",
       "hint": "Participants see the blocks in this order. Drag the handle or use the arrows to reorder.",
       "blockType": "Block type",
       "add": "Add block",
-      "moreBlocksLater": "Screening, choice tasks, the shopping village and the online shop arrive in later phases.",
+      "moreBlocksLater": "The shopping village and the online shop arrive in later phases.",
       "dragHandle": "Reorder block {n}",
       "issues": "{n, plural, one {# problem} other {# problems}}",
       "untitled": "Untitled",
@@ -157,7 +200,10 @@
       "questionnaire": "Questionnaire page",
       "demographics": "Demographics",
       "media": "Media exposure",
-      "end": "End"
+      "end": "End",
+      "screening": "Screening",
+      "exclusion_check": "Repeat-participant check",
+      "debrief": "Debrief"
     },
     "issuesTitle": "{n, plural, one {# problem to fix before publishing} other {# problems to fix before publishing}}",
     "editor": "Block editor",
@@ -176,7 +222,15 @@
       "showProgress": "Show a progress bar to participants",
       "allowResume": "Let participants resume after an accidental refresh",
       "allowResumeHint": "Uses a random token stored in the participant's browser. No personal data is stored.",
-      "themeNote": "Phase 1 uses the neutral research theme. More themes arrive with the interactive environments."
+      "themeNote": "Phase 1 uses the neutral research theme. More themes arrive with the interactive environments.",
+      "usesDeception": "This study uses deception",
+      "usesDeceptionHint": "E.g. an AI-generated advert that is not disclosed. You will be reminded to add a debrief.",
+      "events": "Behavioural events to record",
+      "eventsNavigation": "Navigation: when each page is shown and left, and when the tab is hidden",
+      "eventsNavigationHint": "Used for time per page and drop-off analysis.",
+      "eventsMedia": "Media exposure: visible time, plays, pauses, seeks and progress",
+      "eventsMediaHint": "Used for computed variables such as seconds an advert was visible or the percentage of a video watched.",
+      "eventsNever": "Never recorded: keystrokes, mouse movements, camera, microphone or location."
     },
     "share": {
       "copied": "Copied",
@@ -186,7 +240,7 @@
       "publicLink": "Participant link",
       "paramsHint": "Anything you add to the link, such as ?pid=ABC123 from a participant panel, is saved with the session.",
       "testLink": "Test link (only works while you are signed in)",
-      "testHint": "Test sessions are flagged and left out of exports by default.",
+      "testHint": "Test sessions are flagged and left out of exports by default. Add &f_variable=value to force a factor level.",
       "status": "Status",
       "statusHelp": {
         "draft": "Not published yet.",
@@ -209,7 +263,9 @@
       "copySuffix": "(copy)",
       "deleteWarning": "Deleting removes the study, all versions and all participant data permanently.",
       "typeTitle": "Type the study title to confirm: {title}",
-      "delete": "Delete study permanently"
+      "delete": "Delete study permanently",
+      "testCondition": "Test as condition",
+      "testConditionRandom": "Random (as participants)"
     },
     "media": {
       "pick": "Choose media",
@@ -251,11 +307,42 @@
       "completionCode": "Completion code (optional)",
       "completionCodeHint": "Shown to participants at the end, e.g. for a participant panel.",
       "redirectUrl": "Redirect URL (optional)",
-      "redirectUrlHint": "Participants are sent here a few seconds after finishing. Must start with https://.",
+      "redirectUrlHint": "Participants are sent here a few seconds after finishing. Must start with https://. You can insert '{code}', '{session}' or any link parameter such as '{PROLIFIC_PID}'.",
       "internalName": "Internal name",
       "internalNameHint": "Only you see this.",
       "blockId": "Block ID",
-      "blockIdHint": "Stable identifier used in the data."
+      "blockIdHint": "Stable identifier used in the data.",
+      "itemShowIf": "Show this item only when",
+      "itemShowIfHint": "E.g. show the AI-generated version only when this brand is the participant's target brand.",
+      "pipingHint": "You can insert '{{stimulus}}' (current repetition) or '{{factor:variable}}' (an assigned level).",
+      "role": "What does this page measure?",
+      "roleHint": "Used only for methodological warnings.",
+      "roles": {
+        "general": "General questions",
+        "attitude": "Attitudes, trust or evaluations",
+        "manipulation_check": "Manipulation check",
+        "detection": "Detection (e.g. real or AI-generated?)",
+        "attention": "Attention check"
+      },
+      "uniqueCode": "Give each participant a unique completion code",
+      "uniqueCodeHint": "Stored with the session and exported, so you can match panel submissions.",
+      "eligibleIf": "Eligible when",
+      "eligibleIfHint": "Participants who do not meet this rule see the message below and the session ends. Their answers are kept and the session is marked as screened out.",
+      "screenedOutMessage": "Message for ineligible participants",
+      "debriefHint": "Required when the study withholds or disguises information, such as an undisclosed AI-generated advert.",
+      "exclusionHint": "Participants enter an identifier, such as their email address. Only a salted hash is kept, in a list private to your account; the identifier itself is never stored. Use it to stop people taking part in related studies twice.",
+      "prompt": "Question",
+      "helpText": "Help text",
+      "inputKind": "Identifier type",
+      "inputKinds": {
+        "email": "Email address",
+        "text": "Other text (e.g. student number)"
+      },
+      "recordList": "Add participants to list",
+      "recordListHint": "Lower-case letters, numbers and dashes, e.g. foodcourt-2026. Leave empty to only check.",
+      "excludeLists": "Exclude people already on lists",
+      "excludeListsHint": "Comma-separated list names, e.g. foodcourt-2026.",
+      "excludedMessage": "Message for excluded participants"
     },
     "question": {
       "type": "Question type",
@@ -325,6 +412,188 @@
       "untitled": "Untitled question",
       "duplicate": "Duplicate",
       "add": "Add question"
+    },
+    "logic": {
+      "addRule": "Add a rule",
+      "when": "When",
+      "mode": "Match",
+      "all": "all",
+      "any": "any",
+      "ofTheseAreTrue": "of these are true",
+      "source": "Based on",
+      "variable": "Variable",
+      "choose": "Choose…",
+      "param": "Parameter name",
+      "operator": "Comparison",
+      "value": "Value",
+      "removeRule": "Remove this condition",
+      "addCondition": "Add condition",
+      "removeAll": "Remove rule",
+      "valueHint": "Use answer codes (e.g. 1), factor level values (e.g. A) or condition codes. Separate several values with commas.",
+      "sources": {
+        "answer": "Earlier answer",
+        "condition": "Condition",
+        "factor": "Assigned factor",
+        "param": "URL parameter",
+        "iteration": "Current repetition"
+      },
+      "ops": {
+        "eq": "equals",
+        "neq": "does not equal",
+        "in": "is one of",
+        "notIn": "is not one of",
+        "gt": "is greater than",
+        "gte": "is at least",
+        "lt": "is less than",
+        "lte": "is at most",
+        "includes": "includes (multiple choice)",
+        "answered": "was answered",
+        "notAnswered": "was not answered"
+      }
+    },
+    "display": {
+      "title": "Display & logic",
+      "summaryConditions": "only {list}",
+      "summaryRule": "has a rule",
+      "summaryRepeat": "repeated",
+      "summaryGroup": "order group {id}",
+      "showTo": "Show to these conditions",
+      "showToHint": "Leave all unticked to show the block to everyone.",
+      "noConditions": "Add conditions in the Design tab to show blocks to specific groups.",
+      "showIf": "Show only when",
+      "showIfHint": "Skip or branching logic, checked when the participant reaches this block.",
+      "repeat": "Repeat for each level of",
+      "noRepeat": "Do not repeat",
+      "repeatHint": "E.g. ask the same scale once per brand. Variables get the level as a suffix (att_A, att_B…). Use '{{stimulus}}' in text to show the current level.",
+      "repeatOrder": "Repetition order",
+      "orders": {
+        "assigned": "Participant's assigned order",
+        "listed": "As listed",
+        "random": "Random per participant"
+      },
+      "orderGroup": "Order group",
+      "noGroup": "None (fixed position)",
+      "orderGroupHint": "Blocks in the same group swap positions according to the group's method (Design tab)."
+    },
+    "design": {
+      "conditions": "Conditions (between-subject)",
+      "conditionsHint": "Each participant is assigned to one condition when they start. Show blocks to specific conditions in each block's Display & logic panel.",
+      "noConditions": "No conditions: everyone sees the same study.",
+      "code": "Code",
+      "label": "Label (only you see it)",
+      "weight": "Weight",
+      "quota": "Quota",
+      "remove": "Remove",
+      "addTwoConditions": "Add two conditions",
+      "addCondition": "Add condition",
+      "assignment": "Assignment",
+      "assignments": {
+        "balanced": {
+          "title": "Balanced (recommended)",
+          "body": "Permuted blocks keep group sizes equal (or in proportion to the weights) at every point of data collection."
+        },
+        "random": {
+          "title": "Simple random",
+          "body": "Each participant is drawn independently. Group sizes can drift apart."
+        }
+      },
+      "quotaHint": "A quota counts completed, non-test sessions. Full conditions stop receiving participants; when all are full, the study stops accepting new ones.",
+      "orderGroups": "Block order groups",
+      "orderGroupsHint": "Counterbalance the order of whole blocks, e.g. two questionnaires shown in either order.",
+      "name": "Name",
+      "method": "Method",
+      "methods": {
+        "balanced": "Balanced",
+        "latin": "Balanced Latin square",
+        "permutation": "All orders (full permutation)",
+        "random": "Random",
+        "fixed": "Fixed"
+      },
+      "members": "{n, plural, =0 {No blocks yet: choose this group in a block's Display & logic panel.} one {# block} other {# blocks}}",
+      "addGroup": "Add order group",
+      "factors": "Assigned variables (factors)",
+      "factorsHint": "Values assigned to each participant at the start and stored as their own columns, e.g. which brand gets the AI-generated advert, the order of adverts, or which offer goes to which store.",
+      "addFactor": {
+        "pick": "Add: pick one level",
+        "order": "Add: order of levels",
+        "mapping": "Add: map levels onto targets"
+      },
+      "factorsUsage": "Use factors in rules (Display & logic), to repeat blocks per level, in media item rules, and in text with '{{factor:variable}}'.",
+      "levels": "Levels",
+      "targets": "Targets",
+      "value": "Value",
+      "levelLabel": "Label",
+      "moveUp": "Move up",
+      "addLevel": "Add level",
+      "addTarget": "Add target",
+      "kinds": {
+        "pick": {
+          "title": "Pick one",
+          "body": "Each participant gets one level, e.g. target_brand = B."
+        },
+        "order": {
+          "title": "Order",
+          "body": "Each participant gets all levels in an order, e.g. ad_order = C>A>B."
+        },
+        "mapping": {
+          "title": "Mapping",
+          "body": "Levels are matched one-to-one with targets, e.g. offers onto stores."
+        }
+      },
+      "variable": "Variable name",
+      "variableHint": "Column name in the export.",
+      "variableInvalid": "Start with a letter; use only letters, numbers and _.",
+      "methodHints": {
+        "balanced": "Every level is used equally often (permuted blocks).",
+        "random": "Independent random draws.",
+        "fixed": "Everyone gets the same value or order.",
+        "latin": "Each level appears in each position equally often, and each level follows every other equally often (Williams design).",
+        "permutation": "Cycles through every possible order (up to 6 levels)."
+      },
+      "fixedValue": "Level everyone gets",
+      "choose": "Choose…",
+      "balanceWithinCondition": "Balance separately within each condition"
+    },
+    "warnings": {
+      "title": "{n, plural, =0 {No design warnings} one {# design warning} other {# design warnings}}",
+      "hint": "Warnings never block publishing. Dismissed warnings are recorded in the audit log.",
+      "show": "Show block",
+      "dismiss": "Dismiss",
+      "restore": "Show {n} dismissed",
+      "rules": {
+        "no_consent": {
+          "title": "No consent block",
+          "why": "Participants must actively agree before taking part. Add a Consent block unless your ethics approval says otherwise."
+        },
+        "detection_before_attitude": {
+          "title": "Detection question comes before attitude measures",
+          "why": "Asking whether something was AI-generated makes participants suspicious, which changes later attitude and trust answers."
+        },
+        "deception_no_debrief": {
+          "title": "Deception without a debrief",
+          "why": "Studies that withhold or disguise information should end with a Debrief block explaining what happened and why."
+        },
+        "no_attention_check": {
+          "title": "No attention check in a long questionnaire ({n} questions)",
+          "why": "Long questionnaires invite careless answering. Mark at least one instructed-response question as an attention check."
+        },
+        "condition_imbalance": {
+          "title": "Conditions differ a lot in length",
+          "why": "Condition {high} has many more blocks or questions than {low}. Differences in fatigue or time can be confused with the manipulation."
+        },
+        "no_manipulation_check": {
+          "title": "No manipulation check",
+          "why": "With several conditions, add a questionnaire marked as a manipulation check to verify participants noticed the manipulation."
+        },
+        "group_spans_consent": {
+          "title": "Order group crosses the consent block",
+          "why": "Group {group} has blocks both before and after consent, so some participants could see study content before agreeing."
+        },
+        "screening_after_content": {
+          "title": "Screening comes after study content",
+          "why": "Screen participants before showing stimuli or questions, so ineligible people do not see study material."
+        }
+      }
     }
   },
   "data": {
@@ -337,7 +606,8 @@
       "declined": "Declined consent",
       "withdrawn": "Withdrew",
       "excluded": "Excluded",
-      "test": "Test sessions"
+      "test": "Test sessions",
+      "screened": "Screened out"
     },
     "statsNote": "Counts use real recorded sessions only. Test sessions are counted separately.",
     "export": {
@@ -348,10 +618,19 @@
       "config": "Study versions (JSON)",
       "includeTest": "Include test sessions",
       "includeTestHint": "Off by default so test data never mixes with real data.",
-      "note": "Files are UTF-8 with Arabic intact. In R use readr::read_csv(); in Python use pandas.read_csv(encoding=\"utf-8-sig\"). SPSS syntax and the event log arrive in Phase 2."
+      "note": "Files are UTF-8 with Arabic intact. Put the SPSS syntax next to the data CSV and run it. In R use readr::read_csv(); in Python use pandas.read_csv(encoding=\"utf-8-sig\").",
+      "events": "Event log (CSV, one row per event)",
+      "spssEn": "SPSS syntax (English labels)",
+      "spssAr": "SPSS syntax (Arabic labels)"
     },
     "sessions": "Sessions",
-    "filters": { "all": "Real", "completed": "Completed", "incomplete": "Incomplete", "excluded": "Excluded", "test": "Test" },
+    "filters": {
+      "all": "Real",
+      "completed": "Completed",
+      "incomplete": "Incomplete",
+      "excluded": "Excluded",
+      "test": "Test"
+    },
     "noSessions": "No sessions here yet",
     "noSessionsHint": "Share the participant link or run a test session from the Share tab.",
     "cols": {
@@ -362,7 +641,8 @@
       "device": "Device",
       "started": "Started",
       "duration": "Duration",
-      "flags": "Flags"
+      "flags": "Flags",
+      "condition": "Condition"
     },
     "sessionStatus": {
       "in_progress": "In progress",
@@ -372,7 +652,11 @@
       "screened_out": "Screened out",
       "abandoned": "Abandoned"
     },
-    "device": { "mobile": "Phone", "tablet": "Tablet", "desktop": "Computer" },
+    "device": {
+      "mobile": "Phone",
+      "tablet": "Tablet",
+      "desktop": "Computer"
+    },
     "sec": "s",
     "testFlag": "Test",
     "prev": "Previous",
@@ -385,7 +669,8 @@
     "cancel": "Cancel",
     "deleteTestConfirm": "Delete all test sessions for this study?",
     "deleteTestYes": "Delete test sessions",
-    "deleteTest": "Delete all test sessions"
+    "deleteTest": "Delete all test sessions",
+    "byCondition": "By condition"
   },
   "media": {
     "title": "Media library",
@@ -407,7 +692,12 @@
     "done": "Uploaded",
     "search": "Search name or tag",
     "kind": "Type",
-    "kinds": { "all": "All types", "image": "Images", "video": "Video", "audio": "Audio" },
+    "kinds": {
+      "all": "All types",
+      "image": "Images",
+      "video": "Video",
+      "audio": "Audio"
+    },
     "allFolders": "All folders",
     "empty": "No media here yet",
     "emptyHint": "Upload images, videos or audio to use them in studies.",
@@ -497,6 +787,14 @@
     "notFound": "This study link is not valid.",
     "paused": "This study is paused and not accepting responses at the moment. Please try again later.",
     "closed": "This study is closed and no longer accepting responses. Thank you for your interest.",
-    "testForbidden": "Test links only work for the study's researchers while signed in."
+    "testForbidden": "Test links only work for the study's researchers while signed in.",
+    "screenedOut": "Thank you for your interest. You cannot take part in this study. You can close this page.",
+    "previewRestart": "Restart preview",
+    "identifierPrivacy": "Only a scrambled code made from this is kept, so it cannot be read back.",
+    "previewExclusion": "Preview: the repeat-participant check is skipped.",
+    "previewUniqueCode": "Participants will see a unique completion code here.",
+    "previewCondition": "Condition",
+    "previewReshuffle": "Reshuffle orders",
+    "apiError_studyFull": "This study has reached the number of participants it needs. Thank you for your interest."
   }
 }

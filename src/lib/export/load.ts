@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { StudyConfig } from "@/lib/study/schema";
-import type { SessionRecord } from "./columns";
+import type { ExportExtras, MediaSummary, SessionRecord } from "./columns";
 
 const PAGE = 1000;
 
@@ -16,9 +16,38 @@ async function all<T>(fetchPage: (from: number, to: number) => PromiseLike<{ dat
   return out;
 }
 
+export interface EventRow {
+  id: number;
+  session_id: string;
+  type: string;
+  block_key: string | null;
+  client_at: string | null;
+  created_at: string;
+  data: Record<string, unknown>;
+}
+
 export interface ExportData {
   versions: { id: string; version_number: number; config: StudyConfig; published_at: string; locked: boolean }[];
   sessions: SessionRecord[];
+  extras: ExportExtras;
+}
+
+/** Media referenced anywhere in the configs (stable asset ids). */
+function collectAssets(configs: StudyConfig[]): ExportExtras["assets"] {
+  const seen = new Map<string, { id: string; kind: string; label: string }>();
+  const walk = (v: unknown) => {
+    if (Array.isArray(v)) v.forEach(walk);
+    else if (v && typeof v === "object") {
+      const o = v as Record<string, unknown>;
+      if (typeof o.assetId === "string" && typeof o.storagePath === "string" && !seen.has(o.assetId)) {
+        const file = o.storagePath.split("/").pop() ?? o.assetId;
+        seen.set(o.assetId, { id: o.assetId, kind: String(o.kind ?? "image"), label: file.replace(/^[0-9a-f-]{36}-/, "") });
+      }
+      Object.values(o).forEach(walk);
+    }
+  };
+  configs.forEach(walk);
+  return [...seen.values()];
 }
 
 /** Load everything needed for exports. RLS limits this to studies the researcher can read. */
@@ -34,7 +63,9 @@ export async function loadExportData(supabase: SupabaseClient, studyId: string, 
   const sessions = await all<Record<string, unknown>>((from, to) => {
     let q = supabase
       .from("participant_sessions")
-      .select("id, study_version_id, status, is_test, excluded, exclusion_reason, language, device_class, started_at, ended_at")
+      .select(
+        "id, study_version_id, status, is_test, excluded, exclusion_reason, screen_reason, language, device_class, started_at, ended_at, last_activity_at, condition, assigned_variables, block_orders, recruitment_params, completion_code",
+      )
       .eq("study_id", studyId)
       .order("started_at")
       .range(from, to);
@@ -54,9 +85,21 @@ export async function loadExportData(supabase: SupabaseClient, studyId: string, 
   const consents = await all<{ session_id: string; decision: "given" | "declined" }>((from, to) =>
     supabase.from("consent_records").select("session_id, decision").eq("study_id", studyId).range(from, to),
   );
+  const mediaEvents = await all<{ session_id: string; type: string; data: Record<string, unknown> }>((from, to) =>
+    supabase
+      .from("events")
+      .select("session_id, type, data")
+      .eq("study_id", studyId)
+      .in("type", ["media_visible", "video_play", "audio_play", "video_progress", "audio_progress", "video_complete", "audio_complete"])
+      .order("id")
+      .range(from, to),
+  );
 
   const bySession = new Map<string, SessionRecord>();
+  const paramKeys = new Set<string>();
   for (const s of sessions) {
+    const params = (s.recruitment_params ?? {}) as Record<string, string>;
+    Object.keys(params).forEach((k) => paramKeys.add(k));
     bySession.set(s.id as string, {
       id: s.id as string,
       version_number: versionNumber.get(s.study_version_id as string) ?? 0,
@@ -64,31 +107,74 @@ export async function loadExportData(supabase: SupabaseClient, studyId: string, 
       is_test: s.is_test as boolean,
       excluded: s.excluded as boolean,
       exclusion_reason: (s.exclusion_reason as string) ?? null,
+      screen_reason: (s.screen_reason as string) ?? null,
       language: s.language as string,
       device_class: (s.device_class as string) ?? null,
       started_at: s.started_at as string,
       ended_at: (s.ended_at as string) ?? null,
+      last_activity_at: s.last_activity_at as string,
       consent: null,
+      condition: (s.condition as string) ?? null,
+      factors: (s.assigned_variables ?? {}) as Record<string, unknown>,
+      groups: (s.block_orders ?? {}) as Record<string, string[]>,
+      params,
+      completion_code: (s.completion_code as string) ?? null,
       answers: {},
       blockSeconds: {},
+      media: {},
     });
   }
   for (const r of responses) {
     const s = bySession.get(r.session_id);
     if (!s) continue;
-    Object.assign(s.answers, r.answers);
+    const level = r.block_key.includes("#") ? r.block_key.split("#")[1] : null;
+    for (const [k, v] of Object.entries(r.answers ?? {})) s.answers[level ? `${k}_${level}` : k] = v;
     if (r.entered_at) {
-      const blockId = r.block_key.split("#")[0];
-      s.blockSeconds[blockId] = Math.round((Date.parse(r.submitted_at) - Date.parse(r.entered_at)) / 100) / 10;
+      s.blockSeconds[r.block_key] = Math.round((Date.parse(r.submitted_at) - Date.parse(r.entered_at)) / 100) / 10;
     }
   }
   for (const c of consents) {
     const s = bySession.get(c.session_id);
     if (s) s.consent = c.decision;
   }
+  for (const e of mediaEvents) {
+    const s = bySession.get(e.session_id);
+    const asset = typeof e.data?.asset === "string" ? e.data.asset : null;
+    if (!s || !asset) continue;
+    const m: MediaSummary = (s.media[asset] ??= { visibleMs: 0, maxPct: 0, plays: 0, completed: false });
+    if (e.type === "media_visible") m.visibleMs += Number(e.data.ms) || 0;
+    else if (e.type.endsWith("_play")) m.plays += 1;
+    else if (e.type.endsWith("_progress")) m.maxPct = Math.max(m.maxPct, Number(e.data.pct) || 0);
+    else if (e.type.endsWith("_complete")) {
+      m.maxPct = 100;
+      m.completed = true;
+    }
+  }
 
+  const configs = (versions ?? []).map((v) => v.config as StudyConfig);
   return {
     versions: (versions ?? []) as ExportData["versions"],
     sessions: [...bySession.values()],
+    extras: { paramKeys: [...paramKeys].sort(), assets: collectAssets(configs) },
   };
+}
+
+/** Long-format event log (one row per event). */
+export async function loadEvents(supabase: SupabaseClient, studyId: string, includeTest: boolean): Promise<EventRow[]> {
+  const testIds = new Set<string>();
+  if (!includeTest) {
+    const tests = await all<{ id: string }>((from, to) =>
+      supabase.from("participant_sessions").select("id").eq("study_id", studyId).eq("is_test", true).range(from, to),
+    );
+    tests.forEach((t) => testIds.add(t.id));
+  }
+  const rows = await all<EventRow>((from, to) =>
+    supabase
+      .from("events")
+      .select("id, session_id, type, block_key, client_at, created_at, data")
+      .eq("study_id", studyId)
+      .order("id")
+      .range(from, to),
+  );
+  return rows.filter((r) => !testIds.has(r.session_id));
 }

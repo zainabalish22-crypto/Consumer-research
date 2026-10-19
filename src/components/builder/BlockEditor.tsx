@@ -6,8 +6,9 @@
  */
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import type { Block, BlockType, Language, MediaRef, Question, QuestionType, StudyConfig } from "@/lib/study/schema";
-import { QUESTION_TYPES } from "@/lib/study/schema";
+import type { Block, BlockType, Language, Logic, MediaRef, Question, QuestionType, StudyConfig } from "@/lib/study/schema";
+import { BLOCK_ROLES, QUESTION_TYPES } from "@/lib/study/schema";
+import { LogicEditor } from "./LogicEditor";
 import { newQuestion, nextVariable, usedVariables, shortId } from "@/lib/study/factories";
 import { Button, Select } from "@/components/ui";
 import { LocalizedField } from "./LocalizedField";
@@ -49,18 +50,25 @@ function ConsentEditor({ block, languages, onChange }: EditorProps<"consent">) {
   );
 }
 
+type ListItem = MediaRef & { caption?: import("@/lib/study/schema").LocalizedText; showIf?: Logic };
+
 function MediaList({
   items,
   kinds,
   languages,
   onChange,
   withCaption,
+  logicConfig,
+  blockId,
 }: {
-  items: (MediaRef & { caption?: import("@/lib/study/schema").LocalizedText })[];
+  items: ListItem[];
   kinds: ("image" | "video" | "audio")[];
   languages: Language[];
-  onChange: (items: (MediaRef & { caption?: import("@/lib/study/schema").LocalizedText })[]) => void;
+  onChange: (items: ListItem[]) => void;
   withCaption?: boolean;
+  /** When given, each item gets its own "show only when" rule. */
+  logicConfig?: StudyConfig;
+  blockId?: string;
 }) {
   const t = useTranslations("builder.block");
   const [picking, setPicking] = useState(false);
@@ -88,6 +96,17 @@ function MediaList({
           <LocalizedField label={t("altText")} hint={t("altTextHint")} value={m.alt} languages={languages} onChange={(v) => onChange(items.map((x, k) => (k === i ? { ...x, alt: v } : x)))} />
           {withCaption && (
             <LocalizedField label={t("caption")} value={m.caption} languages={languages} onChange={(v) => onChange(items.map((x, k) => (k === i ? { ...x, caption: v } : x)))} />
+          )}
+          {logicConfig && (
+            <LogicEditor
+              label={t("itemShowIf")}
+              hint={t("itemShowIfHint")}
+              logic={m.showIf}
+              config={logicConfig}
+              beforeBlockId={blockId}
+              allowIteration
+              onChange={(l) => onChange(items.map((x, k) => (k === i ? { ...x, showIf: l } : x)))}
+            />
           )}
         </div>
       ))}
@@ -119,12 +138,20 @@ function InstructionsEditor({ block, languages, onChange }: EditorProps<"instruc
   );
 }
 
-function MediaBlockEditor({ block, languages, onChange }: EditorProps<"media">) {
+function MediaBlockEditor({ block, config, languages, onChange }: EditorProps<"media">) {
   const t = useTranslations("builder.block");
   return (
     <>
       <LocalizedField label={t("heading")} value={block.heading} languages={languages} onChange={(v) => onChange({ ...block, heading: v })} />
-      <MediaList items={block.items} kinds={["image", "video", "audio"]} languages={languages} withCaption onChange={(items) => onChange({ ...block, items })} />
+      <MediaList
+        items={block.items}
+        kinds={["image", "video", "audio"]}
+        languages={languages}
+        withCaption
+        logicConfig={config}
+        blockId={block.id}
+        onChange={(items) => onChange({ ...block, items })}
+      />
       <NumberField label={t("minViewSeconds")} value={block.minViewSeconds} min={0} max={3600} onChange={(v) => onChange({ ...block, minViewSeconds: v ?? 0 })} />
       <Checkbox label={t("requireVideoEnd")} checked={block.requireVideoEnd} onChange={(v) => onChange({ ...block, requireVideoEnd: v })} />
       <Checkbox label={t("autoplay")} hint={t("autoplayHint")} checked={block.autoplay} onChange={(v) => onChange({ ...block, autoplay: v })} />
@@ -133,7 +160,7 @@ function MediaBlockEditor({ block, languages, onChange }: EditorProps<"media">) 
   );
 }
 
-function QuestionnaireEditor({ block, config, languages, onChange }: EditorProps<"questionnaire" | "demographics">) {
+function QuestionnaireEditor({ block, config, languages, onChange }: EditorProps<"questionnaire" | "demographics" | "screening">) {
   const t = useTranslations("builder.block");
   const tq = useTranslations("builder.question");
   const [open, setOpen] = useState<string | null>(block.questions[0]?.id ?? null);
@@ -142,8 +169,23 @@ function QuestionnaireEditor({ block, config, languages, onChange }: EditorProps
   return (
     <>
       <LocalizedField label={t("heading")} value={block.heading} languages={languages} onChange={(v) => onChange({ ...block, heading: v })} />
-      <LocalizedField label={t("intro")} value={block.intro} languages={languages} multiline onChange={(v) => onChange({ ...block, intro: v })} />
+      <LocalizedField label={t("intro")} hint={t("pipingHint")} value={block.intro} languages={languages} multiline onChange={(v) => onChange({ ...block, intro: v })} />
       <Checkbox label={t("randomizeQuestions")} checked={block.randomizeQuestions} onChange={(v) => onChange({ ...block, randomizeQuestions: v })} />
+      {block.type === "questionnaire" && (
+        <div className="flex flex-col gap-1">
+          <label htmlFor={`role-${block.id}`} className="text-sm font-medium">
+            {t("role")}
+          </label>
+          <Select id={`role-${block.id}`} value={block.role} onChange={(e) => onChange({ ...block, role: e.target.value as (typeof BLOCK_ROLES)[number] })}>
+            {BLOCK_ROLES.map((r) => (
+              <option key={r} value={r}>
+                {t(`roles.${r}`)}
+              </option>
+            ))}
+          </Select>
+          <p className="text-xs text-muted">{t("roleHint")}</p>
+        </div>
+      )}
 
       <div className="flex flex-col gap-2">
         <p className="text-sm font-medium">{t("questions", { n: block.questions.length })}</p>
@@ -229,8 +271,92 @@ function EndEditor({ block, languages, onChange }: EditorProps<"end">) {
     <>
       <LocalizedField label={t("heading")} value={block.heading} languages={languages} onChange={(v) => onChange({ ...block, heading: v })} />
       <LocalizedField label={t("body")} value={block.body} languages={languages} multiline rows={4} onChange={(v) => onChange({ ...block, body: v })} />
-      <TextField label={t("completionCode")} hint={t("completionCodeHint")} value={block.completionCode ?? ""} dir="ltr" mono onChange={(v) => onChange({ ...block, completionCode: v.trim() ? v.slice(0, 100) : undefined })} />
+      <Checkbox label={t("uniqueCode")} hint={t("uniqueCodeHint")} checked={block.uniqueCode} onChange={(v) => onChange({ ...block, uniqueCode: v })} />
+      {!block.uniqueCode && (
+        <TextField label={t("completionCode")} hint={t("completionCodeHint")} value={block.completionCode ?? ""} dir="ltr" mono onChange={(v) => onChange({ ...block, completionCode: v.trim() ? v.slice(0, 100) : undefined })} />
+      )}
       <TextField label={t("redirectUrl")} hint={t("redirectUrlHint")} value={block.redirectUrl ?? ""} dir="ltr" onChange={(v) => onChange({ ...block, redirectUrl: v.trim() || undefined })} />
+    </>
+  );
+}
+
+function ScreeningEditor(props: EditorProps<"screening">) {
+  const t = useTranslations("builder.block");
+  const { block, config, languages, onChange } = props;
+  return (
+    <>
+      <QuestionnaireEditor {...(props as EditorProps<"questionnaire" | "demographics" | "screening">)} />
+      <LogicEditor
+        label={t("eligibleIf")}
+        hint={t("eligibleIfHint")}
+        logic={block.eligibleIf}
+        config={config}
+        onChange={(l) => onChange({ ...block, eligibleIf: l })}
+      />
+      <LocalizedField label={t("screenedOutMessage")} value={block.screenedOutMessage} languages={languages} multiline onChange={(v) => onChange({ ...block, screenedOutMessage: v })} />
+    </>
+  );
+}
+
+function DebriefEditor({ block, languages, onChange }: EditorProps<"debrief">) {
+  const t = useTranslations("builder.block");
+  return (
+    <>
+      <p className="rounded-lg bg-paper p-3 text-sm text-muted">{t("debriefHint")}</p>
+      <LocalizedField label={t("heading")} value={block.heading} languages={languages} onChange={(v) => onChange({ ...block, heading: v })} />
+      <LocalizedField label={t("body")} value={block.body} languages={languages} multiline rows={8} onChange={(v) => onChange({ ...block, body: v })} />
+    </>
+  );
+}
+
+const listKeys = (s: string) =>
+  s
+    .split(",")
+    .map((x) => x.trim().toLowerCase())
+    .filter((x) => /^[a-z0-9-]{3,40}$/.test(x))
+    .slice(0, 10);
+
+function ExclusionCheckEditor({ block, languages, onChange }: EditorProps<"exclusion_check">) {
+  const t = useTranslations("builder.block");
+  const [exclude, setExclude] = useState(block.excludeLists.join(", "));
+  return (
+    <>
+      <p className="rounded-lg bg-paper p-3 text-sm text-muted">{t("exclusionHint")}</p>
+      <LocalizedField label={t("heading")} value={block.heading} languages={languages} onChange={(v) => onChange({ ...block, heading: v })} />
+      <LocalizedField label={t("prompt")} value={block.prompt} languages={languages} onChange={(v) => onChange({ ...block, prompt: v })} />
+      <LocalizedField label={t("helpText")} value={block.help} languages={languages} multiline rows={2} onChange={(v) => onChange({ ...block, help: v })} />
+      <div className="flex flex-col gap-1">
+        <label htmlFor={`kind-${block.id}`} className="text-sm font-medium">
+          {t("inputKind")}
+        </label>
+        <Select id={`kind-${block.id}`} value={block.inputKind} onChange={(e) => onChange({ ...block, inputKind: e.target.value as "email" | "text" })}>
+          <option value="email">{t("inputKinds.email")}</option>
+          <option value="text">{t("inputKinds.text")}</option>
+        </Select>
+      </div>
+      <TextField
+        label={t("recordList")}
+        hint={t("recordListHint")}
+        value={block.recordList ?? ""}
+        dir="ltr"
+        mono
+        onChange={(v) => {
+          const k = v.trim().toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 40);
+          onChange({ ...block, recordList: k.length >= 3 ? k : undefined });
+        }}
+      />
+      <TextField
+        label={t("excludeLists")}
+        hint={t("excludeListsHint")}
+        value={exclude}
+        dir="ltr"
+        mono
+        onChange={(v) => {
+          setExclude(v);
+          onChange({ ...block, excludeLists: listKeys(v) });
+        }}
+      />
+      <LocalizedField label={t("excludedMessage")} value={block.excludedMessage} languages={languages} multiline onChange={(v) => onChange({ ...block, excludedMessage: v })} />
     </>
   );
 }
@@ -238,12 +364,120 @@ function EndEditor({ block, languages, onChange }: EditorProps<"end">) {
 const EDITORS: { [K in BlockType]: (p: EditorProps<K>) => React.ReactNode } = {
   welcome: WelcomeEditor,
   consent: ConsentEditor,
+  screening: ScreeningEditor,
+  exclusion_check: ExclusionCheckEditor,
   instructions: InstructionsEditor,
   questionnaire: QuestionnaireEditor as (p: EditorProps<"questionnaire">) => React.ReactNode,
   demographics: QuestionnaireEditor as (p: EditorProps<"demographics">) => React.ReactNode,
   media: MediaBlockEditor,
+  debrief: DebriefEditor,
   end: EndEditor,
 };
+
+/** Who sees the block, when, in what order, and how often. Shared by every block type. */
+function DisplayLogic({ block, config, onChange }: { block: Block; config: StudyConfig; onChange: (b: Block) => void }) {
+  const t = useTranslations("builder.display");
+  const d = config.design;
+  const fixed = block.type === "consent" || block.type === "end";
+  const summary = [
+    block.showTo.length ? t("summaryConditions", { list: block.showTo.join(", ") }) : null,
+    block.showIf ? t("summaryRule") : null,
+    block.repeat ? t("summaryRepeat") : null,
+    block.orderGroup ? t("summaryGroup", { id: block.orderGroup }) : null,
+  ].filter(Boolean);
+  return (
+    <details className="rounded-lg border border-line" open={summary.length > 0}>
+      <summary className="cursor-pointer px-3 py-2 text-sm font-medium">
+        {t("title")}
+        {summary.length > 0 && <span className="ms-2 text-xs font-normal text-muted">{summary.join(" · ")}</span>}
+      </summary>
+      <div className="flex flex-col gap-4 border-t border-line p-3">
+        {d.conditions.length > 1 && (
+          <fieldset className="flex flex-col gap-1">
+            <legend className="mb-1 text-sm font-medium">{t("showTo")}</legend>
+            <div className="flex flex-wrap gap-3">
+              {d.conditions.map((c) => (
+                <Checkbox
+                  key={c.id}
+                  label={c.label || c.id}
+                  checked={block.showTo.includes(c.id)}
+                  onChange={(v) => onChange({ ...block, showTo: v ? [...block.showTo, c.id] : block.showTo.filter((x) => x !== c.id) })}
+                />
+              ))}
+            </div>
+            <p className="text-xs text-muted">{t("showToHint")}</p>
+          </fieldset>
+        )}
+        {d.conditions.length < 2 && <p className="text-xs text-muted">{t("noConditions")}</p>}
+
+        <LogicEditor
+          label={t("showIf")}
+          hint={t("showIfHint")}
+          logic={block.showIf}
+          config={config}
+          beforeBlockId={block.id}
+          allowIteration={!!block.repeat}
+          onChange={(l) => onChange({ ...block, showIf: l })}
+        />
+
+        {!fixed && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="flex flex-col gap-1">
+              <label htmlFor={`rep-${block.id}`} className="text-sm font-medium">
+                {t("repeat")}
+              </label>
+              <Select
+                id={`rep-${block.id}`}
+                value={block.repeat?.factorId ?? ""}
+                onChange={(e) =>
+                  onChange({ ...block, repeat: e.target.value ? { factorId: e.target.value, order: block.repeat?.order ?? "assigned" } : undefined })
+                }
+              >
+                <option value="">{t("noRepeat")}</option>
+                {d.factors.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.name || f.variable}
+                  </option>
+                ))}
+              </Select>
+              <p className="text-xs text-muted">{t("repeatHint")}</p>
+            </div>
+            {block.repeat && (
+              <div className="flex flex-col gap-1">
+                <label htmlFor={`repo-${block.id}`} className="text-sm font-medium">
+                  {t("repeatOrder")}
+                </label>
+                <Select
+                  id={`repo-${block.id}`}
+                  value={block.repeat.order}
+                  onChange={(e) => onChange({ ...block, repeat: { ...block.repeat!, order: e.target.value as "assigned" | "listed" | "random" } })}
+                >
+                  <option value="assigned">{t("orders.assigned")}</option>
+                  <option value="listed">{t("orders.listed")}</option>
+                  <option value="random">{t("orders.random")}</option>
+                </Select>
+              </div>
+            )}
+            <div className="flex flex-col gap-1">
+              <label htmlFor={`grp-${block.id}`} className="text-sm font-medium">
+                {t("orderGroup")}
+              </label>
+              <Select id={`grp-${block.id}`} value={block.orderGroup ?? ""} onChange={(e) => onChange({ ...block, orderGroup: e.target.value || undefined })}>
+                <option value="">{t("noGroup")}</option>
+                {d.orderGroups.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name || g.id}
+                  </option>
+                ))}
+              </Select>
+              <p className="text-xs text-muted">{t("orderGroupHint")}</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </details>
+  );
+}
 
 export function BlockEditor({ block, config, onChange }: { block: Block; config: StudyConfig; onChange: (b: Block) => void }) {
   const t = useTranslations("builder.block");
@@ -260,6 +494,7 @@ export function BlockEditor({ block, config, onChange }: { block: Block; config:
           <p className="text-xs text-muted">{t("blockIdHint")}</p>
         </div>
       </div>
+      <DisplayLogic block={block} config={config} onChange={onChange} />
       <Editor block={block as never} config={config} languages={config.settings.languages} onChange={onChange as never} />
     </div>
   );

@@ -17,13 +17,18 @@ interface Props {
   seed: string;
   mediaUrls: Record<string, string>;
   tr: Tr;
+  /** Replaces {{stimulus}} / {{factor:x}} placeholders. */
+  pipeText?: (s: string) => string;
 }
 
 const choiceRow =
   "flex cursor-pointer items-center gap-3 rounded-lg border border-line bg-surface px-4 py-3 text-base hover:border-accent/60 has-[:checked]:border-accent has-[:checked]:bg-accent-soft has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent";
 
-export function QuestionView({ q, lang, fallback, value, onChange, error, seed, mediaUrls, tr }: Props) {
-  const text = (t: Parameters<typeof lt>[0]) => lt(t, lang, fallback);
+export function QuestionView({ q, lang, fallback, value, onChange, error, seed, mediaUrls, tr, pipeText }: Props) {
+  const text = (t: Parameters<typeof lt>[0]) => {
+    const s = lt(t, lang, fallback);
+    return pipeText ? pipeText(s) : s;
+  };
   const name = `q_${q.id}`;
   const errId = `${name}_err`;
   const helpId = `${name}_help`;

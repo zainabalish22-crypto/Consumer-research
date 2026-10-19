@@ -4,6 +4,7 @@ import path from "node:path";
 import en from "../../messages/en.json";
 import ar from "../../messages/ar.json";
 import { normalizeDigits } from "@/components/participant/i18n";
+import { IntlMessageFormat } from "intl-messageformat";
 
 function keys(obj: object, prefix = ""): string[] {
   return Object.entries(obj).flatMap(([k, v]) =>
@@ -24,6 +25,23 @@ describe("interface translations", () => {
       // Every Arabic message should contain at least one Arabic letter.
       expect(/[؀-ۿ]/.test(v), `${k}: ${v}`).toBe(true);
     }
+  });
+
+  it("every interface message is valid ICU syntax in both languages", () => {
+    const flat = (o: object, p = ""): [string, string][] =>
+      Object.entries(o).flatMap(([k, v]) => (typeof v === "object" ? flat(v, `${p}${k}.`) : [[`${p}${k}`, String(v)]]));
+    const bad: string[] = [];
+    for (const [locale, messages] of [["en", en], ["ar", ar]] as const) {
+      for (const [k, v] of flat(messages)) {
+        if (k.startsWith("participant.")) continue; // participant pages use simple {name} replacement
+        try {
+          new IntlMessageFormat(v, locale);
+        } catch {
+          bad.push(`${locale}:${k}`);
+        }
+      }
+    }
+    expect(bad).toEqual([]);
   });
 
   it("every translation key used in the source exists", () => {
