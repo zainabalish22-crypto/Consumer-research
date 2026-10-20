@@ -6,7 +6,7 @@ A free, bilingual (Arabic/English) platform for consumer-behaviour research: bui
 
 ## Status
 
-**Phase 1 (foundation and questionnaires) and Phase 2 (experimental engine): built, tested locally, schema applied to the hosted project.** Not yet exercised end to end by a signed-in researcher (see `KNOWN_ISSUES.md`).
+**Phases 1–3 built and tested locally. Phases 1–2 are applied to the hosted database; the Phase 3 library migration (`20261021000001_content_library.sql`) still needs applying.** Not yet exercised end to end by a signed-in researcher (see `KNOWN_ISSUES.md`).
 
 | Area | State |
 |---|---|
@@ -31,7 +31,11 @@ A free, bilingual (Arabic/English) platform for consumer-behaviour research: bui
 | Exports: wide CSV, codebook, event log, SPSS syntax (EN/AR labels), config snapshot | Done |
 | Account deletion | Done |
 | Seed script with labelled sample data | Not yet |
-| Shopping village (Phase 3), online shop (Phase 4) | Not started |
+| Content library: brands, stores, products, offers, ads with versions and disclosure labels | Done (migration to apply) |
+| Walkable shopping village (street / food court), store choice task, ad exposure block | Done (not yet tried end to end) |
+| Village and ad export variables, target-vs-other-brand summaries | Done |
+| Templates A (food court) and B (AI ads), created through the normal builder | Done |
+| Online shop (Phase 4) | Not started |
 | Analytics dashboard, Docker self-hosting guide (Phase 5) | Not started |
 
 ### Known limitations

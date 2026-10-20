@@ -4,7 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { getSession, sessionCounts, type ProjectRow, type StudyRow } from "@/lib/data";
 import { Badge, Card, EmptyState } from "@/components/ui";
 import { StatusBadge } from "../../StatusBadge";
-import { ProjectDetailsForm, ProjectActions, NewStudyForm } from "./ProjectForms";
+import { ProjectDetailsForm, ProjectActions, NewStudyForm, TemplatePicker } from "./ProjectForms";
 
 export default async function ProjectPage({ params }: { params: Promise<{ projectId: string }> }) {
   const { projectId } = await params;
@@ -69,6 +69,10 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
           <Card className="mt-4">
             <h2 className="mb-3 font-semibold">{t("newStudy")}</h2>
             <NewStudyForm projectId={p.id} />
+          </Card>
+          <Card>
+            <h2 className="mb-3 font-semibold">{t("templates.title")}</h2>
+            <TemplatePicker projectId={p.id} />
           </Card>
         </section>
 

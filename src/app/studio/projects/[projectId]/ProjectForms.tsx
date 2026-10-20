@@ -2,6 +2,7 @@
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 import {
+  createFromTemplate,
   createStudy,
   deleteProject,
   duplicateProject,
@@ -84,6 +85,40 @@ export function ProjectActions({ projectId, projectName, archived }: { projectId
           </Button>
         </div>
       )}
+    </div>
+  );
+}
+
+export function TemplatePicker({ projectId }: { projectId: string }) {
+  const t = useTranslations("studio.projects.templates");
+  const te = useTranslations("errors");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-xs text-muted">{t("hint")}</p>
+      {error && <Alert tone="danger">{error}</Alert>}
+      {(["foodcourt", "deepfake"] as const).map((k) => (
+        <div key={k} className="flex flex-col gap-2 rounded-lg border border-line p-3">
+          <p className="text-sm font-medium">{t(`${k}.title`)}</p>
+          <p className="text-xs text-muted">{t(`${k}.body`)}</p>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="self-start"
+            disabled={pending}
+            onClick={() =>
+              start(async () => {
+                setError(null);
+                const r = await createFromTemplate(projectId, k);
+                if (r && !r.ok) setError(te(r.error));
+              })
+            }
+          >
+            {t("create")}
+          </Button>
+        </div>
+      ))}
     </div>
   );
 }

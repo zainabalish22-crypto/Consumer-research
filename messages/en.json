@@ -62,7 +62,8 @@
       "dashboard": "Dashboard",
       "media": "Media library",
       "settings": "Settings",
-      "signOut": "Sign out"
+      "signOut": "Sign out",
+      "library": "Library"
     },
     "dashboard": {
       "title": "Dashboard",
@@ -144,7 +145,20 @@
         "en": "English only",
         "ar": "Arabic only"
       },
-      "createStudy": "Create study"
+      "createStudy": "Create study",
+      "templates": {
+        "title": "Start from a template",
+        "hint": "Templates create normal, editable studies and library items (brands, stores, products, offers, ads) in your library. Scale items are placeholders to replace with your chosen scales.",
+        "foodcourt": {
+          "title": "Food court validation study",
+          "body": "Village vs questionnaire, 4 fictional outlets at 2.000 BHD, offers randomly mapped to outlets."
+        },
+        "deepfake": {
+          "title": "AI-generated advertising and disclosure",
+          "body": "Label vs no label, 3 coffee brands with authentic and AI ad versions, a target brand per participant, shopping street, detection task."
+        },
+        "create": "Create from template"
+      }
     }
   },
   "errors": {
@@ -203,7 +217,10 @@
       "end": "End",
       "screening": "Screening",
       "exclusion_check": "Repeat-participant check",
-      "debrief": "Debrief"
+      "debrief": "Debrief",
+      "ad_exposure": "Ad exposure",
+      "store_choice": "Store choice task",
+      "village": "Shopping village"
     },
     "issuesTitle": "{n, plural, one {# problem to fix before publishing} other {# problems to fix before publishing}}",
     "editor": "Block editor",
@@ -230,7 +247,9 @@
       "eventsNavigationHint": "Used for time per page and drop-off analysis.",
       "eventsMedia": "Media exposure: visible time, plays, pauses, seeks and progress",
       "eventsMediaHint": "Used for computed variables such as seconds an advert was visible or the percentage of a video watched.",
-      "eventsNever": "Never recorded: keystrokes, mouse movements, camera, microphone or location."
+      "eventsNever": "Never recorded: keystrokes, mouse movements, camera, microphone or location.",
+      "eventsEnvironment": "Shopping behaviour: walking past, stopping at and entering stores, product views, basket changes, choices",
+      "eventsEnvironmentHint": "Needed for the village's computed variables (entered, dwell time, products viewed)."
     },
     "share": {
       "copied": "Copied",
@@ -552,7 +571,21 @@
       },
       "fixedValue": "Level everyone gets",
       "choose": "Choose…",
-      "balanceWithinCondition": "Balance separately within each condition"
+      "balanceWithinCondition": "Balance separately within each condition",
+      "refKind": "Levels are",
+      "targetRefKind": "Targets are",
+      "refNone": "Plain values",
+      "refKinds": {
+        "brand": "Brands",
+        "store": "Stores",
+        "offer": "Offers",
+        "product": "Products",
+        "ad": "Ads"
+      },
+      "refHint": "Link levels to library items so blocks can use them, e.g. offers mapped onto stores, or the brand whose advert is AI-generated.",
+      "fillFromLibrary": "Fill levels from the library ({n})",
+      "linkedItem": "Linked library item",
+      "linkedNone": "Not linked"
     },
     "warnings": {
       "title": "{n, plural, =0 {No design warnings} one {# design warning} other {# design warnings}}",
@@ -594,6 +627,90 @@
           "why": "Screen participants before showing stimuli or questions, so ineligible people do not see study material."
         }
       }
+    },
+    "env": {
+      "libraryHint": "Stores, products, offers and ads come from your library.",
+      "openLibrary": "Open the library",
+      "heading": "Heading",
+      "intro": "Introduction",
+      "instructions": "Instructions",
+      "prompt": "Question",
+      "ads": "Adverts",
+      "adOrder": "Advert order",
+      "stores": "Stores",
+      "storesHint": "Add as many as you like; around 12 or fewer keeps the street easy to explore on a phone.",
+      "storeOrder": "Store order",
+      "order": {
+        "listed": "As listed",
+        "random": "Random per participant",
+        "factor": "From an order factor"
+      },
+      "orderFactor": "Order factor",
+      "orderFactorHint": "An order factor whose levels are linked to these items (or their brands).",
+      "offers": "Offers",
+      "offerModes": {
+        "none": "No offers",
+        "fixed": "Same offer for everyone (per store)",
+        "factor": "From a mapping factor (offers onto stores)"
+      },
+      "offerFactor": "Mapping factor",
+      "offerFactorHint": "A mapping factor whose levels are linked to offers and whose targets are linked to these stores.",
+      "noOffer": "No offer",
+      "currency": "Currency",
+      "variablePrefix": "Variable prefix",
+      "variablePrefixHint": "Export columns start with this, e.g. {prefix}_S1_entered.",
+      "adRules": "Advert versions and disclosure",
+      "versionMode": "Which version is shown",
+      "versionModes": {
+        "fixed": "The same version for everyone",
+        "targeted": "One brand (from a factor) gets a different version"
+      },
+      "versionKey": "Version key",
+      "targetFactor": "Target factor",
+      "targetKey": "Version for the target",
+      "otherKey": "Version for the others",
+      "targetedHint": "E.g. the participant's target_brand shows its \"ai\" version and every other brand shows \"authentic\".",
+      "disclosure": "Disclosure label",
+      "disclosureFor": {
+        "none": "Never shown",
+        "targeted": "On the target's advert only",
+        "all": "On every advert"
+      },
+      "disclosureHint": "Label text, position and style are set on each ad in the library. Tick conditions to show it only to them (none ticked = everyone).",
+      "minViewSeconds": "Minimum seconds per advert",
+      "requireEnd": "Videos must be played to the end",
+      "autoplay": "Start playing automatically (muted)",
+      "showControls": "Show player controls",
+      "showProducts": "Show a product and its price on each card",
+      "allowNone": "Allow choosing none",
+      "noneLabel": "Label for 'none'",
+      "layout": "Layout",
+      "layouts": {
+        "street": "Shopping street",
+        "foodcourt": "Food court"
+      },
+      "theme": "Theme",
+      "themes": {
+        "minimal": "Minimal village",
+        "neutral": "Neutral research"
+      },
+      "productOrder": "Product order in stores",
+      "rules": "Rules",
+      "approachDistance": "Approach distance (street units)",
+      "approachSeconds": "Seconds that count as stopping",
+      "mustEnterStores": "Stores that must be entered",
+      "minPurchases": "Minimum items",
+      "maxPurchases": "Maximum items",
+      "budget": "Budget (optional)",
+      "timeLimit": "Time limit in seconds (optional)",
+      "considerationPrompt": "Question when leaving a store (optional)",
+      "considerationHint": "Yes/no, e.g. \"Would you consider buying here?\". Leave empty to skip.",
+      "noneYet": "None added yet.",
+      "missing": "Missing from the library",
+      "moveUp": "Move up",
+      "remove": "Remove",
+      "choose": "Choose…",
+      "add": "Add"
     }
   },
   "data": {
@@ -795,6 +912,174 @@
     "previewUniqueCode": "Participants will see a unique completion code here.",
     "previewCondition": "Condition",
     "previewReshuffle": "Reshuffle orders",
-    "apiError_studyFull": "This study has reached the number of participants it needs. Thank you for your interest."
+    "apiError_studyFull": "This study has reached the number of participants it needs. Thank you for your interest.",
+    "adOf": "Advert {n} of {total}",
+    "nextAd": "Next advert",
+    "villageTitle": "Shopping street",
+    "villageRole": "shopping street",
+    "villageHelp": "Walk with the arrow buttons or keys, or drag the street. Tap a shop to walk to it and go in.",
+    "bagSummary": "{n} items · {total}",
+    "budgetLeft": "Left to spend: {amount}",
+    "finishShopping": "Finish",
+    "walkLeft": "Walk left",
+    "walkRight": "Walk right",
+    "enterStore": "Go into {store}",
+    "goTo": "Go to",
+    "chooseStore": "Choose a shop…",
+    "goToStore": "Walk to {store}",
+    "leaveStore": "Leave shop",
+    "noProducts": "This shop has nothing for sale right now.",
+    "details": "Details of {item}",
+    "addToBag": "Add to bag",
+    "added": "{item} added to your bag.",
+    "quantity": "Quantity",
+    "maxReached": "You can buy at most {n} items.",
+    "overBudget": "That would go over your budget.",
+    "needMore": "Please choose at least {n} items before finishing.",
+    "needStores": "Please visit at least {n} shops before finishing.",
+    "bag": "Your bag",
+    "bagEmpty": "Your bag is empty.",
+    "total": "Total",
+    "remove": "Remove",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "library": {
+    "title": "Library",
+    "subtitle": "Brands, stores, products, offers and adverts you can reuse across studies. Studies copy what they use when you publish, so editing the library never changes a running study.",
+    "kinds": {
+      "brand": "Brands",
+      "store": "Stores",
+      "product": "Products",
+      "offer": "Offers",
+      "ad": "Ads"
+    },
+    "search": "Search",
+    "new": "New",
+    "empty": "Nothing here yet",
+    "emptyHint": {
+      "brand": "Brands give stores and adverts a name, colours and a logo. Mark fictional brands as fictional.",
+      "store": "Stores appear in the shopping village and the store choice task.",
+      "product": "Products are sold in stores. Prices use the currency you choose.",
+      "offer": "Offers (e.g. 50% off, buy one get one free) are shown on stores and change the effective price.",
+      "ad": "Adverts can have several versions, e.g. authentic and AI-generated."
+    },
+    "about": {
+      "brand": "Select a brand to edit it, or create a new one.",
+      "store": "Select a store to edit it, or create a new one. A store sells products and can show adverts on its front and inside.",
+      "product": "Select a product to edit it, or create a new one.",
+      "offer": "Select an offer to edit it, or create a new one. The effective unit price is calculated for you.",
+      "ad": "Select an advert to edit it, or create a new one. Each version has its own image or video."
+    },
+    "newTitle": {
+      "brand": "New brand",
+      "store": "New store",
+      "product": "New product",
+      "offer": "New offer",
+      "ad": "New advert"
+    },
+    "editTitle": {
+      "brand": "Edit brand",
+      "store": "Edit store",
+      "product": "Edit product",
+      "offer": "Edit offer",
+      "ad": "Edit advert"
+    },
+    "untitled": "Untitled",
+    "close": "Close",
+    "code": "Code",
+    "codeHint": "Short, unique, used in exported column names (e.g. S1).",
+    "codeTaken": "That code is already used. Choose another.",
+    "name": "Name",
+    "brand": "Brand",
+    "noBrand": "No brand",
+    "folder": "Folder",
+    "tags": "Tags (comma-separated)",
+    "snapshotNote": "Published studies keep the version they were published with. Publish again to use your changes.",
+    "save": "Save",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "confirmDelete": "Delete this item?",
+    "colors": {
+      "primary": "Main colour",
+      "secondary": "Second colour"
+    },
+    "logo": "Logo",
+    "fictional": "Fictional brand",
+    "fictionalHint": "Reminds you to say so in the debrief.",
+    "noMedia": "None",
+    "change": "Change",
+    "choose": "Choose",
+    "remove": "Remove",
+    "description": "Description",
+    "price": "Price",
+    "currency": "Currency",
+    "category": "Category",
+    "images": "Images",
+    "addImage": "Add an image",
+    "attributes": "Attributes",
+    "attrName": "Attribute",
+    "attrValue": "Value",
+    "addAttribute": "Add attribute",
+    "offerKind": "Type of offer",
+    "offerKinds": {
+      "none": "No offer",
+      "percentage": "Percentage off",
+      "fixed_amount": "Amount off",
+      "buy_x_get_y": "Buy X get Y free",
+      "bundle": "Bundle price",
+      "free_shipping": "Free delivery (label only)"
+    },
+    "percent": "Percent off",
+    "amount": "Amount off",
+    "buy": "Buy",
+    "get": "Get free",
+    "bundleQty": "Items in bundle",
+    "bundlePrice": "Bundle price",
+    "displayText": "Badge text",
+    "displayTextHint": "What participants see on the store, e.g. \"Buy 1 get 1 free\".",
+    "effectiveExample": "Example: a product at {base} costs {effective} per unit with this offer.",
+    "facade": "Shop front",
+    "facadeColor": "Colour",
+    "facadeStyle": "Style",
+    "styles": {
+      "shop": "Shop",
+      "cafe": "Café",
+      "kiosk": "Kiosk"
+    },
+    "signText": "Sign text",
+    "signTextHint": "Leave empty to use the store name.",
+    "facadeImage": "Shop front photo (optional)",
+    "facadeAd": "Advert on the shop front",
+    "noAd": "No advert",
+    "storeProducts": "Products sold here",
+    "inStoreAds": "Adverts inside the store",
+    "noneYet": "None added yet.",
+    "missing": "Missing",
+    "moveUp": "Move up",
+    "add": "Add",
+    "versions": "Versions",
+    "versionsHint": "E.g. \"authentic\" and \"ai\". Studies choose which version each participant sees.",
+    "versionKey": "Key",
+    "versionLabel": "Label (only you see it)",
+    "versionMedia": "Image or video",
+    "addVersion": "Add version",
+    "disclosure": "Disclosure label",
+    "disclosureHint": "Shown on this advert only when a study's rules say so (e.g. in the label condition).",
+    "disclosureText": "Label text",
+    "position": "Position",
+    "positions": {
+      "top-start": "Top, start",
+      "top-end": "Top, end",
+      "bottom-start": "Bottom, start",
+      "bottom-end": "Bottom, end"
+    },
+    "labelStyle": "Style",
+    "labelStyles": {
+      "badge": "Badge",
+      "banner": "Banner",
+      "subtle": "Subtle"
+    }
   }
 }

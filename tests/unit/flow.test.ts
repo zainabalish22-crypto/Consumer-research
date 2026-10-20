@@ -142,7 +142,7 @@ describe("flow engine", () => {
     const n = normalizeDraft(old);
     expect(n.design.conditions).toEqual([]);
     expect(n.blocks[0].showTo).toEqual([]);
-    expect(n.settings.events).toEqual({ navigation: true, media: true });
+    expect(n.settings.events).toEqual({ navigation: true, media: true, environment: true });
   });
 });
 
