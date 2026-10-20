@@ -9,14 +9,17 @@ export async function generateMetadata() {
   return { title: t("title") };
 }
 
+const LINK_REASONS = ["otp_expired", "pkce"] as const;
+
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; error?: string; mode?: string }>;
+  searchParams: Promise<{ next?: string; error?: string; mode?: string; reason?: string }>;
 }) {
-  const { next, error, mode } = await searchParams;
+  const { next, error, mode, reason } = await searchParams;
   const t = await getTranslations("auth");
   const tc = await getTranslations("common");
+  const why = (LINK_REASONS as readonly string[]).includes(reason ?? "") ? reason : "other";
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-6 px-4 py-10">
       <div className="flex items-center justify-between">
@@ -25,8 +28,8 @@ export default async function LoginPage({
         </Link>
         <LanguageSwitch />
       </div>
-      {error === "link" && <Alert tone="danger">{t("errors.badLink")}</Alert>}
-      <AuthForms next={next ?? "/studio"} initialMode={mode === "signup" ? "signup" : "signin"} />
+      {error === "link" && <Alert tone="danger">{t(`linkErrors.${why}`)}</Alert>}
+      <AuthForms next={next ?? "/studio"} initialMode={mode === "signup" ? "signup" : mode === "forgot" ? "forgot" : "signin"} />
       <p className="text-center text-xs text-muted">{t("freeNote")}</p>
     </main>
   );

@@ -1,8 +1,10 @@
-# Known issues (to review together)
+# Known issues
 
-## 1. Email confirmation link fails when opened in a different browser
+## 1. Email links only work in the browser where they were requested (mitigated)
 
-- **Seen**: 2026-10-19. `GET /auth/callback?code=…` → redirect to `/login?error=link`.
-- **Cause**: Supabase's PKCE flow stores a code verifier in the browser that signed up. Opening the email link in another browser (e.g. the mail app opens Chrome, sign-up happened elsewhere) cannot finish the exchange. The email address *is* confirmed; only the automatic sign-in fails.
-- **Workaround**: sign in with email and password. The error message now says so.
-- **Planned fix**: add `/auth/confirm` using `verifyOtp({ token_hash, type })` and change the Supabase "Confirm signup" email template to link to `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email`, which works in any browser.
+- **Cause**: Supabase's default email links use the PKCE flow, which needs a code stored in the browser that asked for the email. Opening the link in another browser (e.g. the mail app opens Chrome) cannot finish signing in. The email address *is* confirmed by then.
+- **Now in the app**: clear messages explaining what happened; "Forgot password?" (reset by email, then set a new password); "Resend confirmation email"; a clear message when signing up with an email that already has an account.
+- **Permanent fix (one-off, in Supabase)**: make the email links work in any browser. In **Authentication → Emails**, edit these templates and replace `{{ .ConfirmationURL }}` with:
+  - *Confirm signup*: `{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=email`
+  - *Reset password*: `{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=recovery`
+  The app's `/auth/callback` already handles both link styles.

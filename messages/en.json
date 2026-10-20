@@ -46,14 +46,37 @@
     "errors": {
       "badLink": "We could not sign you in from that link, but if you just confirmed your email it is confirmed. Please sign in with your email and password.",
       "invalidInput": "Please enter a valid email address and password.",
-      "emailNotConfirmed": "Please confirm your email address first. Check your inbox for the link.",
-      "invalidCredentials": "The email or password is not correct.",
+      "emailNotConfirmed": "This email address has not been confirmed yet. Open the link in the confirmation email, or send a new one.",
+      "invalidCredentials": "The email or password is not correct. If you have forgotten your password, you can reset it.",
       "passwordTooShort": "The password must be at least 8 characters.",
       "rateLimited": "Too many attempts. Please wait a few minutes and try again.",
-      "signUpFailed": "We could not create the account. Please try again."
+      "signUpFailed": "We could not create the account. Please try again.",
+      "alreadyRegistered": "An account with this email already exists. Sign in instead, or reset your password if you have forgotten it.",
+      "sendFailed": "The email could not be sent. Please try again in a few minutes.",
+      "passwordMismatch": "The two passwords do not match.",
+      "resetExpired": "This reset link has expired or was already used. Please request a new one.",
+      "resetFailed": "The password could not be changed. Please try again.",
+      "samePassword": "Please choose a password different from your current one."
     },
     "notices": {
-      "checkEmail": "Account created. We sent you an email: open the link in it to confirm your address, then sign in."
+      "checkEmail": "Account created. We sent you an email: open the link in it (in this same browser) to confirm your address.",
+      "confirmationResent": "We sent a new confirmation email. Open the link in this same browser.",
+      "resetSent": "If an account exists for this email, we sent a link to reset the password. Open it in this same browser."
+    },
+    "forgotPassword": "Forgot password?",
+    "forgotTitle": "Reset your password",
+    "forgotHint": "Enter your account email and we'll send you a link to set a new password.",
+    "sendResetLink": "Send reset link",
+    "backToSignIn": "Back to sign in",
+    "resendConfirmation": "Resend confirmation email",
+    "resetTitle": "Set a new password",
+    "newPassword": "New password",
+    "confirmPassword": "Repeat the new password",
+    "savePassword": "Save password",
+    "linkErrors": {
+      "otp_expired": "That email link has expired or was already used. Sign in if your email is confirmed, or request a new link.",
+      "pkce": "That link must be opened in the same browser where you requested it. Your email may already be confirmed: try signing in, or request a new link from this browser.",
+      "other": "We could not sign you in from that link. Try signing in with your password, or request a new link."
     }
   },
   "studio": {
