@@ -94,6 +94,10 @@ export default async function DataPage({
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-semibold">{t("title")}</h1>
         <StatusBadge status={data.study.status} />
+        <span className="flex-1" />
+        <Link href={`/studio/studies/${studyId}/analytics`} className="rounded-lg border border-line bg-surface px-2.5 py-1 text-sm hover:bg-paper">
+          {t("toAnalytics")}
+        </Link>
       </div>
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8" aria-label={t("summary")}>

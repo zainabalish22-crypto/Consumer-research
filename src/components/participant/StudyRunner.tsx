@@ -402,13 +402,15 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
 
   // ---------------------------------------------------------------------------
 
+  // In preview the studio layout already provides <main>; landmarks must not nest.
+  const Main = isPreview ? "div" : "main";
   const shell = (content: React.ReactNode) => (
     <div lang={lang} dir={dirFor(lang)} className="min-h-screen bg-paper">
       {mode !== "live" && (
-        <div className={cx("px-4 py-2 text-center text-sm", isPreview ? "bg-warn-soft text-warn" : "bg-accent-soft text-accent-strong")}>
-          {isPreview ? tr("previewBanner") : tr("testBanner")}
-        </div>
-      )}
+        <section aria-label={tr(isPreview ? "previewBanner" : "testBanner")}>
+          <div className={cx("px-4 py-2 text-center text-sm", isPreview ? "bg-warn-soft text-warn" : "bg-accent-soft text-accent-strong")}>
+            {isPreview ? tr("previewBanner") : tr("testBanner")}
+          </div>
       {isPreview && (
         <PreviewBar
           config={config}
@@ -432,12 +434,16 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
           tr={tr}
         />
       )}
+        </section>
+      )}
+      <Main>
       {config.settings.showProgress && phase === "block" && total > 1 && (
         <div className="h-1.5 w-full bg-line" role="progressbar" aria-valuemin={0} aria-valuemax={total - 1} aria-valuenow={index} aria-label={tr("progress")}>
           <div className="h-full bg-accent transition-all" style={{ width: `${(index / (total - 1)) * 100}%` }} />
         </div>
       )}
-      <main className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-8 sm:py-12">{content}</main>
+      <div className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-8 sm:py-12">{content}</div>
+      </Main>
     </div>
   );
 

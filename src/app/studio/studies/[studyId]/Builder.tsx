@@ -15,6 +15,7 @@ import {
   saveDraft,
   setStudyStatus,
 } from "@/lib/actions/studio";
+import { saveAsTemplate } from "@/lib/actions/templates";
 import type { StudyStatus } from "@/lib/data";
 import { Alert, Badge, Button, Card, Field, Input, Select, cx } from "@/components/ui";
 import { FlowList } from "@/components/builder/FlowList";
@@ -227,6 +228,9 @@ function BuilderInner({ study, initialConfig, versions }: Props) {
           <Link href={`/studio/studies/${study.id}/data`} className="rounded-lg border border-line bg-surface px-2.5 py-1 text-sm hover:bg-paper">
             {t("data")}
           </Link>
+          <Link href={`/studio/studies/${study.id}/analytics`} className="rounded-lg border border-line bg-surface px-2.5 py-1 text-sm hover:bg-paper">
+            {t("analytics")}
+          </Link>
           <Button size="sm" onClick={publish} disabled={pending}>
             {versions.length ? t("publishChanges") : t("publish")}
           </Button>
@@ -385,9 +389,11 @@ function TitleEditor({ studyId, title }: { studyId: string; title: string }) {
   const [, start] = useTransition();
   if (!editing) {
     return (
-      <button type="button" onClick={() => setEditing(true)} className="truncate text-start text-2xl font-semibold hover:underline" title={t("rename")} dir="auto">
-        {value}
-      </button>
+      <h1 className="min-w-0 truncate text-2xl font-semibold">
+        <button type="button" onClick={() => setEditing(true)} className="max-w-full truncate text-start hover:underline" title={t("rename")} dir="auto">
+          {value}
+        </button>
+      </h1>
     );
   }
   return (
@@ -503,6 +509,7 @@ function ShareTab({
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState("");
+  const [templateSaved, setTemplateSaved] = useState(false);
   useEffect(() => setOrigin(window.location.origin), []);
   const url = `${origin}/s/${study.slug}`;
   const run = (fn: () => Promise<{ ok: boolean; error?: string } | void>) =>
@@ -597,6 +604,37 @@ function ShareTab({
         <Button variant="secondary" size="sm" className="self-start" disabled={pending} onClick={() => run(() => duplicateStudy(study.id, `${study.title} ${t("copySuffix")}`))}>
           {t("duplicate")}
         </Button>
+        <form
+          className="flex flex-col gap-2 rounded-lg border border-line p-3"
+          action={(form) =>
+            run(async () => {
+              setTemplateSaved(false);
+              const r = await saveAsTemplate(study.id, String(form.get("tplTitle") ?? ""), String(form.get("tplDescription") ?? ""));
+              if (r.ok) setTemplateSaved(true);
+              return r;
+            })
+          }
+        >
+          <p className="text-sm font-medium">{t("saveTemplate")}</p>
+          <p className="text-xs text-muted">{t("saveTemplateHint")}</p>
+          <Field label={t("templateName")} htmlFor="tpl-title">
+            <Input id="tpl-title" name="tplTitle" defaultValue={study.title} required maxLength={200} dir="auto" />
+          </Field>
+          <Field label={t("templateDescription")} htmlFor="tpl-desc">
+            <Input id="tpl-desc" name="tplDescription" maxLength={2000} dir="auto" />
+          </Field>
+          <Button type="submit" variant="secondary" size="sm" className="self-start" disabled={pending}>
+            {t("saveTemplateButton")}
+          </Button>
+          {templateSaved && (
+            <p role="status" className="text-sm text-accent">
+              {t("templateSaved")}{" "}
+              <Link href="/studio/templates" className="underline">
+                {t("openTemplates")}
+              </Link>
+            </p>
+          )}
+        </form>
         <div className="flex flex-col gap-2 rounded-lg border border-danger/30 bg-danger-soft p-3">
           <p className="text-sm text-danger">{t("deleteWarning")}</p>
           <Field label={t("typeTitle", { title: study.title })} htmlFor="del-study">

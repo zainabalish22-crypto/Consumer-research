@@ -11,3 +11,4 @@ test-results/
 .vercel
 supabase/.temp/
 tsconfig.tsbuildinfo
+/.next-prod/

@@ -74,6 +74,16 @@ Reasonable, reversible defaults chosen where the brief left room. Newest at the 
 - **Scroll depth** is the highest percentage of the page scrolled, logged once when the participant leaves each shop page. Pointer movement is not recorded.
 - **Answers are checked on the server** against the published version: products must belong to the shop, there are no duplicate lines, and min/max items and budget are enforced. A time-out may end with fewer items than the minimum.
 
+## Phase 5: analytics, templates, self-hosting
+
+- **Analytics use the export loader and pure functions** (`src/lib/analytics/compute.ts`), so the numbers on screen and in the CSV come from the same data. Questions and blocks follow the newest version; answers from older versions count when their variable names match.
+- **Test and excluded sessions are hidden by default.** Including test sessions shows a warning that they are not real participants. There is no sample or seed data.
+- **Charts are HTML tables with drawn bars**, not a chart library. Every number is written out, so the charts work with screen readers, right-to-left text and printing, and the bundle stays small. A chart library can be added later if richer charts are needed.
+- **Open-text answers are not shown in analytics**, only counted. They can contain identifying details; they are in the CSV export.
+- **Saved templates** (`study_templates`) are copies of a study's draft configuration, private to the workspace (row-level security like the library). Library items stay in the library and are referenced by id, so a template can only be used in its own workspace. Dismissed warnings are not copied. Ready-made templates (A and B) are still created by code through the normal builder format.
+- **Self-hosting** needs Supabase (self-hosted or cloud), because the app relies on its sign-in, storage and row-level security; plain PostgreSQL on its own is not enough. The app needs only the public URL and publishable key, which are build-time values.
+- **Landmarks:** the studio has one `<main>`. The participant page uses `<main>` when live, but not inside the studio preview, so landmarks never nest.
+
 ## Hosting region
 
 - The hosted instance uses a Supabase project in **eu-central-1 (Frankfurt)** (`research-platform-eu`). Some ethics committees and data-protection laws (e.g. Bahrain's PDPL) care where data is stored; EU storage under GDPR is generally the easiest location to justify, and Supabase has no Gulf region. An earlier empty project in Tokyo (ap-northeast-1) is not used. This is not legal advice: check any storage-location rule your institution has.

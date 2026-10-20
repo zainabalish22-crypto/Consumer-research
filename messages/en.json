@@ -86,7 +86,8 @@
       "media": "Media library",
       "settings": "Settings",
       "signOut": "Sign out",
-      "library": "Library"
+      "library": "Library",
+      "templates": "Templates"
     },
     "dashboard": {
       "title": "Dashboard",
@@ -175,7 +176,8 @@
           "title": "AI-generated advertising and disclosure",
           "body": "Label vs no label, 3 coffee brands with authentic and AI ad versions, a target brand per participant, shopping street, detection task."
         },
-        "create": "Create from template"
+        "create": "Create from template",
+        "gallery": "All templates, including ones you saved →"
       },
       "tools": {
         "legend": "What will participants use?",
@@ -338,7 +340,14 @@
       "typeTitle": "Type the study title to confirm: {title}",
       "delete": "Delete study permanently",
       "testCondition": "Test as condition",
-      "testConditionRandom": "Random (as participants)"
+      "testConditionRandom": "Random (as participants)",
+      "saveTemplate": "Save as a template",
+      "saveTemplateHint": "Saves the last saved draft (blocks, design and settings) so you can start new studies from it in any of your projects. Participant data is never included.",
+      "templateName": "Template name",
+      "templateDescription": "Short description (optional)",
+      "saveTemplateButton": "Save template",
+      "templateSaved": "Template saved.",
+      "openTemplates": "Open templates"
     },
     "media": {
       "pick": "Choose media",
@@ -784,7 +793,8 @@
       "requireCheckoutHint": "When off, a “Leave the shop” button lets participants finish without ordering.",
       "shopProductOrder": "Product order in the listing",
       "shopPrefixHint": "Export columns start with this, e.g. {prefix}_P1_qty."
-    }
+    },
+    "analytics": "Analytics"
   },
   "data": {
     "title": "Participants & data",
@@ -860,7 +870,8 @@
     "deleteTestConfirm": "Delete all test sessions for this study?",
     "deleteTestYes": "Delete test sessions",
     "deleteTest": "Delete all test sessions",
-    "byCondition": "By condition"
+    "byCondition": "By condition",
+    "toAnalytics": "Analytics"
   },
   "media": {
     "title": "Media library",
@@ -1207,5 +1218,91 @@
     "reviewStars": "Stars",
     "reviewText": "Review",
     "addReview": "Add review"
+  },
+  "analytics": {
+    "title": "Analytics",
+    "toData": "Participants & data",
+    "notPublished": "Nothing to analyse yet",
+    "notPublishedHint": "Analytics appear once the study is published and people have taken part.",
+    "noData": "No sessions match",
+    "noDataHint": "No one has started this study yet with the current filters. Test sessions are hidden unless you include them.",
+    "includeTest": "Include test sessions",
+    "includeExcluded": "Include excluded sessions",
+    "note": "Computed from recorded sessions only. Questions and blocks follow the latest version (v{version}).",
+    "testWarning": "Includes {n} test sessions. These are not real participants; do not report them.",
+    "summary": "Summary",
+    "stats": {
+      "started": "Started",
+      "completed": "Completed",
+      "completionRate": "Completion rate",
+      "medianMinutes": "Median minutes (completed)",
+      "inProgress": "In progress",
+      "declined": "Declined consent",
+      "screened": "Screened out",
+      "withdrawn": "Withdrew"
+    },
+    "overTime": "Starts per day",
+    "date": "Date",
+    "lastDays": "Showing the last {n} days with sessions.",
+    "byCondition": "By condition",
+    "devices": "Devices and languages",
+    "sessions": "Sessions",
+    "funnel": "Where people stopped",
+    "funnelHint": "Sessions that submitted each block. A drop between two rows shows where people left.",
+    "block": "Block",
+    "reached": "Submitted",
+    "ofStarted": "of started",
+    "timePerBlock": "Time per block",
+    "timeHint": "Median seconds from entering to submitting a block (repeated blocks pooled).",
+    "medianSeconds": "Median s",
+    "shopping": "Shopping",
+    "envN": "{n} participants finished this block",
+    "store": "Store",
+    "entered": "Entered",
+    "approached": "Stopped in front",
+    "boughtFrom": "Bought from",
+    "itemsMean": "Mean items bought: {n}",
+    "chosen": "Chosen",
+    "none": "None",
+    "product": "Product",
+    "bought": "Bought",
+    "seen": "Seen",
+    "pageOpened": "Page opened",
+    "checkoutLine": "{started} went to checkout, {done} of {n} placed the simulated order",
+    "questions": "Questions",
+    "answer": "Answer",
+    "count": "Count",
+    "notSure": "Not sure",
+    "preferNot": "Prefer not to say",
+    "multiNote": "Participants could pick more than one answer, so percentages can add up to more than 100%.",
+    "numericLine": "Mean {mean} · median {median} · SD {sd} · range {min} to {max}",
+    "value": "Value",
+    "item": "Item",
+    "mean": "Mean",
+    "meanRank": "Mean rank (1 = top)",
+    "textNote": "Open text answers are in the CSV export."
+  },
+  "templates": {
+    "title": "Templates",
+    "subtitle": "Start a new study from a ready-made template or from a study you saved. Each one creates a normal draft you can edit freely.",
+    "createIn": "Create new studies in",
+    "needProject": "Create a project first; new studies are added to a project.",
+    "toDashboard": "Go to the dashboard",
+    "builtIn": "Ready-made templates",
+    "saved": "Your templates",
+    "noSaved": "No saved templates yet",
+    "noSavedHint": "Open any study, go to Share & versions, and use “Save as a template”.",
+    "howToSave": "To add one, open a study and use “Save as a template” under Share & versions. Templates use items from your library, which stay where they are.",
+    "use": "Use template",
+    "edit": "Edit",
+    "duplicate": "Duplicate",
+    "delete": "Delete",
+    "confirmDelete": "Delete template",
+    "cancel": "Cancel",
+    "save": "Save",
+    "name": "Name",
+    "description": "Description",
+    "copySuffix": "(copy)",
+    "facts": "{blocks} blocks · {conditions} conditions · {factors} factors"
   }
 }

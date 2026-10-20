@@ -22,6 +22,9 @@ export default async function StudioLayout({ children }: { children: React.React
             <Link href="/studio/library" className="rounded-md px-2.5 py-1.5 hover:bg-paper">
               {t("library")}
             </Link>
+            <Link href="/studio/templates" className="rounded-md px-2.5 py-1.5 hover:bg-paper">
+              {t("templates")}
+            </Link>
             <Link href="/studio/media" className="rounded-md px-2.5 py-1.5 hover:bg-paper">
               {t("media")}
             </Link>
@@ -42,7 +45,7 @@ export default async function StudioLayout({ children }: { children: React.React
           </div>
         </div>
       </header>
-      <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</div>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>
     </div>
   );
 }

@@ -576,7 +576,7 @@ export function ShopView({
 
   return (
     <section className="flex flex-col gap-3" ref={topRef}>
-      {t(block.heading) && heading(t(block.heading))}
+      {t(block.heading) ? heading(t(block.heading)) : <div className="sr-only">{heading(t(block.shopName) || tr("shopTitle"))}</div>}
       {t(block.instructions) && <p className="prose-study text-sm text-muted">{t(block.instructions)}</p>}
       {error && <Alert tone="danger">{tr(`err_${error}`)}</Alert>}
 

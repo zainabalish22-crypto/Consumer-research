@@ -120,3 +120,22 @@ describe("online shop", () => {
     });
   });
 });
+
+describe("saved study templates", () => {
+  it("are private to the workspace", async () => {
+    const id = await as(db, alice, async () =>
+      (await one<{ id: string }>("insert into study_templates (workspace_id, title, config) values ($1, 'Mine', '{\"blocks\":[]}') returning id", [wsA])).id,
+    );
+    await as(db, alice, async () => {
+      await expect(db.query("insert into study_templates (workspace_id, title, config) values ($1, 'X', '{}')", [wsB])).rejects.toThrow();
+      await expect(db.query("insert into study_templates (workspace_id, title, config) values ($1, 'X', '[]')", [wsA])).rejects.toThrow();
+    });
+    await as(db, bob, async () => {
+      expect((await db.query("select * from study_templates")).rows).toHaveLength(0);
+      expect((await db.query("delete from study_templates where id = $1", [id])).affectedRows ?? 0).toBe(0);
+    });
+    await as(db, null, async () => {
+      await expect(db.query("select * from study_templates")).rejects.toThrow();
+    });
+  });
+});

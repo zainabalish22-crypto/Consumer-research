@@ -52,6 +52,8 @@ export interface SessionRecord {
   answers: Record<string, unknown>;
   /** Seconds per step key (block id or block#level). */
   blockSeconds: Record<string, number>;
+  /** Step keys (block id or block#level) the participant submitted. */
+  blocksDone?: string[];
   /** Computed from events, per media asset id (and "ad:<id>" per ad). */
   media: Record<string, MediaSummary>;
   /** Computed from environment events, per block id and store id. */

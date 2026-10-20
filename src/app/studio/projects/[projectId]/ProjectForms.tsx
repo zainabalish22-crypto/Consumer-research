@@ -1,5 +1,6 @@
 "use client";
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import {
   createFromTemplate,
@@ -120,6 +121,9 @@ export function TemplatePicker({ projectId }: { projectId: string }) {
           </Button>
         </div>
       ))}
+      <Link href={`/studio/templates?project=${projectId}`} className="self-start text-sm text-accent hover:underline">
+        {t("gallery")}
+      </Link>
     </div>
   );
 }

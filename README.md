@@ -6,7 +6,7 @@ A free, bilingual (Arabic/English) platform for consumer-behaviour research: bui
 
 ## Status
 
-**Phases 1–4 built and tested locally, and all migrations are applied to the hosted database (Frankfurt).** Templates and the online shop have been checked in preview; no study has yet been published and run by real participants (see `KNOWN_ISSUES.md`).
+**Phases 1–5 built and tested locally, and all migrations are applied to the hosted database (Frankfurt).** Templates, the online shop and the analytics page's empty state have been checked in preview. No study has yet been published and run by real participants, so the analytics charts have only been tested with unit-test data (see `KNOWN_ISSUES.md`).
 
 | Area | State |
 |---|---|
@@ -37,7 +37,12 @@ A free, bilingual (Arabic/English) platform for consumer-behaviour research: bui
 | Templates A (food court) and B (AI ads), created through the normal builder | Done |
 | Online shop simulation: home, search, filters, sorting, product pages, researcher-written ratings and reviews, banner / sidebar / pop-up ads, sponsored products, cart, simulated checkout (no payment details ever asked) | Done (checked in preview) |
 | Online shop export variables: per-product position, offer, views, page opens, quantity; searches, filters, sorts, checkout, scroll depth, pop-up closing time, ad exposure | Done |
-| Analytics dashboard, Docker self-hosting guide (Phase 5) | Not started |
+| Analytics: starts, completions, completion rate, starts per day, conditions, devices and languages, drop-off by block, time per block, question distributions, village / store choice / shop results; test and excluded sessions hidden unless included | Done (charts not yet seen with real data) |
+| Templates gallery: ready-made templates plus “Save as a template” for any study; use, rename, duplicate, delete | Done |
+| Self-hosting guide, Dockerfile and Compose file | Done (standalone Node server tested; Docker image not yet built) |
+| Running costs and limits documentation | Done ([`docs/LIMITS.md`](docs/LIMITS.md)) |
+| Accessibility check: axe on participant pages (both languages, village, shop with pop-up) and all studio pages | No violations left in what was checked; a manual screen-reader test is still to do |
+| AI features and other extensions (Phase 6) | Not started |
 
 ### Known limitations
 
@@ -101,4 +106,4 @@ npm run build
 
 ## Deploying to Vercel
 
-Import the repository in Vercel, set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and deploy. Add the deployed URL plus `/auth/callback` to Supabase's redirect URLs. (`next.config.ts` also emits a standalone build for Docker; a self-hosting guide comes in Phase 5.)
+Import the repository in Vercel, set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and deploy. Add the deployed URL plus `/auth/callback` to Supabase's redirect URLs. To run it on your own servers instead, see [`docs/SELF_HOSTING.md`](docs/SELF_HOSTING.md) (Docker or plain Node).

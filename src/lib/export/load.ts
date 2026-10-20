@@ -132,6 +132,7 @@ export async function loadExportData(supabase: SupabaseClient, studyId: string, 
       completion_code: (s.completion_code as string) ?? null,
       answers: {},
       blockSeconds: {},
+      blocksDone: [],
       media: {},
       env: {},
     });
@@ -140,6 +141,7 @@ export async function loadExportData(supabase: SupabaseClient, studyId: string, 
     const s = bySession.get(r.session_id);
     if (!s) continue;
     if (r.block_type === "village" || r.block_type === "online_shop") villageDone.push({ session_id: r.session_id, block_id: r.block_key, shop: r.block_type === "online_shop" });
+    s.blocksDone!.push(r.block_key);
     const level = r.block_key.includes("#") ? r.block_key.split("#")[1] : null;
     for (const [k, v] of Object.entries(r.answers ?? {})) s.answers[level ? `${k}_${level}` : k] = v;
     if (r.entered_at) {
