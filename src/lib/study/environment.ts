@@ -56,7 +56,7 @@ export function offerForStore(rule: OfferRule, storeId: string, config: StudyCon
   const factor = config.design.factors.find((f) => f.id === rule.factorId);
   const mapping = factor ? a.factors[factor.variable] : undefined;
   if (!factor || !mapping || typeof mapping !== "object" || Array.isArray(mapping)) return null;
-  const target = factor.targets.find((t) => t.ref === storeId || (t.ref && t.ref === lib.stores[storeId]?.brandId));
+  const target = factor.targets.find((t) => t.ref === storeId || (!!t.ref && t.ref === brandOf(lib, storeId)));
   if (!target) return null;
   const levelValue = (mapping as Record<string, string>)[target.value];
   const level = factor.levels.find((l) => l.value === levelValue);
@@ -94,3 +94,6 @@ export function resolveAd(ad: LibAd, rules: AdRules, config: StudyConfig, a: Ass
 export function priceInfo(basePrice: number, offer: LibOffer | null) {
   return { base: basePrice, effective: effectiveUnitPrice(basePrice, offer), hasOffer: !!offer && offer.kind !== "none" };
 }
+
+/** Offers for products in the online shop use the same rules as stores (targets ref products or brands). */
+export const offerForItem = offerForStore;

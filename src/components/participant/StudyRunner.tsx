@@ -28,7 +28,8 @@ import { EventLogger, type EventData, type EventType } from "./events";
 import { AdExposureView } from "./environment/AdExposureView";
 import { StoreChoiceView } from "./environment/StoreChoiceView";
 import { VillageView } from "./environment/VillageView";
-import { validateStoreChoice, validateVillageAnswer } from "@/lib/study/envAnswers";
+import { validateShopAnswer, validateStoreChoice, validateVillageAnswer } from "@/lib/study/envAnswers";
+import { ShopView } from "./environment/ShopView";
 
 type Mode = "live" | "test" | "preview";
 type Phase = "loading" | "language" | "block" | "declined" | "withdrawn" | "screened" | "completed" | "error";
@@ -297,9 +298,13 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
     if (!block || !step) return;
     setProblem(null);
     let payload: Record<string, unknown> = {};
-    if (block.type === "village" || block.type === "store_choice") {
+    if (block.type === "village" || block.type === "store_choice" || block.type === "online_shop") {
       const v =
-        block.type === "village" ? validateVillageAnswer(block, config, assignment, envValue) : validateStoreChoice(block, envValue);
+        block.type === "village"
+          ? validateVillageAnswer(block, config, assignment, envValue)
+          : block.type === "online_shop"
+            ? validateShopAnswer(block, config, assignment, envValue)
+            : validateStoreChoice(block, envValue);
       if (!v.ok) return setErrors({ [block.variable]: v.error as AnswerError });
       payload = { [block.variable]: v.value };
     }
@@ -681,6 +686,27 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
     case "store_choice":
       body = (
         <StoreChoiceView
+          key={step.key}
+          block={block}
+          config={config}
+          assignment={assignment}
+          seed={seed}
+          lang={lang}
+          fallback={fallback}
+          mediaUrls={mediaUrls}
+          tr={tr}
+          t={t}
+          log={logEvent}
+          busy={busy}
+          error={errors[block.variable]}
+          onSubmit={(v) => void submitBlock(v)}
+          heading={heading}
+        />
+      );
+      break;
+    case "online_shop":
+      body = (
+        <ShopView
           key={step.key}
           block={block}
           config={config}

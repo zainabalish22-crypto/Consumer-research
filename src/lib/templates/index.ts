@@ -81,6 +81,10 @@ export function foodcourtTemplate(o: TemplateOptions): TemplateResult {
     currency: "BHD",
     category: "drink",
     attributes: [],
+    originalPrice: null,
+    rating: null,
+    ratingCount: null,
+    reviews: [],
   }));
   const offerDefs: [string, LibOffer["kind"], LibOffer["params"], LocalizedText, LocalizedText][] = [
     ["BOGO", "buy_x_get_y", { buy: 1, get: 1 }, T("Buy one get one free", "اشترِ واحدًا واحصل على الثاني مجانًا"), T("Buy 1 get 1 free", "اشترِ 1 واحصل على 1 مجانًا")],
@@ -337,6 +341,10 @@ export function deepfakeTemplate(o: TemplateOptions): TemplateResult {
       currency: "BHD",
       category: "coffee",
       attributes: [],
+      originalPrice: null,
+      rating: null,
+      ratingCount: null,
+      reviews: [],
     })),
   );
   const stores: LibStore[] = defs.map((d, i) => ({

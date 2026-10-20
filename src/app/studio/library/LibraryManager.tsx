@@ -40,7 +40,21 @@ function blank(kind: LibraryKind, lib: LibrarySnapshot): Record<string, unknown>
     case "brand":
       return { code, name: {}, logo: null, colors: { primary: "#0f6e6e", secondary: "#f4efe6" }, fictional: true };
     case "product":
-      return { code, brandId: null, name: {}, description: {}, images: [], basePrice: 2, currency: "BHD", category: "", attributes: [] };
+      return {
+        code,
+        brandId: null,
+        name: {},
+        description: {},
+        images: [],
+        basePrice: 2,
+        originalPrice: null,
+        currency: "BHD",
+        category: "",
+        attributes: [],
+        rating: null,
+        ratingCount: null,
+        reviews: [],
+      };
     case "offer":
       return { code, name: {}, kind: "percentage", params: { percent: 50 }, displayText: { en: "50% off", ar: "خصم 50٪" } };
     case "store":
@@ -377,6 +391,8 @@ function ProductFields({ item, set }: FieldsProps) {
         ))}
         <MediaSlot label={t("addImage")} value={null} kinds={["image"]} onChange={(m) => m && set({ images: [...images, m] })} />
       </div>
+      <NumberField label={t("originalPrice")} value={(item.originalPrice as number | null) ?? undefined} optional min={0} step={0.001} onChange={(v) => set({ originalPrice: v ?? null })} />
+      <ReviewFields item={item} set={set} />
       <div className="flex flex-col gap-2">
         <span className="text-sm font-medium">{t("attributes")}</span>
         {attrs.map((a, i) => (
@@ -393,6 +409,37 @@ function ProductFields({ item, set }: FieldsProps) {
         </Button>
       </div>
     </>
+  );
+}
+
+/** Ratings and reviews are stimuli written by the researcher, never real customer data. */
+function ReviewFields({ item, set }: FieldsProps) {
+  const t = useTranslations("library");
+  const reviews = (item.reviews ?? []) as { author: LocalizedText; rating: number; text: LocalizedText }[];
+  return (
+    <fieldset className="flex flex-col gap-3 rounded-lg border border-warn/40 bg-warn-soft/40 p-3">
+      <legend className="px-1 text-sm font-medium">{t("ratingsTitle")}</legend>
+      <p className="text-xs text-warn">{t("ratingsNote")}</p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <NumberField label={t("rating")} value={(item.rating as number | null) ?? undefined} optional min={0} max={5} step={0.1} onChange={(v) => set({ rating: v === undefined ? null : Math.min(5, Math.max(0, v)) })} />
+        <NumberField label={t("ratingCount")} value={(item.ratingCount as number | null) ?? undefined} optional min={0} onChange={(v) => set({ ratingCount: v === undefined ? null : Math.max(0, Math.floor(v)) })} />
+      </div>
+      {reviews.map((r, i) => (
+        <div key={i} className="grid gap-2 rounded-lg border border-line bg-surface p-2 sm:grid-cols-[1fr_6rem_auto]">
+          <LocalizedField label={t("reviewAuthor")} value={r.author} languages={LANGS} onChange={(v) => set({ reviews: reviews.map((x, k) => (k === i ? { ...x, author: v } : x)) })} />
+          <NumberField label={t("reviewStars")} value={r.rating} min={1} max={5} onChange={(v) => set({ reviews: reviews.map((x, k) => (k === i ? { ...x, rating: Math.min(5, Math.max(1, Math.round(v ?? 5))) } : x)) })} />
+          <IconButton label={t("remove")} onClick={() => set({ reviews: reviews.filter((_, k) => k !== i) })}>
+            ✕
+          </IconButton>
+          <div className="sm:col-span-3">
+            <LocalizedField label={t("reviewText")} value={r.text} languages={LANGS} multiline rows={2} onChange={(v) => set({ reviews: reviews.map((x, k) => (k === i ? { ...x, text: v } : x)) })} />
+          </div>
+        </div>
+      ))}
+      <Button variant="secondary" size="sm" className="self-start" disabled={reviews.length >= 20} onClick={() => set({ reviews: [...reviews, { author: {}, rating: 5, text: {} }] })}>
+        {t("addReview")}
+      </Button>
+    </fieldset>
   );
 }
 

@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/lib/supabase/server";
 import { StudyConfig } from "@/lib/study/schema";
-import { startingConfig } from "@/lib/study/factories";
+import { TOOLS, startingConfig, toolsConfig } from "@/lib/study/factories";
 import { loadLibrary } from "@/lib/library/load";
 import { TABLES, buildSnapshot, toRow } from "@/lib/library/rows";
 import { mediaIssues } from "@/lib/library/checks";
@@ -153,13 +153,24 @@ export async function deleteProject(projectId: string, confirmName: string): Pro
 
 const NewStudy = z.object({
   title: z.string().trim().min(1).max(200),
-  start: z.enum(["blank", "questionnaire", "media", "experiment"]),
+  start: z.enum(["tools", "blank", "media", "experiment"]),
+  tools: z.array(z.enum(TOOLS)).max(TOOLS.length).default([]),
+  mode: z.enum(["sequence", "between"]).default("sequence"),
+  order: z.enum(["fixed", "counterbalanced"]).default("fixed"),
   languages: z.enum(["en", "ar", "both-en", "both-ar"]),
 });
 
 export async function createStudy(projectId: string, form: FormData): Promise<ActionResult> {
-  const parsed = NewStudy.safeParse({ title: form.get("title"), start: form.get("start"), languages: form.get("languages") });
+  const parsed = NewStudy.safeParse({
+    title: form.get("title"),
+    start: form.get("start"),
+    tools: form.getAll("tools"),
+    mode: form.get("mode") ?? undefined,
+    order: form.get("order") ?? undefined,
+    languages: form.get("languages"),
+  });
   if (!parsed.success || !uuid.safeParse(projectId).success) return { ok: false, error: "invalidInput" };
+  if (parsed.data.start === "tools" && parsed.data.tools.length === 0) return { ok: false, error: "chooseTool" };
   const langs =
     parsed.data.languages === "both-en"
       ? (["en", "ar"] as const)
@@ -172,7 +183,10 @@ export async function createStudy(projectId: string, form: FormData): Promise<Ac
     .insert({
       project_id: projectId,
       title: parsed.data.title,
-      draft_config: startingConfig(parsed.data.start, [...langs]),
+      draft_config:
+        parsed.data.start === "tools"
+          ? toolsConfig(parsed.data.tools, parsed.data.mode, parsed.data.order, [...langs])
+          : startingConfig(parsed.data.start, [...langs]),
       created_by: user.id,
     })
     .select("id")

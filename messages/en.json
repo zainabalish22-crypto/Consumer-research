@@ -147,10 +147,6 @@
           "title": "Blank",
           "body": "Welcome, consent and end pages only."
         },
-        "questionnaire": {
-          "title": "Questionnaire",
-          "body": "Adds a questionnaire page and optional demographics."
-        },
         "media": {
           "title": "Media experiment",
           "body": "Adds instructions, a media exposure page and follow-up questions."
@@ -160,7 +156,6 @@
           "body": "Two conditions, screening, a stimulus per condition, attitude and manipulation-check pages, and a debrief."
         }
       },
-      "moreStartingPointsLater": "Shopping villages, store choice tasks and ad exposure are blocks you can add to any study, or start from a template below. The online shop arrives in a later phase.",
       "studyLanguages": "Study languages",
       "langs": {
         "bothEn": "Arabic and English (English first)",
@@ -181,6 +176,41 @@
           "body": "Label vs no label, 3 coffee brands with authentic and AI ad versions, a target brand per participant, shopping street, detection task."
         },
         "create": "Create from template"
+      },
+      "tools": {
+        "legend": "What will participants use?",
+        "hint": "Choose one tool, or two or more to combine them in one study.",
+        "village": {
+          "title": "Virtual shopping village",
+          "body": "A walkable street of shops: stopping, entering, browsing and buying are recorded."
+        },
+        "shop": {
+          "title": "Online shop simulation",
+          "body": "An e-commerce site with search, filters, product pages, ads, a cart and a simulated checkout."
+        },
+        "questionnaire": {
+          "title": "Questionnaire",
+          "body": "Question pages (scales, choices, text and more)."
+        },
+        "pickOne": "Choose at least one tool.",
+        "combine": "How should the tools be combined?",
+        "mode": {
+          "sequence": {
+            "title": "Everyone uses every tool",
+            "body": "Each participant goes through all {n} tools, one after the other (within-subjects)."
+          },
+          "between": {
+            "title": "Each participant gets one tool",
+            "body": "Participants are split evenly into {n} conditions, one per tool, so the tools can be compared (between-subjects)."
+          }
+        },
+        "order": {
+          "label": "Tool order",
+          "fixed": "Same order for everyone (as listed)",
+          "counterbalanced": "Counterbalanced order (Latin square)"
+        },
+        "otherStart": "Other starting points (blank, media experiment, two-condition experiment)",
+        "backToTools": "Back to choosing tools"
       }
     }
   },
@@ -192,7 +222,8 @@
     "deleteFailed": "Deleting failed. Please try again.",
     "tooLarge": "The study is too large to save.",
     "invalidConfig": "The study has problems that must be fixed before publishing.",
-    "publishFailed": "Publishing failed. Please try again."
+    "publishFailed": "Publishing failed. Please try again.",
+    "chooseTool": "Choose at least one research tool."
   },
   "builder": {
     "missingTranslation": "One language is still empty.",
@@ -221,7 +252,6 @@
       "hint": "Participants see the blocks in this order. Drag the handle or use the arrows to reorder.",
       "blockType": "Block type",
       "add": "Add block",
-      "moreBlocksLater": "The online shop arrives in a later phase.",
       "dragHandle": "Reorder block {n}",
       "issues": "{n, plural, one {# problem} other {# problems}}",
       "untitled": "Untitled",
@@ -243,7 +273,8 @@
       "debrief": "Debrief",
       "ad_exposure": "Ad exposure",
       "store_choice": "Store choice task",
-      "village": "Shopping village"
+      "village": "Shopping village",
+      "online_shop": "Online shop"
     },
     "issuesTitle": "{n, plural, one {# problem to fix before publishing} other {# problems to fix before publishing}}",
     "editor": "Block editor",
@@ -673,11 +704,11 @@
       "offers": "Offers",
       "offerModes": {
         "none": "No offers",
-        "fixed": "Same offer for everyone (per store)",
-        "factor": "From a mapping factor (offers onto stores)"
+        "fixed": "Same offer for everyone (per store or product)",
+        "factor": "From a mapping factor (offers onto stores or products)"
       },
       "offerFactor": "Mapping factor",
-      "offerFactorHint": "A mapping factor whose levels are linked to offers and whose targets are linked to these stores.",
+      "offerFactorHint": "A mapping factor whose levels are linked to offers and whose targets are linked to these stores or products.",
       "noOffer": "No offer",
       "currency": "Currency",
       "variablePrefix": "Variable prefix",
@@ -733,7 +764,26 @@
       "moveUp": "Move up",
       "remove": "Remove",
       "choose": "Choose…",
-      "add": "Add"
+      "add": "Add",
+      "shopName": "Shop name",
+      "products": "Products for sale",
+      "productsHint": "Products come from your library. Their order follows the product order setting; sponsored products are also lifted to the top of listings.",
+      "placements": "Ad placements",
+      "bannerAds": "Home page banners",
+      "sidebarAds": "Sidebar ads",
+      "sponsored": "Sponsored products",
+      "sponsoredHint": "Shown first and marked “Sponsored”.",
+      "popupAd": "Pop-up ad",
+      "noPopup": "No pop-up",
+      "popupDelay": "Show the pop-up after (seconds)",
+      "showSearch": "Search box",
+      "showFilters": "Filters (category, price, on offer, rating)",
+      "showSort": "Sorting",
+      "showRatings": "Ratings and reviews",
+      "requireCheckout": "Participants must go through checkout to finish",
+      "requireCheckoutHint": "When off, a “Leave the shop” button lets participants finish without ordering.",
+      "shopProductOrder": "Product order in the listing",
+      "shopPrefixHint": "Export columns start with this, e.g. {prefix}_P1_qty."
     }
   },
   "data": {
@@ -967,7 +1017,50 @@
     "close": "Close",
     "yes": "Yes",
     "no": "No",
-    "effectiveEach": "{price} each with the offer"
+    "effectiveEach": "{price} each with the offer",
+    "shopTitle": "Shop",
+    "searchProducts": "Search products",
+    "search": "Search",
+    "allProducts": "All products",
+    "cartSummary": "Cart: {n} · {total}",
+    "featured": "Featured",
+    "seeAll": "See all",
+    "resultsCount": "Products: {n}",
+    "filters": "Filters",
+    "sortBy": "Sort by",
+    "sort_featured": "Featured",
+    "sort_price_asc": "Price: low to high",
+    "sort_price_desc": "Price: high to low",
+    "sort_rating": "Rating",
+    "sort_name": "Name",
+    "noResults": "No products match. Try another search or clear the filters.",
+    "category": "Category",
+    "allCategories": "All categories",
+    "maxPrice": "Up to {price}",
+    "onOfferOnly": "On offer only",
+    "minRating": "Rating",
+    "anyRating": "Any rating",
+    "ratingAtLeast": "{value} stars and up",
+    "ratingOutOf": "Rated {value} out of 5",
+    "clearFilters": "Clear filters",
+    "sponsored": "Sponsored",
+    "addToCart": "Add to cart",
+    "addedToCart": "{item} added to your cart.",
+    "inCart": "{n} in cart",
+    "backToResults": "Back to products",
+    "reviews": "Reviews",
+    "cart": "Your cart",
+    "cartEmpty": "Your cart is empty.",
+    "decrease": "One fewer {item}",
+    "increase": "One more {item}",
+    "continueShopping": "Continue shopping",
+    "proceedToCheckout": "Go to checkout",
+    "checkoutTitle": "Checkout",
+    "simulatedCheckout": "This is a simulated shop for research. No payment is taken, nothing is delivered, and you will not be asked for payment or address details.",
+    "backToCart": "Back to cart",
+    "placeOrder": "Place order",
+    "leaveShop": "Leave the shop",
+    "advert": "Advert"
   },
   "library": {
     "title": "Library",
@@ -1104,6 +1197,15 @@
       "badge": "Badge",
       "banner": "Banner",
       "subtle": "Subtle"
-    }
+    },
+    "originalPrice": "Original price (shown crossed out)",
+    "ratingsTitle": "Ratings and reviews (online shop)",
+    "ratingsNote": "Written by you for the study. If they are fictional, say so in your debrief.",
+    "rating": "Average rating (0–5)",
+    "ratingCount": "Number of ratings",
+    "reviewAuthor": "Reviewer name",
+    "reviewStars": "Stars",
+    "reviewText": "Review",
+    "addReview": "Add review"
   }
 }

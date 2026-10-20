@@ -342,6 +342,31 @@ export function newBlock(type: BlockType, config: StudyConfig): Block {
         minPurchases: 0,
         maxPurchases: 10,
       } as unknown as Block;
+    case "online_shop":
+      return {
+        ...base,
+        type,
+        variable: nextVariable(usedVariables(config), "shop"),
+        heading: T("", ""),
+        instructions: T(
+          "Shop as you normally would online. Search, browse and add what you want to your cart, then check out. No real payment is taken.",
+          "تسوّق كما تفعل عادةً عبر الإنترنت. ابحث وتصفح وأضف ما تريده إلى سلة التسوق، ثم أكمل الطلب. لن يتم أي دفع حقيقي.",
+        ),
+        shopName: T("Shop", "المتجر"),
+        products: [],
+        productOrder: { mode: "listed" },
+        offers: { mode: "none" },
+        currency: "BHD",
+        ads: { version: { mode: "fixed", key: "authentic" }, disclosure: { showFor: "none", conditions: [] } },
+        placements: { banner: [], sidebar: [], sponsored: [], popup: null, popupDelaySec: 5 },
+        showSearch: true,
+        showFilters: true,
+        showSort: true,
+        showRatings: true,
+        minItems: 0,
+        maxItems: 20,
+        requireCheckout: true,
+      } as unknown as Block; // Valid once the researcher adds products.
     case "debrief":
       return {
         ...base,
@@ -486,5 +511,46 @@ export function startingConfig(kind: StartingPoint, languages: Language[] = ["en
     add("debrief");
   }
   add("end");
+  return config;
+}
+/** Research tools a study can be built around; two or more can be combined. */
+export const TOOLS = ["village", "shop", "questionnaire"] as const;
+export type Tool = (typeof TOOLS)[number];
+/**
+ * sequence = every participant uses every chosen tool (in the listed order, or
+ * counterbalanced with a Latin square); between = each participant is assigned
+ * one tool, with balanced assignment across conditions.
+ */
+export type ToolMode = "sequence" | "between";
+export type ToolOrder = "fixed" | "counterbalanced";
+
+const TOOL_BLOCK: Record<Tool, BlockType> = { village: "village", shop: "online_shop", questionnaire: "questionnaire" };
+const TOOL_NAME: Record<Tool, string> = { village: "Shopping village", shop: "Online shop", questionnaire: "Questionnaire" };
+
+export function toolsConfig(
+  tools: Tool[],
+  mode: ToolMode = "sequence",
+  order: ToolOrder = "fixed",
+  languages: Language[] = ["en", "ar"],
+): StudyConfig {
+  const chosen = TOOLS.filter((x) => tools.includes(x));
+  const config = startingConfig("blank", languages);
+  const end = config.blocks.pop()!;
+  const multi = chosen.length > 1;
+  if (multi && mode === "between") {
+    config.design.conditions = chosen.map((x) => ({ id: x, label: TOOL_NAME[x], weight: 1 }));
+  }
+  if (multi && mode === "sequence" && order === "counterbalanced") {
+    config.design.orderGroups = [{ id: "tools", name: "Tool order", method: "latin" }];
+  }
+  for (const x of chosen) {
+    const b = newBlock(TOOL_BLOCK[x], config);
+    b.name = TOOL_NAME[x];
+    if (multi && mode === "between") b.showTo = [x];
+    if (multi && mode === "sequence" && order === "counterbalanced") b.orderGroup = "tools";
+    config.blocks.push(b);
+  }
+  config.blocks.push(newBlock("demographics", config));
+  config.blocks.push(end);
   return config;
 }

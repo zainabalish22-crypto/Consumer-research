@@ -10,6 +10,7 @@ import {
   updateProject,
 } from "@/lib/actions/studio";
 import type { ProjectRow } from "@/lib/data";
+import { TOOLS, type Tool } from "@/lib/study/factories";
 import { Alert, Button, Field, Input, Select, Textarea } from "@/components/ui";
 
 export function ProjectDetailsForm({ project }: { project: ProjectRow }) {
@@ -128,6 +129,10 @@ export function NewStudyForm({ projectId }: { projectId: string }) {
   const te = useTranslations("errors");
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  const [startKind, setStartKind] = useState<"tools" | "blank" | "media" | "experiment">("tools");
+  const [tools, setTools] = useState<Tool[]>(["questionnaire"]);
+  const [mode, setMode] = useState<"sequence" | "between">("sequence");
+  const card = "flex cursor-pointer items-start gap-2 rounded-lg border border-line p-3 has-[:checked]:border-accent has-[:checked]:bg-accent-soft";
   return (
     <form
       className="flex flex-col gap-3"
@@ -142,19 +147,73 @@ export function NewStudyForm({ projectId }: { projectId: string }) {
       <Field label={t("studyTitle")} htmlFor="s-title">
         <Input id="s-title" name="title" required maxLength={200} dir="auto" />
       </Field>
-      <fieldset className="flex flex-col gap-2">
-        <legend className="mb-1 text-sm font-medium">{t("startingPoint")}</legend>
-        {(["blank", "questionnaire", "media", "experiment"] as const).map((k, i) => (
-          <label key={k} className="flex cursor-pointer items-start gap-2 rounded-lg border border-line p-3 has-[:checked]:border-accent has-[:checked]:bg-accent-soft">
-            <input type="radio" name="start" value={k} defaultChecked={i === 1} className="mt-1" />
-            <span>
-              <span className="block text-sm font-medium">{t(`start.${k}.title`)}</span>
-              <span className="block text-xs text-muted">{t(`start.${k}.body`)}</span>
-            </span>
-          </label>
-        ))}
-        <p className="text-xs text-muted">{t("moreStartingPointsLater")}</p>
-      </fieldset>
+      <input type="hidden" name="start" value={startKind} />
+      {startKind === "tools" ? (
+        <>
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-1 text-sm font-medium">{t("tools.legend")}</legend>
+            <p className="text-xs text-muted">{t("tools.hint")}</p>
+            {TOOLS.map((k) => (
+              <label key={k} className={card}>
+                <input
+                  type="checkbox"
+                  name="tools"
+                  value={k}
+                  checked={tools.includes(k)}
+                  onChange={(e) => setTools((cur) => (e.target.checked ? [...cur, k] : cur.filter((x) => x !== k)))}
+                  className="mt-1"
+                />
+                <span>
+                  <span className="block text-sm font-medium">{t(`tools.${k}.title`)}</span>
+                  <span className="block text-xs text-muted">{t(`tools.${k}.body`)}</span>
+                </span>
+              </label>
+            ))}
+            {tools.length === 0 && <p className="text-xs text-danger">{t("tools.pickOne")}</p>}
+          </fieldset>
+          {tools.length > 1 && (
+            <fieldset className="flex flex-col gap-2">
+              <legend className="mb-1 text-sm font-medium">{t("tools.combine")}</legend>
+              {(["sequence", "between"] as const).map((k) => (
+                <label key={k} className={card}>
+                  <input type="radio" name="mode" value={k} checked={mode === k} onChange={() => setMode(k)} className="mt-1" />
+                  <span className="flex flex-col gap-2">
+                    <span>
+                      <span className="block text-sm font-medium">{t(`tools.mode.${k}.title`)}</span>
+                      <span className="block text-xs text-muted">{t(`tools.mode.${k}.body`, { n: tools.length })}</span>
+                    </span>
+                    {k === "sequence" && mode === "sequence" && (
+                      <Select name="order" defaultValue="fixed" aria-label={t("tools.order.label")} className="max-w-xs">
+                        <option value="fixed">{t("tools.order.fixed")}</option>
+                        <option value="counterbalanced">{t("tools.order.counterbalanced")}</option>
+                      </Select>
+                    )}
+                  </span>
+                </label>
+              ))}
+            </fieldset>
+          )}
+          <button type="button" className="self-start text-sm text-accent hover:underline" onClick={() => setStartKind("blank")}>
+            {t("tools.otherStart")}
+          </button>
+        </>
+      ) : (
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-1 text-sm font-medium">{t("startingPoint")}</legend>
+          {(["blank", "media", "experiment"] as const).map((k) => (
+            <label key={k} className={card}>
+              <input type="radio" name="startKind" value={k} checked={startKind === k} onChange={() => setStartKind(k)} className="mt-1" />
+              <span>
+                <span className="block text-sm font-medium">{t(`start.${k}.title`)}</span>
+                <span className="block text-xs text-muted">{t(`start.${k}.body`)}</span>
+              </span>
+            </label>
+          ))}
+          <button type="button" className="self-start text-sm text-accent hover:underline" onClick={() => setStartKind("tools")}>
+            {t("tools.backToTools")}
+          </button>
+        </fieldset>
+      )}
       <Field label={t("studyLanguages")} htmlFor="s-langs">
         <Select id="s-langs" name="languages" defaultValue="both-en">
           <option value="both-en">{t("langs.bothEn")}</option>
@@ -163,7 +222,7 @@ export function NewStudyForm({ projectId }: { projectId: string }) {
           <option value="ar">{t("langs.ar")}</option>
         </Select>
       </Field>
-      <Button type="submit" disabled={pending}>
+      <Button type="submit" disabled={pending || (startKind === "tools" && tools.length === 0)}>
         {t("createStudy")}
       </Button>
     </form>

@@ -12,10 +12,11 @@ export function mediaIssues(config: StudyConfig, lib: LibrarySnapshot): { path: 
     needed.set(adId, s);
   };
   for (const b of config.blocks) {
-    const rules = b.type === "ad_exposure" ? b.rules : b.type === "village" ? b.ads : null;
+    const rules = b.type === "ad_exposure" ? b.rules : b.type === "village" || b.type === "online_shop" ? b.ads : null;
     if (!rules) continue;
     const keys = rules.version.mode === "fixed" ? [rules.version.key] : [rules.version.targetKey, rules.version.otherKey];
     if (b.type === "ad_exposure") b.ads.forEach((id) => need(id, keys));
+    if (b.type === "online_shop") [...b.placements.banner, ...b.placements.sidebar, b.placements.popup].forEach((id) => need(id, keys));
     if (b.type === "village") {
       for (const sid of b.stores) {
         const s = lib.stores[sid];

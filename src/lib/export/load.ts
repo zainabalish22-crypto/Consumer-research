@@ -1,7 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { StudyConfig } from "@/lib/study/schema";
-import type { EnvSummary, ExportExtras, MediaSummary, SessionRecord } from "./columns";
+import { emptyShop, type EnvSummary, type ExportExtras, type MediaSummary, type SessionRecord } from "./columns";
 
 const PAGE = 1000;
 
@@ -100,11 +100,11 @@ export async function loadExportData(supabase: SupabaseClient, studyId: string, 
       .from("events")
       .select("session_id, type, block_key, data")
       .eq("study_id", studyId)
-      .in("type", ["store_approach", "store_enter", "store_leave", "store_pass", "product_view", "product_detail"])
+      .in("type", ["store_approach", "store_enter", "store_leave", "store_pass", "product_view", "product_detail", "shop_search", "shop_filter", "shop_sort", "checkout_start", "scroll_depth", "popup_close"])
       .order("id")
       .range(from, to),
   );
-  const villageDone: { session_id: string; block_id: string }[] = [];
+  const villageDone: { session_id: string; block_id: string; shop: boolean }[] = [];
 
   const bySession = new Map<string, SessionRecord>();
   const paramKeys = new Set<string>();
@@ -139,7 +139,7 @@ export async function loadExportData(supabase: SupabaseClient, studyId: string, 
   for (const r of responses) {
     const s = bySession.get(r.session_id);
     if (!s) continue;
-    if (r.block_type === "village") villageDone.push({ session_id: r.session_id, block_id: r.block_key });
+    if (r.block_type === "village" || r.block_type === "online_shop") villageDone.push({ session_id: r.session_id, block_id: r.block_key, shop: r.block_type === "online_shop" });
     const level = r.block_key.includes("#") ? r.block_key.split("#")[1] : null;
     for (const [k, v] of Object.entries(r.answers ?? {})) s.answers[level ? `${k}_${level}` : k] = v;
     if (r.entered_at) {
@@ -180,11 +180,26 @@ export async function loadExportData(supabase: SupabaseClient, studyId: string, 
       env.productsViewed += 1;
       if (st) st.views += 1;
     } else if (e.type === "product_detail") env.details += 1;
+    if (store) continue;
+    // Online shop events carry a product instead of a store.
+    const product = typeof e.data?.product === "string" ? e.data.product : null;
+    const isShop = product !== null || ["shop_search", "shop_filter", "shop_sort", "checkout_start", "scroll_depth", "popup_close"].includes(e.type);
+    if (!isShop) continue;
+    const sh = (env.shop ??= emptyShop());
+    if (e.type === "product_view" && product) (sh.products[product] ??= { views: 0, details: 0 }).views += 1;
+    else if (e.type === "product_detail" && product) (sh.products[product] ??= { views: 0, details: 0 }).details += 1;
+    else if (e.type === "shop_search") sh.searches += 1;
+    else if (e.type === "shop_filter") sh.filters += 1;
+    else if (e.type === "shop_sort") sh.sorts += 1;
+    else if (e.type === "checkout_start") sh.checkoutStarted = true;
+    else if (e.type === "scroll_depth") sh.maxScroll = Math.max(sh.maxScroll, Number(e.data.pct) || 0);
+    else if (e.type === "popup_close" && sh.popupCloseMs === null) sh.popupCloseMs = Number(e.data.ms) || 0;
   }
   // A session that finished a village block but logged no environment events gets zeros, not blanks.
-  for (const { session_id, block_id } of villageDone) {
+  for (const { session_id, block_id, shop } of villageDone) {
     const s = bySession.get(session_id);
     if (s && !s.env[block_id]) s.env[block_id] = { stores: {}, productsViewed: 0, details: 0 };
+    if (s && shop) s.env[block_id].shop ??= emptyShop();
   }
 
   const configs = (versions ?? []).map((v) => v.config as StudyConfig);

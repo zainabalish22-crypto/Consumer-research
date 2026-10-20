@@ -43,9 +43,13 @@ export function fromRow(kind: LibraryKind, r: Row) {
         description: r.description,
         images: r.images,
         basePrice: Number(r.base_price),
+        originalPrice: r.original_price === null || r.original_price === undefined ? null : Number(r.original_price),
         currency: r.currency,
         category: r.category,
         attributes: r.attributes,
+        rating: r.rating === null || r.rating === undefined ? null : Number(r.rating),
+        ratingCount: r.rating_count ?? null,
+        reviews: r.reviews ?? [],
       });
     case "offer":
       return LibOffer.parse({ id: r.id, code: r.code, name: r.name, kind: r.kind, params: r.params, displayText: r.display_text });
@@ -78,9 +82,13 @@ export function toRow(kind: LibraryKind, o: Record<string, unknown>): Row {
         description: o.description,
         images: o.images,
         base_price: o.basePrice,
+        original_price: o.originalPrice ?? null,
         currency: o.currency,
         category: o.category,
         attributes: o.attributes,
+        rating: o.rating ?? null,
+        rating_count: o.ratingCount ?? null,
+        reviews: o.reviews ?? [],
       };
     case "offer":
       return { code: o.code, name: o.name, kind: o.kind, params: o.params, display_text: o.displayText };
@@ -118,6 +126,12 @@ export function referencedIds(config: StudyConfig, full: LibrarySnapshot) {
       if (b.offers.mode === "fixed") Object.values(b.offers.byStore).forEach(addAny);
     }
     if (b.type === "ad_exposure") b.ads.forEach(addAny);
+    if (b.type === "online_shop") {
+      b.products.forEach(addAny);
+      if (b.offers.mode === "fixed") Object.values(b.offers.byStore).forEach(addAny);
+      [...b.placements.banner, ...b.placements.sidebar, b.placements.popup].forEach(addAny);
+      b.placements.sponsored.forEach(addAny);
+    }
   }
   for (const f of config.design.factors) {
     f.levels.forEach((l) => addAny(l.ref));

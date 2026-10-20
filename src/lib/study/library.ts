@@ -31,9 +31,18 @@ export const LibProduct = z.object({
   description: LocalizedText.default({}),
   images: z.array(MediaRef).max(10).default([]),
   basePrice: z.number().min(0).max(1_000_000),
+  /** Optional "was" price shown struck through in the online shop. */
+  originalPrice: z.number().min(0).max(1_000_000).nullable().default(null),
   currency: z.string().regex(/^[A-Z]{3}$/).default("BHD"),
   category: z.string().max(80).default(""),
   attributes: z.array(z.object({ name: LocalizedText, value: LocalizedText })).max(20).default([]),
+  /** Researcher-created stimuli (not real customer reviews); the builder labels them as such. */
+  rating: z.number().min(0).max(5).nullable().default(null),
+  ratingCount: z.number().int().min(0).max(1_000_000).nullable().default(null),
+  reviews: z
+    .array(z.object({ author: LocalizedText, rating: z.number().int().min(1).max(5), text: LocalizedText }))
+    .max(20)
+    .default([]),
 });
 export type LibProduct = z.infer<typeof LibProduct>;
 

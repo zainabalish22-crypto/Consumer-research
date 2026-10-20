@@ -32,7 +32,15 @@ export type EventType =
   | "bag_remove"
   | "checkout"
   | "consideration"
-  | "choice_select";
+  | "choice_select"
+  | "shop_page"
+  | "shop_search"
+  | "shop_filter"
+  | "shop_sort"
+  | "checkout_start"
+  | "scroll_depth"
+  | "popup_close"
+  | "ad_click";
 
 const ENVIRONMENT_TYPES = new Set<EventType>([
   "env_enter",
@@ -47,6 +55,14 @@ const ENVIRONMENT_TYPES = new Set<EventType>([
   "checkout",
   "consideration",
   "choice_select",
+  "shop_page",
+  "shop_search",
+  "shop_filter",
+  "shop_sort",
+  "checkout_start",
+  "scroll_depth",
+  "popup_close",
+  "ad_click",
 ]);
 
 export type EventData = Record<string, string | number | boolean | null>;

@@ -8,3 +8,7 @@
   - *Confirm signup*: `{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=email`
   - *Reset password*: `{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=recovery`
   The app's `/auth/callback` already handles both link styles.
+
+## 2. Online shop categories are not translated
+
+A product's category is one free-text field in the library, so filter chips and the category menu show the same text in both languages. Write categories in the study's main language, or in both (e.g. "Coffee / قهوة"), until categories get their own bilingual field.

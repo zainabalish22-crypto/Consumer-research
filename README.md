@@ -6,14 +6,14 @@ A free, bilingual (Arabic/English) platform for consumer-behaviour research: bui
 
 ## Status
 
-**Phases 1–3 built and tested locally. Phases 1–2 are applied to the hosted database; the Phase 3 library migration (`20261021000001_content_library.sql`) still needs applying.** Not yet exercised end to end by a signed-in researcher (see `KNOWN_ISSUES.md`).
+**Phases 1–4 built and tested locally, and all migrations are applied to the hosted database (Frankfurt).** Templates and the online shop have been checked in preview; no study has yet been published and run by real participants (see `KNOWN_ISSUES.md`).
 
 | Area | State |
 |---|---|
 | Bilingual interface (AR/EN, RTL/LTR) | Done |
 | Sign-up / sign-in, personal workspace | Done (see known issue 1) |
 | Projects: create, edit, duplicate, archive, delete | Done |
-| Studies: blank / questionnaire / media / experiment starting points, rename, duplicate, delete | Done |
+| Studies: choose one or more research tools (shopping village, online shop, questionnaire) at creation, combined within-subjects (fixed or counterbalanced order) or between-subjects (one tool per condition); blank / media / experiment starting points; rename, duplicate, delete | Done |
 | Block flow editor: add, remove, duplicate, drag-and-drop + arrow reordering, live validation | Done |
 | Blocks: welcome, consent, screening, repeat-participant check, instructions, questionnaire, demographics, media, debrief, end | Done |
 | 12 question types, required, randomised options, "not sure"/"prefer not to say", attention checks | Done |
@@ -31,11 +31,12 @@ A free, bilingual (Arabic/English) platform for consumer-behaviour research: bui
 | Exports: wide CSV, codebook, event log, SPSS syntax (EN/AR labels), config snapshot | Done |
 | Account deletion | Done |
 | Seed script with labelled sample data | Not yet |
-| Content library: brands, stores, products, offers, ads with versions and disclosure labels | Done (migration to apply) |
+| Content library: brands, stores, products, offers, ads with versions and disclosure labels | Done |
 | Walkable shopping village (street / food court), store choice task, ad exposure block | Done (not yet tried end to end) |
 | Village and ad export variables, target-vs-other-brand summaries | Done |
 | Templates A (food court) and B (AI ads), created through the normal builder | Done |
-| Online shop (Phase 4) | Not started |
+| Online shop simulation: home, search, filters, sorting, product pages, researcher-written ratings and reviews, banner / sidebar / pop-up ads, sponsored products, cart, simulated checkout (no payment details ever asked) | Done (checked in preview) |
+| Online shop export variables: per-product position, offer, views, page opens, quantity; searches, filters, sorts, checkout, scroll depth, pop-up closing time, ad exposure | Done |
 | Analytics dashboard, Docker self-hosting guide (Phase 5) | Not started |
 
 ### Known limitations

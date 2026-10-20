@@ -14,8 +14,8 @@ import {
 } from "@/lib/study/schema";
 import { likertValues } from "@/lib/study/answers";
 import type { Assignment } from "@/lib/study/flow";
-import { libraryOf, offerForStore, orderItems, resolveAd } from "@/lib/study/environment";
-import { basketValue } from "@/lib/study/envAnswers";
+import { libraryOf, offerForItem, offerForStore, orderItems, resolveAd } from "@/lib/study/environment";
+import { basketValue, cartValue } from "@/lib/study/envAnswers";
 import { lt } from "@/lib/study/text";
 
 export type ValueLabel = { value: number; en: string; ar: string };
@@ -62,7 +62,22 @@ export interface EnvSummary {
   stores: Record<string, { approached: boolean; entered: boolean; dwellMs: number; views: number; passes: number }>;
   productsViewed: number;
   details: number;
+  /** Online shop blocks only. */
+  shop?: ShopSummary;
 }
+
+export interface ShopSummary {
+  products: Record<string, { views: number; details: number }>;
+  searches: number;
+  filters: number;
+  sorts: number;
+  checkoutStarted: boolean;
+  popupCloseMs: number | null;
+  /** Highest scroll depth (%) reached on any shop page. */
+  maxScroll: number;
+}
+
+export const emptyShop = (): ShopSummary => ({ products: {}, searches: 0, filters: 0, sorts: 0, checkoutStarted: false, popupCloseMs: null, maxScroll: 0 });
 
 export interface Column {
   name: string;
@@ -508,6 +523,58 @@ function environmentColumns(cfg: StudyConfig): Column[] {
           col({ sourceBlock: b.id, name: `${P}_products_viewed`, label: { en: "Product views (all stores)", ar: "مشاهدات المنتجات (كل المتاجر)" }, type: "numeric", cell: (s) => s.env[b.id]?.productsViewed ?? null }),
           col({ sourceBlock: b.id, name: `${P}_details_opened`, label: { en: "Product details opened", ar: "مرات فتح تفاصيل المنتج" }, type: "numeric", cell: (s) => s.env[b.id]?.details ?? null }),
           col({ sourceBlock: b.id, name: `${P}_timed_out`, label: { en: "Time limit reached", ar: "انتهى الوقت المحدد" }, type: "numeric", measure: "nominal", valueLabels: yesNo, cell: (s) => (answer(s) ? (answer(s)!.timedOut ? 1 : 0) : null) }),
+        );
+      }
+    }
+    if (b.type === "online_shop") {
+      const P = b.variable;
+      const blk = b;
+      const a = (s: SessionRecord) => assignmentOf(s);
+      const order = (s: SessionRecord) => orderItems(b.products, b.productOrder, cfg, a(s), `${s.id}:${b.id}`);
+      const answer = (s: SessionRecord) => s.answers[P] as { cart?: { product: string; qty: number }[]; checkedOut?: boolean; timedOut?: boolean } | undefined;
+      const shop = (s: SessionRecord) => (s.env[b.id] ? (s.env[b.id].shop ?? null) : null);
+      for (const pid of b.products) {
+        const p = lib.products[pid];
+        if (!p) continue;
+        const name = lt(p.name, "en") || p.code;
+        const nameAr = lt(p.name, "ar") || name;
+        const base = { sourceBlock: b.id };
+        out.push(
+          col({ ...base, name: `${P}_${p.code}_pos`, label: { en: `${name}: position in listing`, ar: `${nameAr}: الموضع في القائمة` }, type: "numeric", measure: "ordinal", rule: `1 = first product in the default listing (product id ${pid}); sponsored products are also lifted to the top`, cell: (s) => order(s).indexOf(pid) + 1 || null }),
+          col({ ...base, name: `${P}_${p.code}_offer`, label: { en: `${name}: offer shown`, ar: `${nameAr}: العرض المقدم` }, type: "string", measure: "nominal", rule: "Offer code from the library (empty = no offer)", cell: (s) => offerForItem(b.offers, pid, cfg, a(s))?.code ?? null }),
+          col({ ...base, name: `${P}_${p.code}_viewed`, label: { en: `${name}: times seen in a listing`, ar: `${nameAr}: مرات الظهور في القائمة` }, type: "numeric", rule: "Count of product_view events (card at least half visible)", cell: (s) => { const x = shop(s); return x ? (x.products[pid]?.views ?? 0) : null; } }),
+          col({ ...base, name: `${P}_${p.code}_detail`, label: { en: `${name}: product page opened`, ar: `${nameAr}: مرات فتح صفحة المنتج` }, type: "numeric", rule: "Count of product_detail events", cell: (s) => { const x = shop(s); return x ? (x.products[pid]?.details ?? 0) : null; } }),
+          col({ ...base, name: `${P}_${p.code}_qty`, label: { en: `${name}: quantity bought`, ar: `${nameAr}: الكمية المشتراة` }, type: "numeric", rule: "Quantity in the final cart", cell: (s) => { const c = answer(s)?.cart; return c ? (c.find((l) => l.product === pid)?.qty ?? 0) : null; } }),
+        );
+      }
+      const cart = (s: SessionRecord) => answer(s)?.cart ?? null;
+      out.push(
+        col({ sourceBlock: b.id, name: `${P}_items`, label: { en: "Items in final cart", ar: "عدد القطع في السلة النهائية" }, type: "numeric", cell: (s) => { const c = cart(s); return c ? c.reduce((n, l) => n + l.qty, 0) : null; } }),
+        col({ sourceBlock: b.id, name: `${P}_value`, label: { en: `Cart value (${b.currency})`, ar: `قيمة السلة (${b.currency})` }, type: "numeric", rule: "Sum of line totals after offers (simulated spend)", cell: (s) => { const c = cart(s); return c ? cartValue(blk, cfg, a(s), c) : null; } }),
+        col({ sourceBlock: b.id, name: `${P}_searches`, label: { en: "Searches made", ar: "عدد عمليات البحث" }, type: "numeric", rule: "Count of shop_search events (the queries are in the event log)", cell: (s) => shop(s)?.searches ?? null }),
+        col({ sourceBlock: b.id, name: `${P}_filters`, label: { en: "Filter changes", ar: "تغييرات التصفية" }, type: "numeric", cell: (s) => shop(s)?.filters ?? null }),
+        col({ sourceBlock: b.id, name: `${P}_sorts`, label: { en: "Sort changes", ar: "تغييرات الترتيب" }, type: "numeric", cell: (s) => shop(s)?.sorts ?? null }),
+        col({ sourceBlock: b.id, name: `${P}_details_opened`, label: { en: "Product pages opened", ar: "مرات فتح صفحات المنتجات" }, type: "numeric", cell: (s) => (s.env[b.id] ? s.env[b.id].details : null) }),
+        col({ sourceBlock: b.id, name: `${P}_checkout_started`, label: { en: "Went to checkout", ar: "انتقل إلى إتمام الطلب" }, type: "numeric", measure: "nominal", valueLabels: yesNo, cell: (s) => { const x = shop(s); return x ? (x.checkoutStarted ? 1 : 0) : null; } }),
+        col({ sourceBlock: b.id, name: `${P}_checked_out`, label: { en: "Placed the simulated order", ar: "أكمل الطلب التجريبي" }, type: "numeric", measure: "nominal", valueLabels: yesNo, rule: "0 = left the shop or ran out of time without placing the simulated order", cell: (s) => (answer(s) ? (answer(s)!.checkedOut ? 1 : 0) : null) }),
+        col({ sourceBlock: b.id, name: `${P}_timed_out`, label: { en: "Time limit reached", ar: "انتهى الوقت المحدد" }, type: "numeric", measure: "nominal", valueLabels: yesNo, cell: (s) => (answer(s) ? (answer(s)!.timedOut ? 1 : 0) : null) }),
+        col({ sourceBlock: b.id, name: `${P}_max_scroll`, label: { en: "Deepest scroll on any page (%)", ar: "أعمق تمرير في أي صفحة (%)" }, type: "numeric", cell: (s) => shop(s)?.maxScroll ?? null }),
+      );
+      if (b.placements.popup) {
+        out.push(col({ sourceBlock: b.id, name: `${P}_popup_close_sec`, label: { en: "Seconds before closing the pop-up ad", ar: "ثوانٍ قبل إغلاق الإعلان المنبثق" }, type: "numeric", rule: "Empty = pop-up not shown or never closed", cell: (s) => { const ms = shop(s)?.popupCloseMs; return ms == null ? null : Math.round(ms / 100) / 10; } }));
+      }
+      const adIds = [...new Set([...b.placements.banner, ...b.placements.sidebar, ...(b.placements.popup ? [b.placements.popup] : [])])];
+      for (const adId of adIds) {
+        const ad = lib.ads[adId];
+        if (!ad) continue;
+        const n = lt(ad.name, "en") || ad.code;
+        const nAr = lt(ad.name, "ar") || n;
+        const shown = (s: SessionRecord) => resolveAd(ad, b.ads, cfg, a(s));
+        const m = (s: SessionRecord) => s.media[`ad:${adId}`];
+        out.push(
+          col({ sourceBlock: b.id, name: `${P}_ad_${ad.code}_version`, label: { en: `${n}: version shown`, ar: `${nAr}: النسخة المعروضة` }, type: "string", measure: "nominal", cell: (s) => shown(s).versionKey }),
+          col({ sourceBlock: b.id, name: `${P}_ad_${ad.code}_disclosed`, label: { en: `${n}: disclosure label shown`, ar: `${nAr}: ظهرت علامة الإفصاح` }, type: "numeric", measure: "nominal", valueLabels: yesNo, cell: (s) => (shown(s).disclosed ? 1 : 0) }),
+          col({ sourceBlock: b.id, name: `${P}_ad_${ad.code}_visible_sec`, label: { en: `${n}: seconds visible`, ar: `${nAr}: ثوانٍ ظاهرة` }, type: "numeric", rule: "Sum of media_visible durations for this ad (any placement in the study)", cell: (s) => (m(s) ? Math.round(m(s)!.visibleMs / 100) / 10 : null) }),
         );
       }
     }

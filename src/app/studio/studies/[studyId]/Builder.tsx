@@ -37,6 +37,7 @@ const ADDABLE: BlockType[] = [
   "ad_exposure",
   "store_choice",
   "village",
+  "online_shop",
   "demographics",
   "debrief",
   "end",
@@ -296,7 +297,6 @@ function BuilderInner({ study, initialConfig, versions }: Props) {
                 {t("flow.add")}
               </Button>
             </div>
-            <p className="text-xs text-muted">{t("flow.moreBlocksLater")}</p>
             {issues.length > 0 && (
               <Card className="p-3">
                 <p className="mb-2 text-sm font-medium text-danger">{t("issuesTitle", { n: issues.length })}</p>

@@ -99,7 +99,11 @@ function OfferRuleEditor({ rule, stores, config, onChange }: { rule: OfferRule; 
         stores.map((sid) => (
           <label key={sid} className="flex items-center gap-2 text-sm">
             <span className="w-40 truncate" dir="auto">
-              {lib.stores[sid] ? `${lib.stores[sid].code} · ${lt(lib.stores[sid].name, locale, "en")}` : sid}
+              {lib.stores[sid]
+                ? `${lib.stores[sid].code} · ${lt(lib.stores[sid].name, locale, "en")}`
+                : lib.products[sid]
+                  ? `${lib.products[sid].code} · ${lt(lib.products[sid].name, locale, "en")}`
+                  : sid}
             </span>
             <Select
               className="w-auto"
@@ -276,6 +280,79 @@ export function StoreChoiceEditor({ block, config, languages, onChange }: P<"sto
       <Checkbox label={t("showProducts")} checked={block.showProducts} onChange={(v) => onChange({ ...block, showProducts: v })} />
       <Checkbox label={t("allowNone")} checked={block.allowNone} onChange={(v) => onChange({ ...block, allowNone: v })} />
       {block.allowNone && <LocalizedField label={t("noneLabel")} value={block.noneLabel} languages={languages} onChange={(v) => onChange({ ...block, noneLabel: v })} />}
+    </>
+  );
+}
+
+function useProductOptions() {
+  const lib = useLibrary();
+  const locale = useLocale() as Language;
+  return Object.values(lib.products).map((p) => ({ id: p.id, label: `${p.code} · ${lt(p.name, locale, locale === "ar" ? "en" : "ar")} · ${p.basePrice} ${p.currency}` }));
+}
+
+export function OnlineShopEditor({ block, config, languages, onChange }: P<"online_shop">) {
+  const t = useTranslations("builder.env");
+  const labels = useIdListLabels();
+  const products = useProductOptions();
+  const ads = useOptions("ads");
+  const set = (p: Partial<typeof block>) => onChange({ ...block, ...p });
+  const pl = block.placements;
+  const setPl = (p: Partial<typeof pl>) => set({ placements: { ...pl, ...p } });
+  return (
+    <>
+      <LibraryLink />
+      <LocalizedField label={t("heading")} value={block.heading} languages={languages} onChange={(v) => set({ heading: v })} />
+      <LocalizedField label={t("instructions")} value={block.instructions} languages={languages} multiline onChange={(v) => set({ instructions: v })} />
+      <LocalizedField label={t("shopName")} value={block.shopName} languages={languages} onChange={(v) => set({ shopName: v })} />
+      <TextField
+        label={t("variablePrefix")}
+        hint={t("shopPrefixHint", { prefix: block.variable })}
+        value={block.variable}
+        dir="ltr"
+        mono
+        onChange={(v) => set({ variable: v.replace(/[^A-Za-z0-9_]/g, "").slice(0, 30) })}
+      />
+      <IdList label={t("products")} hint={t("productsHint")} ids={block.products} options={products} labels={labels} onChange={(v) => set({ products: v })} />
+      <ItemOrderEditor label={t("shopProductOrder")} order={block.productOrder} config={config} onChange={(o) => set({ productOrder: o })} />
+      <OfferRuleEditor rule={block.offers} stores={block.products} config={config} onChange={(r) => set({ offers: r })} />
+      <TextField label={t("currency")} value={block.currency} dir="ltr" mono onChange={(v) => set({ currency: v.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 3) })} />
+      <fieldset className="flex flex-col gap-3 rounded-lg border border-line p-3">
+        <legend className="px-1 text-sm font-medium">{t("placements")}</legend>
+        <IdList label={t("bannerAds")} ids={pl.banner} options={ads} labels={labels} onChange={(v) => setPl({ banner: v })} />
+        <IdList label={t("sidebarAds")} ids={pl.sidebar} options={ads} labels={labels} onChange={(v) => setPl({ sidebar: v })} />
+        <IdList label={t("sponsored")} hint={t("sponsoredHint")} ids={pl.sponsored} options={products.filter((p) => block.products.includes(p.id))} labels={labels} onChange={(v) => setPl({ sponsored: v })} />
+        <div className="grid gap-2 sm:grid-cols-2">
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium" htmlFor={`popup-${block.id}`}>
+              {t("popupAd")}
+            </label>
+            <Select id={`popup-${block.id}`} value={pl.popup ?? ""} onChange={(e) => setPl({ popup: e.target.value || null })}>
+              <option value="">{t("noPopup")}</option>
+              {ads.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+          {pl.popup && <NumberField label={t("popupDelay")} value={pl.popupDelaySec} min={0} max={600} onChange={(v) => setPl({ popupDelaySec: v ?? 5 })} />}
+        </div>
+      </fieldset>
+      <AdRulesEditor rules={block.ads} config={config} onChange={(r) => set({ ads: r })} />
+      <div className="flex flex-wrap gap-4">
+        <Checkbox label={t("showSearch")} checked={block.showSearch} onChange={(v) => set({ showSearch: v })} />
+        <Checkbox label={t("showFilters")} checked={block.showFilters} onChange={(v) => set({ showFilters: v })} />
+        <Checkbox label={t("showSort")} checked={block.showSort} onChange={(v) => set({ showSort: v })} />
+        <Checkbox label={t("showRatings")} checked={block.showRatings} onChange={(v) => set({ showRatings: v })} />
+      </div>
+      <fieldset className="grid gap-3 rounded-lg border border-line p-3 sm:grid-cols-3">
+        <legend className="px-1 text-sm font-medium">{t("rules")}</legend>
+        <NumberField label={t("minPurchases")} value={block.minItems} min={0} max={50} onChange={(v) => set({ minItems: v ?? 0 })} />
+        <NumberField label={t("maxPurchases")} value={block.maxItems} min={1} max={100} onChange={(v) => set({ maxItems: v ?? 20 })} />
+        <NumberField label={t("budget")} value={block.budget} optional min={0} step={0.001} onChange={(v) => set({ budget: v })} />
+        <NumberField label={t("timeLimit")} value={block.timeLimitSec} optional min={10} max={7200} onChange={(v) => set({ timeLimitSec: v })} />
+      </fieldset>
+      <Checkbox label={t("requireCheckout")} hint={t("requireCheckoutHint")} checked={block.requireCheckout} onChange={(v) => set({ requireCheckout: v })} />
     </>
   );
 }

@@ -448,6 +448,47 @@ export const VillageBlock = BlockBase.extend({
   considerationPrompt: LocalizedText.optional(),
 });
 export type VillageBlock = z.infer<typeof VillageBlock>;
+
+/**
+ * Online shop: a realistic e-commerce site (home, listing with search, filters and
+ * sorting, product pages, cart and a simulated checkout). No real payment, no real
+ * orders, and no payment details are ever collected.
+ */
+export const OnlineShopBlock = BlockBase.extend({
+  type: z.literal("online_shop"),
+  /** Prefix for this block's export variables, e.g. "shop" → shop_items. */
+  variable: variableName,
+  heading: LocalizedText.optional(),
+  instructions: LocalizedText.default({}),
+  shopName: LocalizedText.default({ en: "Shop", ar: "المتجر" }),
+  products: z.array(z.string().uuid()).min(1).max(300),
+  productOrder: ItemOrder.default({ mode: "listed" }),
+  /** Offers per product: fixed, or a mapping factor whose targets ref products (or brands). */
+  offers: OfferRule.default({ mode: "none" }),
+  currency: z.string().regex(/^[A-Z]{3}$/).default("BHD"),
+  ads: AdRules.default(DEFAULT_AD_RULES),
+  placements: z
+    .object({
+      banner: z.array(z.string().uuid()).max(10).default([]),
+      sidebar: z.array(z.string().uuid()).max(10).default([]),
+      /** Products shown at the top of listings with a "Sponsored" tag. */
+      sponsored: z.array(z.string().uuid()).max(20).default([]),
+      popup: z.string().uuid().nullable().default(null),
+      popupDelaySec: z.number().int().min(0).max(600).default(5),
+    })
+    .default({ banner: [], sidebar: [], sponsored: [], popup: null, popupDelaySec: 5 }),
+  showSearch: z.boolean().default(true),
+  showFilters: z.boolean().default(true),
+  showSort: z.boolean().default(true),
+  showRatings: z.boolean().default(true),
+  minItems: z.number().int().min(0).max(50).default(0),
+  maxItems: z.number().int().min(1).max(100).default(20),
+  budget: z.number().min(0).max(1_000_000).optional(),
+  timeLimitSec: z.number().int().min(10).max(7200).optional(),
+  /** Participants must complete the simulated checkout to continue. */
+  requireCheckout: z.boolean().default(true),
+});
+export type OnlineShopBlock = z.infer<typeof OnlineShopBlock>;
 export type StoreChoiceBlock = z.infer<typeof StoreChoiceBlock>;
 export type AdExposureBlock = z.infer<typeof AdExposureBlock>;
 
@@ -455,6 +496,7 @@ export const Block = z.discriminatedUnion("type", [
   AdExposureBlock,
   StoreChoiceBlock,
   VillageBlock,
+  OnlineShopBlock,
   WelcomeBlock,
   ConsentBlock,
   ScreeningBlock,
@@ -541,7 +583,7 @@ export const StudyConfig = z
       if (b.repeat && !repeatFactor) {
         ctx.addIssue({ code: "custom", path: ["blocks", bi, "repeat"], message: "Repeat uses a factor that does not exist" });
       }
-      if (b.type === "consent" || b.type === "end" || b.type === "village" || b.type === "store_choice") {
+      if (b.type === "consent" || b.type === "end" || b.type === "village" || b.type === "store_choice" || b.type === "online_shop") {
         if (b.repeat) ctx.addIssue({ code: "custom", path: ["blocks", bi, "repeat"], message: "This block cannot be repeated" });
       }
       const factorOf = (fid: string | undefined, kinds: string[], path: string, what: string) => {
@@ -550,18 +592,22 @@ export const StudyConfig = z
           ctx.addIssue({ code: "custom", path: ["blocks", bi, path], message: `Choose a ${kinds.join(" or ")} factor for ${what}` });
         }
       };
-      if (b.type === "village" || b.type === "store_choice") {
+      if (b.type === "village" || b.type === "store_choice" || b.type === "online_shop") {
         const prefix = b.variable.toLowerCase();
         if (variables.has(prefix)) {
           ctx.addIssue({ code: "custom", path: ["blocks", bi, "variable"], message: `Variable prefix "${b.variable}" is already used by ${variables.get(prefix)}` });
         }
         variables.set(prefix, `${b.id} (prefix)`);
         prefixes.push(prefix);
-        if (b.storeOrder.mode === "factor") factorOf(b.storeOrder.factorId, ["order"], "storeOrder", "the store order");
+        const order = b.type === "online_shop" ? b.productOrder : b.storeOrder;
+        if (order.mode === "factor") factorOf(order.factorId, ["order"], b.type === "online_shop" ? "productOrder" : "storeOrder", "the order");
         if (b.offers.mode === "factor") factorOf(b.offers.factorId, ["mapping"], "offers", "the offers");
       }
+      if (b.type === "online_shop" && b.minItems > b.maxItems) {
+        ctx.addIssue({ code: "custom", path: ["blocks", bi, "minItems"], message: "Minimum items cannot be more than maximum items" });
+      }
       if (b.type === "ad_exposure" && b.order.mode === "factor") factorOf(b.order.factorId, ["order"], "order", "the ad order");
-      const adRules = b.type === "ad_exposure" ? b.rules : b.type === "village" ? b.ads : null;
+      const adRules = b.type === "ad_exposure" ? b.rules : b.type === "village" || b.type === "online_shop" ? b.ads : null;
       if (adRules?.version.mode === "targeted") factorOf(adRules.version.factorId, ["pick"], "rules", "the targeted ad version");
       if (!isQuestionBlock(b)) return;
       const repeatLevels = repeatFactor ? repeatFactor.levels.map((l) => l.value) : null;

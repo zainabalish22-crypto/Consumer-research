@@ -60,6 +60,20 @@ Reasonable, reversible defaults chosen where the brief left room. Newest at the 
 - **SPSS syntax** reads the wide CSV in Unicode mode and applies variable labels, value labels, measurement levels and −98/−99 as user-missing, with English or Arabic labels.
 - **Methodological warnings** never block publishing; dismissals are stored in the draft and written to the audit log.
 
+## Phase 4: online shop and choosing research tools
+
+- **Choosing tools at creation.** A new study starts from one or more research tools: the shopping village, the online shop and the questionnaire. With two or more, the researcher picks how they combine:
+  - *Everyone uses every tool* (within-subjects). The order is the same for everyone, or counterbalanced with a Latin-square block order group (`tools`).
+  - *Each participant gets one tool* (between-subjects). One condition per tool, balanced assignment, and each tool block is shown only to its condition.
+  This is only a starting configuration made of normal blocks, conditions and order groups: everything stays editable in the builder, and no study is hard-coded. A demographics page is added by default and can be removed.
+- **The online shop is a block** (`online_shop`), like the village. Products, offers and ads come from the library and are snapshotted at publish. Product order, offers and ad versions use the same factor machinery as the village (order factors, mapping factors, targeted AI versions and disclosure labels).
+- **No payment or address details are ever collected.** Checkout shows the cart, a total and a notice that the shop is simulated, then a "Place order" button. The study records only the cart.
+- **Ratings and reviews are stimuli written by the researcher** in the library. They are stored with a comment saying so, and the library tells researchers to explain fictional reviews in the debrief.
+- **Sponsored products** keep their position from the product order but are lifted to the top of the default ("Featured") listing and the home page, with a "Sponsored" label. Exported positions are the product order before this lift.
+- **Search queries** are logged in the event log (at most 100 characters), because search terms are a research variable. Typing itself is not logged, only submitted searches. The wide export counts searches; the queries are in the event log.
+- **Scroll depth** is the highest percentage of the page scrolled, logged once when the participant leaves each shop page. Pointer movement is not recorded.
+- **Answers are checked on the server** against the published version: products must belong to the shop, there are no duplicate lines, and min/max items and budget are enforced. A time-out may end with fewer items than the minimum.
+
 ## Hosting region
 
 - The hosted instance uses a Supabase project in **eu-central-1 (Frankfurt)** (`research-platform-eu`). Some ethics committees and data-protection laws (e.g. Bahrain's PDPL) care where data is stored; EU storage under GDPR is generally the easiest location to justify, and Supabase has no Gulf region. An earlier empty project in Tokyo (ap-northeast-1) is not used. This is not legal advice: check any storage-location rule your institution has.
