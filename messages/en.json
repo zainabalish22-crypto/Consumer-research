@@ -160,7 +160,7 @@
           "body": "Two conditions, screening, a stimulus per condition, attitude and manipulation-check pages, and a debrief."
         }
       },
-      "moreStartingPointsLater": "The shopping village and the online shop arrive in later phases.",
+      "moreStartingPointsLater": "Shopping villages, store choice tasks and ad exposure are blocks you can add to any study, or start from a template below. The online shop arrives in a later phase.",
       "studyLanguages": "Study languages",
       "langs": {
         "bothEn": "Arabic and English (English first)",
@@ -221,7 +221,7 @@
       "hint": "Participants see the blocks in this order. Drag the handle or use the arrows to reorder.",
       "blockType": "Block type",
       "add": "Add block",
-      "moreBlocksLater": "The shopping village and the online shop arrive in later phases.",
+      "moreBlocksLater": "The online shop arrives in a later phase.",
       "dragHandle": "Reorder block {n}",
       "issues": "{n, plural, one {# problem} other {# problems}}",
       "untitled": "Untitled",
@@ -941,7 +941,7 @@
     "villageTitle": "Shopping street",
     "villageRole": "shopping street",
     "villageHelp": "Walk with the arrow buttons or keys, or drag the street. Tap a shop to walk to it and go in.",
-    "bagSummary": "{n} items · {total}",
+    "bagSummary": "Bag: {n} · {total}",
     "budgetLeft": "Left to spend: {amount}",
     "finishShopping": "Finish",
     "walkLeft": "Walk left",
@@ -966,7 +966,8 @@
     "remove": "Remove",
     "close": "Close",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "effectiveEach": "{price} each with the offer"
   },
   "library": {
     "title": "Library",

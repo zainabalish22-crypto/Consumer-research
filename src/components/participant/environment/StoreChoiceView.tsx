@@ -108,7 +108,7 @@ export function StoreChoiceView({
                     <span className="font-semibold">{lt(s.name, lang, fallback)}</span>
                     {block.showProducts && product && (
                       <span className="text-sm text-muted">
-                        {lt(product.name, lang, fallback)} · <Price product={product} offer={offer} currency={block.currency} lang={lang} />
+                        {lt(product.name, lang, fallback)} · <Price product={product} offer={offer} currency={block.currency} lang={lang} each={(price) => tr("effectiveEach", { price })} />
                       </span>
                     )}
                   </span>

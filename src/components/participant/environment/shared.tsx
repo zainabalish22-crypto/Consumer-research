@@ -12,7 +12,7 @@ import type { EventData, EventType } from "../events";
 export type Log = (type: EventType, data?: EventData) => void;
 
 /** Disclosure label over an ad, positioned and styled as configured in the library. */
-export function DisclosureLabel({ ad, lang, fallback }: { ad: LibAd; lang: Language; fallback: Language }) {
+export function DisclosureLabel({ ad, lang, fallback, compact }: { ad: LibAd; lang: Language; fallback: Language; compact?: boolean }) {
   const d = ad.disclosure;
   const pos = {
     "top-start": "top-2 start-2",
@@ -20,13 +20,21 @@ export function DisclosureLabel({ ad, lang, fallback }: { ad: LibAd; lang: Langu
     "bottom-start": "bottom-2 start-2",
     "bottom-end": "bottom-2 end-2",
   }[d.position];
-  const style = {
-    badge: "rounded-full bg-black/75 px-2.5 py-1 text-xs font-semibold text-white",
-    banner: "inset-x-0 rounded-none bg-black/75 px-3 py-1.5 text-center text-sm font-semibold text-white",
-    subtle: "rounded bg-white/80 px-1.5 py-0.5 text-[11px] text-ink",
-  }[d.style];
+  const style = compact
+    ? {
+        // Small posters (shop fronts): keep the label legible without covering the creative.
+        badge: "rounded-full bg-black/75 px-1.5 py-0.5 text-[9px] font-semibold leading-tight text-white",
+        banner: "inset-x-0 rounded-none bg-black/75 px-1 py-0.5 text-center text-[9px] font-semibold leading-tight text-white",
+        subtle: "rounded bg-white/80 px-1 text-[8px] leading-tight text-ink",
+      }[d.style]
+    : {
+        badge: "rounded-full bg-black/75 px-2.5 py-1 text-xs font-semibold text-white",
+        banner: "inset-x-0 rounded-none bg-black/75 px-3 py-1.5 text-center text-sm font-semibold text-white",
+        subtle: "rounded bg-white/80 px-1.5 py-0.5 text-[11px] text-ink",
+      }[d.style];
+  const inset = compact ? pos.replace(/-2/g, "-1") : pos;
   return (
-    <span className={cx("pointer-events-none absolute z-10", d.style === "banner" ? (d.position.startsWith("top") ? "top-0" : "bottom-0") : pos, style)} role="note">
+    <span className={cx("pointer-events-none absolute z-10", d.style === "banner" ? (d.position.startsWith("top") ? "top-0" : "bottom-0") : inset, style)} role="note">
       {lt(d.text, lang, fallback)}
     </span>
   );
@@ -100,7 +108,7 @@ export function AdCreative({
   const alt = media ? lt(media.alt, lang, fallback) || lt(shown.ad.name, lang, fallback) : lt(shown.ad.name, lang, fallback);
   return (
     <div ref={ref} className={cx("relative overflow-hidden rounded-lg bg-black/5", className)}>
-      {shown.disclosed && <DisclosureLabel ad={shown.ad} lang={lang} fallback={fallback} />}
+      {shown.disclosed && <DisclosureLabel ad={shown.ad} lang={lang} fallback={fallback} compact={compact} />}
       {!media || !url ? (
         <div className="flex aspect-video items-center justify-center p-3 text-center text-sm text-muted">{alt}</div>
       ) : media.kind === "video" ? (
@@ -147,14 +155,27 @@ export function OfferBadge({ offer, lang, fallback, className }: { offer: LibOff
   return <span className={cx("inline-flex rounded-full bg-[#c2410c] px-2.5 py-0.5 text-xs font-bold text-white shadow", className)}>{text}</span>;
 }
 
-export function Price({ product, offer, currency, lang }: { product: LibProduct; offer: LibOffer | null; currency: string; lang: Language }) {
+export function Price({
+  product,
+  offer,
+  currency,
+  lang,
+  each,
+}: {
+  product: LibProduct;
+  offer: LibOffer | null;
+  currency: string;
+  lang: Language;
+  /** Formats the effective unit price, e.g. "BHD 1.000 each with the offer". */
+  each: (price: string) => string;
+}) {
   const eff = effectiveUnitPrice(product.basePrice, offer);
   const cur = product.currency || currency;
   if (offer && offer.kind !== "none" && eff < product.basePrice) {
     return (
       <span className="flex flex-wrap items-baseline gap-x-2">
         <span className="font-semibold">{formatPrice(product.basePrice, cur, lang)}</span>
-        <span className="text-xs text-muted">≈ {formatPrice(eff, cur, lang)} / 1</span>
+        <span className="text-xs text-muted">{each(formatPrice(eff, cur, lang))}</span>
       </span>
     );
   }

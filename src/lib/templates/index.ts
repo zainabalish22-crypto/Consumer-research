@@ -141,8 +141,8 @@ export function foodcourtTemplate(o: TemplateOptions): TemplateResult {
   Object.assign(welcome, {
     heading: T("Campus food and drink study", "دراسة الطعام والمشروبات في الحرم الجامعي"),
     body: T(
-      "This study is about how students choose where to buy a drink on campus. It takes about 10 minutes.",
-      "تتناول هذه الدراسة كيف يختار الطلبة مكان شراء مشروب في الحرم الجامعي، وتستغرق نحو 10 دقائق.",
+      "This study is about how students choose where to buy a drink on campus.",
+      "تتناول هذه الدراسة كيف يختار الطلبة مكان شراء مشروب في الحرم الجامعي،",
     ),
   });
 
@@ -374,9 +374,10 @@ export function deepfakeTemplate(o: TemplateOptions): TemplateResult {
   welcome.name = "Welcome";
   Object.assign(welcome, {
     heading: T("Coffee brands study", "دراسة علامات القهوة"),
+    estimatedMinutes: 15,
     body: T(
-      "In this study you will watch some coffee adverts, visit a small shopping street, and answer questions. It takes about 15 minutes.",
-      "ستشاهد في هذه الدراسة بعض إعلانات القهوة، وتزور شارع تسوق صغيرًا، وتجيب عن بعض الأسئلة. تستغرق نحو 15 دقيقة.",
+      "In this study you will watch some coffee adverts, visit a small shopping street, and answer questions.",
+      "ستشاهد في هذه الدراسة بعض إعلانات القهوة، وتزور شارع تسوق صغيرًا، وتجيب عن بعض الأسئلة.",
     ),
   });
   consent.name = "Consent";
@@ -479,6 +480,7 @@ export function deepfakeTemplate(o: TemplateOptions): TemplateResult {
   );
 
   const demographics = newBlock("demographics", cfg);
+  demographics.name = "Demographics";
   const debrief = newBlock("debrief", cfg) as Extract<Block, { type: "debrief" }>;
   Object.assign(debrief, {
     name: "Debrief",

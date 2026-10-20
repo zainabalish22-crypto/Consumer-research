@@ -741,7 +741,7 @@ function StoreInterior({
                   <span className="font-medium" dir="auto">
                     {lt(p.name, lang, fallback)}
                   </span>
-                  <Price product={p} offer={st.offer} currency={currency} lang={lang} />
+                  <Price product={p} offer={st.offer} currency={currency} lang={lang} each={(price) => tr("effectiveEach", { price })} />
                   <Button size="sm" className="mt-auto" onClick={() => onAdd(p, 1)}>
                     {tr("addToBag")}
                   </Button>
@@ -803,7 +803,7 @@ function ProductDetail({
         </dl>
       )}
       <div className="flex items-center gap-3">
-        <Price product={product} offer={st.offer} currency={currency} lang={lang} />
+        <Price product={product} offer={st.offer} currency={currency} lang={lang} each={(price) => tr("effectiveEach", { price })} />
         <OfferBadge offer={st.offer} lang={lang} fallback={fallback} />
       </div>
       <div className="flex items-center gap-2">

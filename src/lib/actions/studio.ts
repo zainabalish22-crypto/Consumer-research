@@ -221,7 +221,11 @@ export async function createFromTemplate(projectId: string, template: TemplateKi
     ["store", result.library.stores],
   ] as const) {
     const error = await insert(kind, items);
-    if (error) return { ok: false, error: "saveFailed" };
+    if (error) {
+      // Library rows contain no participant data, so the database reason is safe to log.
+      console.error(`[template] inserting ${kind} failed: ${error.code} ${error.message}`);
+      return { ok: false, error: "saveFailed" };
+    }
   }
 
   const { data, error } = await supabase
@@ -229,7 +233,10 @@ export async function createFromTemplate(projectId: string, template: TemplateKi
     .insert({ project_id: projectId, title: result.title, draft_config: result.config, created_by: user.id })
     .select("id")
     .single();
-  if (error || !data) return { ok: false, error: "saveFailed" };
+  if (error || !data) {
+    console.error(`[template] creating the study failed: ${error?.code} ${error?.message}`);
+    return { ok: false, error: "saveFailed" };
+  }
   await audit(supabase, user.id, ws, "study.created_from_template", "study", data.id, { template });
   redirect(`/studio/studies/${data.id}`);
 }

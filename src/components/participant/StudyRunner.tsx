@@ -867,7 +867,8 @@ function PreviewBar({
   const d = config.design;
   const label = (s: Step) => {
     const b = config.blocks.find((x) => x.id === s.blockId);
-    const name = b?.name || b?.type || s.blockId;
+    const heading = b && "heading" in b ? lt(b.heading, lang) : "";
+    const name = b?.name || heading || b?.type || s.blockId;
     return s.iteration ? `${name} · ${lt(s.iteration.label, lang)}` : name;
   };
   const sel = "rounded-md border border-line bg-surface px-2 py-1";
