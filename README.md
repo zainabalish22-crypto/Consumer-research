@@ -2,7 +2,7 @@
 
 A free, bilingual (Arabic/English) platform for consumer-behaviour research: build a study as an ordered flow of blocks, run it with participants, and export clean data. See `docs/PLATFORM_BRIEF.md` for the full product brief and `DECISIONS.md` for choices made during the build.
 
-> Not yet open source: no licence has been chosen and the code is not published.
+> Not yet open source: the code is visible on GitHub, but no licence has been chosen, so others may read it but not reuse it until one is added.
 
 ## Status
 
