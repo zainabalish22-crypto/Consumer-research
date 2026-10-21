@@ -1241,7 +1241,7 @@
       "screened": "Screened out",
       "withdrawn": "Withdrew"
     },
-    "overTime": "Starts per day",
+    "overTime": "Starts per day (UTC)",
     "date": "Date",
     "lastDays": "Showing the last {n} days with sessions.",
     "byCondition": "By condition",
@@ -1256,7 +1256,7 @@
     "timeHint": "Median seconds from entering to submitting a block (repeated blocks pooled).",
     "medianSeconds": "Median s",
     "shopping": "Shopping",
-    "envN": "{n} participants finished this block",
+    "envN": "{n, plural, one {# participant finished this block} other {# participants finished this block}}",
     "store": "Store",
     "entered": "Entered",
     "approached": "Stopped in front",

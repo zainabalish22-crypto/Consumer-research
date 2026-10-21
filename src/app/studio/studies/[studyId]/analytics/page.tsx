@@ -124,7 +124,7 @@ export default async function AnalyticsPage({
                 head={[t("date"), t("stats.started"), t("stats.completed")]}
                 rows={a.daily.slice(-60).map((d) => ({
                   key: d.date,
-                  label: new Date(`${d.date}T00:00:00`).toLocaleDateString(locale, { day: "numeric", month: "short" }),
+                  label: new Date(`${d.date}T00:00:00Z`).toLocaleDateString(locale, { day: "numeric", month: "short", timeZone: "UTC" }),
                   value: d.started,
                   extra: [String(d.completed)],
                 }))}

@@ -144,6 +144,16 @@ function summarizeQuestion(block: Block, q: Question, sessions: SessionRecord[])
   }
 }
 
+/** Product name with its brand, since several brands often sell the same product. */
+function productLabel(lib: ReturnType<typeof libraryOf>, pid: string): Label {
+  const p = lib.products[pid];
+  if (!p) return pid;
+  const brand = p.brandId ? lib.brands[p.brandId]?.name : undefined;
+  if (!brand) return p.name;
+  const join = (a?: string, b?: string) => (a && b ? `${a} · ${b}` : a || b || "");
+  return { en: join(p.name.en, brand.en), ar: join(p.name.ar, brand.ar) };
+}
+
 function summarizeEnvironment(block: Block, cfg: StudyConfig, sessions: SessionRecord[]): EnvironmentSummary | null {
   const lib = libraryOf(cfg);
   const name = block.name || block.type;
@@ -171,7 +181,7 @@ function summarizeEnvironment(block: Block, cfg: StudyConfig, sessions: SessionR
     const done = sessions.filter((s) => s.answers[block.variable] !== undefined);
     const carts = done.map((s) => s.answers[block.variable] as { cart?: { product: string; qty: number }[]; checkedOut?: boolean });
     const products = block.products.map((pid) => ({
-      label: lib.products[pid]?.name ?? pid,
+      label: productLabel(lib, pid),
       viewed: sessions.filter((s) => (s.env[block.id]?.shop?.products[pid]?.views ?? 0) > 0).length,
       detail: sessions.filter((s) => (s.env[block.id]?.shop?.products[pid]?.details ?? 0) > 0).length,
       bought: carts.filter((c) => c.cart?.some((l) => l.product === pid)).length,
@@ -213,7 +223,10 @@ export function computeAnalytics(config: StudyConfig, sessions: SessionRecord[])
     byDay.set(d, row);
   }
 
-  const reached = (blockId: string) => sessions.filter((s) => (s.blocksDone ?? Object.keys(s.blockSeconds)).some((k) => k === blockId || k.startsWith(`${blockId}#`))).length;
+  const reached = (b: Block) =>
+    b.type === "consent"
+      ? sessions.filter((s) => s.consent === "given").length // consent is stored separately from block answers
+      : sessions.filter((s) => (s.blocksDone ?? Object.keys(s.blockSeconds)).some((k) => k === b.id || k.startsWith(`${b.id}#`))).length;
   const contentBlocks = config.blocks.filter((b) => b.type !== "end");
 
   return {
@@ -237,7 +250,7 @@ export function computeAnalytics(config: StudyConfig, sessions: SessionRecord[])
     })),
     devices: count(sessions.map((s) => s.device_class)),
     languages: count(sessions.map((s) => s.language)),
-    funnel: contentBlocks.map((b) => ({ blockId: b.id, type: b.type, name: b.name, reached: reached(b.id) })),
+    funnel: contentBlocks.map((b) => ({ blockId: b.id, type: b.type, name: b.name, reached: reached(b) })),
     timePerBlock: contentBlocks.map((b) => {
       const secs = sessions.flatMap((s) => Object.entries(s.blockSeconds).filter(([k]) => k === b.id || k.startsWith(`${b.id}#`)).map(([, v]) => v));
       return { blockId: b.id, type: b.type, name: b.name, n: secs.length, median: stats(secs).median };

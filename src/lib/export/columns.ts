@@ -599,7 +599,15 @@ function environmentColumns(cfg: StudyConfig): Column[] {
       }
     }
   }
-  return out;
+  // A block shown only to some conditions has no data for the others: leave those cells blank
+  // instead of reporting positions, offers or ad versions the participant never saw.
+  const shownTo = new Map(cfg.blocks.map((b) => [b.id, b.showTo]));
+  return out.map((c) => {
+    const only = shownTo.get(c.sourceBlock);
+    if (!only?.length) return c;
+    const cell = c.cell;
+    return { ...c, cell: (s: SessionRecord) => (s.condition !== null && only.includes(s.condition) ? cell(s) : null) };
+  });
 }
 
 /**

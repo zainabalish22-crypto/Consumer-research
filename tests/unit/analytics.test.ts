@@ -93,3 +93,29 @@ describe("analytics", () => {
     expect(a.funnel.every((f) => f.reached === 0)).toBe(true);
   });
 });
+
+describe("analytics and exports for tools split by condition", () => {
+  it("counts consent from consent records, and blanks columns of blocks hidden from a condition", async () => {
+    const { toolsConfig } = await import("@/lib/study/factories");
+    const { buildColumns } = await import("@/lib/export/columns");
+    const cfg = toolsConfig(["village", "shop"], "between");
+    for (const b of cfg.blocks) {
+      if (b.type === "village") b.stores = [crypto.randomUUID()];
+      if (b.type === "online_shop") b.products = [crypto.randomUUID()];
+    }
+    const parsed = StudyConfig.parse(cfg);
+    const shop = parsed.blocks.find((b) => b.type === "online_shop")!;
+    const consent = parsed.blocks.find((b) => b.type === "consent")!;
+    const sessions = [
+      session({ condition: "village", consent: "given" } as Partial<SessionRecord>),
+      session({ condition: "shop", consent: "declined", status: "declined" } as Partial<SessionRecord>),
+    ];
+    const a = computeAnalytics(parsed, sessions);
+    expect(a.funnel.find((f) => f.blockId === consent.id)?.reached).toBe(1);
+
+    const cols = buildColumns([parsed]).filter((c) => c.sourceBlock === shop.id);
+    expect(cols.length).toBeGreaterThan(0);
+    // The village participant never saw the shop: every shop column is blank.
+    expect(cols.map((c) => c.cell(sessions[0])).every((v) => v === null)).toBe(true);
+  });
+});
