@@ -106,4 +106,14 @@ npm run build
 
 ## Deploying to Vercel
 
-Import the repository in Vercel, set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and deploy. Add the deployed URL plus `/auth/callback` to Supabase's redirect URLs. To run it on your own servers instead, see [`docs/SELF_HOSTING.md`](docs/SELF_HOSTING.md) (Docker or plain Node).
+**Live instance:** https://consumer-research-sigma.vercel.app (Vercel project , deployed from the  branch of GitHub ). Every push to  redeploys automatically.
+
+To set up your own:
+
+1. Import the GitHub repository in Vercel.  runs the server functions in Frankfurt (), next to the database.
+2. Add two environment variables, both of type **Config** (not Secret; Vercel refuses Secret for  names, and these values are public by design):
+   -    -    Redeploy after changing them; they are built into the browser code.
+3. In **Supabase → Authentication → URL Configuration**, set the Site URL to the Vercel address and add  to the redirect URLs (keep  for local work).
+4. Before real participants: add your own SMTP server in Supabase (**Authentication → Emails → SMTP Settings**). The built-in sender only sends a few emails per hour, and the email templates (needed for the any-browser link fix in ) can only be edited once SMTP is set.
+
+To run it on your own servers instead, see [](docs/SELF_HOSTING.md) (Docker or plain Node).
