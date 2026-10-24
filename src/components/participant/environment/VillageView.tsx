@@ -34,6 +34,37 @@ interface StoreView {
 
 type Line = VillageAnswer["basket"][number];
 
+/**
+ * Street appearance per theme. Themes change colours and paving only, never
+ * store positions, distances or anything that is recorded.
+ */
+const THEMES: Record<string, { ground: string; road: string; sky?: string; marking: string; markingStyle?: React.CSSProperties }> = {
+  minimal: { ground: "bg-[#eef2f1]", road: "bg-[#cfd6dc]", marking: "top-1/2 h-0 -translate-y-1/2 border-t-4 border-dashed border-white/80" },
+  neutral: { ground: "bg-[#eceff3]", road: "bg-[#d5d9de]", marking: "top-1/2 h-0 -translate-y-1/2 border-t-2 border-white/70" },
+  playful: {
+    ground: "bg-[#fff4d6]",
+    road: "bg-[#ffd1dc]",
+    sky: "bg-gradient-to-b from-[#cdeffd] to-[#fff4d6]",
+    marking: "top-0 h-full",
+    markingStyle: { backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.9) 0 6px, transparent 7px)", backgroundSize: "48px 48px", backgroundPosition: "0 50%" },
+  },
+  luxury: {
+    ground: "bg-[#f6f1e7]",
+    road: "bg-[#2b2b2b]",
+    sky: "bg-gradient-to-b from-[#ece3d0] to-[#f6f1e7]",
+    marking: "top-1/2 h-0 -translate-y-1/2 border-t-2 border-[#c8a96a]",
+  },
+  souq: {
+    ground: "bg-[#efe2c8]",
+    road: "bg-[#d9c29a]",
+    sky: "bg-[#e7d3ad]",
+    marking: "top-0 h-full",
+    markingStyle: {
+      backgroundImage: "repeating-linear-gradient(90deg, rgba(122,86,44,0.18) 0 2px, transparent 2px 56px), repeating-linear-gradient(0deg, rgba(122,86,44,0.12) 0 2px, transparent 2px 28px)",
+    },
+  },
+};
+
 export function VillageView({
   block,
   config,
@@ -333,7 +364,7 @@ export function VillageView({
   })();
   const offset = Math.max(0, Math.min(Math.max(0, length - vw + SPACING / 2), x - vw / 2));
   const food = block.layout === "foodcourt";
-  const minimal = block.theme === "minimal";
+  const look = THEMES[block.theme] ?? THEMES.minimal;
 
   const topBar = (
     <div className="sticky top-0 z-20 flex flex-wrap items-center gap-2 rounded-xl border border-line bg-surface/95 px-3 py-2 text-sm shadow-sm backdrop-blur">
@@ -392,7 +423,7 @@ export function VillageView({
             dir="ltr"
             className={cx(
               "relative h-[min(62vh,440px)] touch-pan-y select-none overflow-hidden rounded-xl border border-line",
-              food ? "bg-[#f3eadb]" : minimal ? "bg-[#eef2f1]" : "bg-[#eceff3]",
+              food ? "bg-[#f3eadb]" : look.ground,
             )}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
@@ -404,13 +435,14 @@ export function VillageView({
           >
             <div className="absolute inset-y-0" style={{ width: length + vw, transform: `translateX(${-offset}px)` }}>
               {/* Road / plaza */}
-              <div className={cx("absolute inset-x-0 top-[40%] h-[20%]", food ? "bg-[#e6d7bf]" : "bg-[#cfd6dc]")}>
+              {!food && look.sky && <div className={cx("absolute inset-x-0 top-0 h-[40%]", look.sky)} aria-hidden />}
+              <div className={cx("absolute inset-x-0 top-[40%] h-[20%]", food ? "bg-[#e6d7bf]" : look.road)}>
                 {food ? (
                   Array.from({ length: Math.ceil((length + vw) / 120) }, (_, k) => (
                     <span key={k} className="absolute top-1/2 h-7 w-7 -translate-y-1/2 rounded-full border-2 border-[#b89b72] bg-[#fdf8ef]" style={{ left: k * 120 + 40 }} aria-hidden />
                   ))
                 ) : (
-                  <div className="absolute inset-x-0 top-1/2 h-0 -translate-y-1/2 border-t-4 border-dashed border-white/80" aria-hidden />
+                  <div className={cx("absolute inset-x-0", look.marking)} style={look.markingStyle} aria-hidden />
                 )}
               </div>
               {stores.map((st, i) => (

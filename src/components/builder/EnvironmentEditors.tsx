@@ -385,6 +385,9 @@ export function VillageEditor({ block, config, languages, onChange }: P<"village
           <Select id="v-theme" value={block.theme} onChange={(e) => set({ theme: e.target.value as typeof block.theme })}>
             <option value="minimal">{t("themes.minimal")}</option>
             <option value="neutral">{t("themes.neutral")}</option>
+            <option value="playful">{t("themes.playful")}</option>
+            <option value="luxury">{t("themes.luxury")}</option>
+            <option value="souq">{t("themes.souq")}</option>
           </Select>
         </div>
         <div className="flex flex-col gap-1">

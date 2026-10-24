@@ -759,7 +759,10 @@
       "theme": "Theme",
       "themes": {
         "minimal": "Minimal village",
-        "neutral": "Neutral research"
+        "neutral": "Neutral research",
+        "playful": "Playful (bright, game-like)",
+        "luxury": "Luxury district (stone and gold)",
+        "souq": "Souq-inspired (warm stone, arcade paving)"
       },
       "productOrder": "Product order in stores",
       "rules": "Rules",

@@ -441,7 +441,8 @@ export const VillageBlock = BlockBase.extend({
   ...storeSet,
   heading: LocalizedText.optional(),
   instructions: LocalizedText.default({}),
-  theme: z.enum(["minimal", "neutral"]).default("minimal"),
+  /** Appearance only; never changes what is recorded. */
+  theme: z.enum(["minimal", "neutral", "playful", "luxury", "souq"]).default("minimal"),
   layout: z.enum(["street", "foodcourt"]).default("street"),
   productOrder: z.enum(["listed", "random"]).default("listed"),
   ads: AdRules.default(DEFAULT_AD_RULES),
