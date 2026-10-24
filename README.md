@@ -106,14 +106,17 @@ npm run build
 
 ## Deploying to Vercel
 
-**Live instance:** https://consumer-research-sigma.vercel.app (Vercel project , deployed from the  branch of GitHub ). Every push to  redeploys automatically.
+**Live instance:** https://consumer-research-sigma.vercel.app. It is the Vercel project `consumer-research`, deployed from the `main` branch of GitHub `zainabalish22-crypto/Consumer-research`. Every push to `main` redeploys automatically.
 
 To set up your own:
 
-1. Import the GitHub repository in Vercel.  runs the server functions in Frankfurt (), next to the database.
-2. Add two environment variables, both of type **Config** (not Secret; Vercel refuses Secret for  names, and these values are public by design):
-   -    -    Redeploy after changing them; they are built into the browser code.
-3. In **Supabase → Authentication → URL Configuration**, set the Site URL to the Vercel address and add  to the redirect URLs (keep  for local work).
-4. Before real participants: add your own SMTP server in Supabase (**Authentication → Emails → SMTP Settings**). The built-in sender only sends a few emails per hour, and the email templates (needed for the any-browser link fix in ) can only be edited once SMTP is set.
+1. Import the GitHub repository in Vercel. `vercel.json` runs the server functions in Frankfurt (`fra1`), next to the database.
+2. Add two environment variables, both of type **Config**, not Secret. Vercel refuses Secret for `NEXT_PUBLIC_` names, and these values are public by design:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 
-To run it on your own servers instead, see [](docs/SELF_HOSTING.md) (Docker or plain Node).
+   Redeploy after changing them, because they are built into the browser code.
+3. In **Supabase → Authentication → URL Configuration**, set the Site URL to the Vercel address and add `<address>/auth/callback` to the redirect URLs. Keep `http://localhost:3000/auth/callback` for local work.
+4. Before real participants, add your own SMTP server in Supabase (**Authentication → Emails → SMTP Settings**). The built-in sender sends only a few emails per hour. The email templates can only be edited once SMTP is set, and they are needed for the any-browser link fix in `KNOWN_ISSUES.md`.
+
+To run it on your own servers instead, see [`docs/SELF_HOSTING.md`](docs/SELF_HOSTING.md) (Docker or plain Node).
