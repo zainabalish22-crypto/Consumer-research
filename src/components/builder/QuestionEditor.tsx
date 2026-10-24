@@ -143,6 +143,17 @@ function TypeSpecific({ q, languages, onChange }: Props) {
           <LocalizedField label={t("rightLabel")} value={q.rightLabel} languages={languages} onChange={(v) => patch({ rightLabel: v })} />
         </div>
       );
+    case "constant_sum":
+      return (
+        <div className="flex flex-col gap-3">
+          <OptionsEditor options={q.options} languages={languages} withImages={false} onChange={(options) => patch({ options })} />
+          <div className="grid grid-cols-2 gap-3">
+            <NumberField label={t("sumTotal")} value={q.total} min={1} max={10000} onChange={(v) => patch({ total: v && v > 0 ? Math.round(v) : 100 })} />
+          </div>
+          <LocalizedField label={t("sumUnit")} value={q.unit} languages={languages} onChange={(v) => patch({ unit: v })} />
+          <Checkbox label={t("randomizeOptions")} checked={q.randomizeOptions} onChange={(v) => patch({ randomizeOptions: v })} hint={t("randomizeHint")} />
+        </div>
+      );
     case "slider":
       return (
         <div className="flex flex-col gap-3">

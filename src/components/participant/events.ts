@@ -40,7 +40,14 @@ export type EventType =
   | "checkout_start"
   | "scroll_depth"
   | "popup_close"
-  | "ad_click";
+  | "ad_click"
+  | "feed_like"
+  | "feed_unlike"
+  | "feed_save"
+  | "feed_unsave"
+  | "feed_hide"
+  | "feed_unhide"
+  | "post_visible";
 
 const ENVIRONMENT_TYPES = new Set<EventType>([
   "env_enter",
@@ -63,6 +70,13 @@ const ENVIRONMENT_TYPES = new Set<EventType>([
   "scroll_depth",
   "popup_close",
   "ad_click",
+  "feed_like",
+  "feed_unlike",
+  "feed_save",
+  "feed_unsave",
+  "feed_hide",
+  "feed_unhide",
+  "post_visible",
 ]);
 
 export type EventData = Record<string, string | number | boolean | null>;

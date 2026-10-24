@@ -3,7 +3,7 @@
  * published version (stores, products and offers come from config.library).
  */
 import { z } from "zod";
-import type { OnlineShopBlock, StoreChoiceBlock, StudyConfig, VillageBlock } from "./schema";
+import type { OnlineShopBlock, SocialFeedBlock, StoreChoiceBlock, StudyConfig, VillageBlock } from "./schema";
 import type { Assignment } from "./flow";
 import { lineTotal } from "./library";
 import { libraryOf, offerForItem, offerForStore } from "./environment";
@@ -89,4 +89,24 @@ export function validateShopAnswer(block: OnlineShopBlock, config: StudyConfig, 
   if (!v.timedOut && items < block.minItems) return { ok: false, error: "selectMin" };
   if (block.budget !== undefined && cartValue(block, config, a, v.cart) > block.budget + 1e-9) return { ok: false, error: "max" };
   return { ok: true, value: v };
+}
+
+export const FeedAnswer = z.object({
+  liked: z.array(z.string().max(40)).max(60).default([]),
+  saved: z.array(z.string().max(40)).max(60).default([]),
+  hidden: z.array(z.string().max(40)).max(60).default([]),
+});
+export type FeedAnswer = z.infer<typeof FeedAnswer>;
+
+export function validateFeedAnswer(block: SocialFeedBlock, raw: unknown): EnvValidation {
+  const parsed = FeedAnswer.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: "invalid" };
+  const ids = new Set(block.posts.map((p) => p.id));
+  for (const list of [parsed.data.liked, parsed.data.saved, parsed.data.hidden]) {
+    if (new Set(list).size !== list.length || list.some((id) => !ids.has(id))) return { ok: false, error: "invalid" };
+  }
+  if (!block.actions.like && parsed.data.liked.length) return { ok: false, error: "invalid" };
+  if (!block.actions.save && parsed.data.saved.length) return { ok: false, error: "invalid" };
+  if (!block.actions.hide && parsed.data.hidden.length) return { ok: false, error: "invalid" };
+  return { ok: true, value: parsed.data };
 }

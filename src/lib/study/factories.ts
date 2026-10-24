@@ -87,6 +87,19 @@ export function newQuestion(type: QuestionType, variable: string): Question {
         randomizeOptions: false,
         special,
       };
+    case "constant_sum":
+      return {
+        ...base,
+        type,
+        options: opts([
+          ["Price", "السعر"],
+          ["Quality", "الجودة"],
+          ["Brand", "العلامة التجارية"],
+        ]),
+        total: 100,
+        unit: T("points", "نقطة"),
+        randomizeOptions: false,
+      };
     case "likert":
       return { ...base, type, points: 5, startValue: 1, labels: AGREE_5, special };
     case "semantic":
@@ -341,6 +354,27 @@ export function newBlock(type: BlockType, config: StudyConfig): Block {
         mustEnterStores: 0,
         minPurchases: 0,
         maxPurchases: 10,
+      } as unknown as Block;
+    case "social_feed":
+      return {
+        ...base,
+        type,
+        variable: nextVariable(usedVariables(config), "feed"),
+        heading: T("", ""),
+        intro: T(
+          "Scroll through the feed as you normally would. You can like, save or hide posts. Press Next when you are done.",
+          "تصفّح المنشورات كما تفعل عادةً. يمكنك الإعجاب بالمنشورات أو حفظها أو إخفاؤها. اضغط «التالي» عند الانتهاء.",
+        ),
+        platformName: T("Feed", "الصفحة الرئيسية"),
+        posts: [
+          { id: "p1", kind: "post", author: T("Sara", "سارة"), text: T("Weekend plans: coffee and a long walk by the sea.", "خطط عطلة نهاية الأسبوع: قهوة ونزهة طويلة على البحر."), likes: 124 },
+          { id: "p2", kind: "post", author: T("Ahmed", "أحمد"), text: T("Finally tried the new place downtown. Worth it!", "جرّبت أخيرًا المكان الجديد في وسط المدينة. يستحق!"), likes: 58 },
+        ],
+        postOrder: { mode: "listed" },
+        ads: { version: { mode: "fixed", key: "authentic" }, disclosure: { showFor: "none", conditions: [] } },
+        actions: { like: true, save: true, hide: true },
+        showCounts: true,
+        minSeconds: 0,
       } as unknown as Block;
     case "online_shop":
       return {

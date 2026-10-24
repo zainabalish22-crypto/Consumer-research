@@ -96,6 +96,14 @@ export const RankingQ = QuestionBase.extend({
   options: z.array(ChoiceOption).min(2).max(20),
   randomizeOptions: z.boolean().default(false),
 });
+/** Constant sum: split a fixed total (e.g. 100 points) across options. */
+export const ConstantSumQ = QuestionBase.extend({
+  type: z.literal("constant_sum"),
+  options: z.array(ChoiceOption).min(2).max(20),
+  total: z.number().int().min(1).max(10_000).default(100),
+  unit: LocalizedText.optional(),
+  randomizeOptions: z.boolean().default(false),
+});
 export const NumericQ = QuestionBase.extend({
   type: z.literal("numeric"),
   min: z.number().optional(),
@@ -132,6 +140,7 @@ export const Question = z.discriminatedUnion("type", [
   SliderQ,
   MatrixQ,
   RankingQ,
+  ConstantSumQ,
   NumericQ,
   TextQ,
   DateQ,
@@ -148,6 +157,7 @@ export const QUESTION_TYPES: QuestionType[] = [
   "slider",
   "matrix",
   "ranking",
+  "constant_sum",
   "numeric",
   "text",
   "date",
@@ -489,6 +499,44 @@ export const OnlineShopBlock = BlockBase.extend({
   requireCheckout: z.boolean().default(true),
 });
 export type OnlineShopBlock = z.infer<typeof OnlineShopBlock>;
+
+/**
+ * One item in a social feed: an organic post written by the researcher, or a
+ * sponsored post that shows a library ad (with its version and disclosure rules).
+ */
+export const FeedPost = z.object({
+  id,
+  kind: z.enum(["post", "ad"]),
+  /** Library ad shown by a sponsored post. */
+  adId: z.string().uuid().optional(),
+  author: LocalizedText,
+  text: LocalizedText,
+  /** Image or video for organic posts (sponsored posts use the ad's media). */
+  media: MediaRef.optional(),
+  /** Like count shown on the post (a researcher-set stimulus, not real data). */
+  likes: z.number().int().min(0).max(10_000_000).optional(),
+});
+export type FeedPost = z.infer<typeof FeedPost>;
+
+/** A scrolling social-media style feed with like / save / hide and per-post viewing time. */
+export const SocialFeedBlock = BlockBase.extend({
+  type: z.literal("social_feed"),
+  /** Prefix for this block's export variables, e.g. "feed" → feed_p1_liked. */
+  variable: variableName,
+  heading: LocalizedText.optional(),
+  intro: LocalizedText.optional(),
+  platformName: LocalizedText.default({ en: "Feed", ar: "الصفحة الرئيسية" }),
+  posts: z.array(FeedPost).min(1).max(60),
+  postOrder: ItemOrder.default({ mode: "listed" }),
+  ads: AdRules.default(DEFAULT_AD_RULES),
+  actions: z
+    .object({ like: z.boolean().default(true), save: z.boolean().default(true), hide: z.boolean().default(true) })
+    .default({ like: true, save: true, hide: true }),
+  showCounts: z.boolean().default(true),
+  /** Seconds before the participant may continue. */
+  minSeconds: z.number().int().min(0).max(3600).default(0),
+});
+export type SocialFeedBlock = z.infer<typeof SocialFeedBlock>;
 export type StoreChoiceBlock = z.infer<typeof StoreChoiceBlock>;
 export type AdExposureBlock = z.infer<typeof AdExposureBlock>;
 
@@ -497,6 +545,7 @@ export const Block = z.discriminatedUnion("type", [
   StoreChoiceBlock,
   VillageBlock,
   OnlineShopBlock,
+  SocialFeedBlock,
   WelcomeBlock,
   ConsentBlock,
   ScreeningBlock,
@@ -583,7 +632,7 @@ export const StudyConfig = z
       if (b.repeat && !repeatFactor) {
         ctx.addIssue({ code: "custom", path: ["blocks", bi, "repeat"], message: "Repeat uses a factor that does not exist" });
       }
-      if (b.type === "consent" || b.type === "end" || b.type === "village" || b.type === "store_choice" || b.type === "online_shop") {
+      if (b.type === "consent" || b.type === "end" || b.type === "village" || b.type === "store_choice" || b.type === "online_shop" || b.type === "social_feed") {
         if (b.repeat) ctx.addIssue({ code: "custom", path: ["blocks", bi, "repeat"], message: "This block cannot be repeated" });
       }
       const factorOf = (fid: string | undefined, kinds: string[], path: string, what: string) => {
@@ -592,6 +641,23 @@ export const StudyConfig = z
           ctx.addIssue({ code: "custom", path: ["blocks", bi, path], message: `Choose a ${kinds.join(" or ")} factor for ${what}` });
         }
       };
+      if (b.type === "social_feed") {
+        const prefix = b.variable.toLowerCase();
+        if (variables.has(prefix)) {
+          ctx.addIssue({ code: "custom", path: ["blocks", bi, "variable"], message: `Variable prefix "${b.variable}" is already used by ${variables.get(prefix)}` });
+        }
+        variables.set(prefix, `${b.id} (prefix)`);
+        prefixes.push(prefix);
+        if (b.postOrder.mode === "factor") {
+          ctx.addIssue({ code: "custom", path: ["blocks", bi, "postOrder"], message: "Feed posts can be shown as listed or in random order" });
+        }
+        const postIds = new Set<string>();
+        b.posts.forEach((p, pi) => {
+          if (postIds.has(p.id)) ctx.addIssue({ code: "custom", path: ["blocks", bi, "posts", pi, "id"], message: `Duplicate post id "${p.id}"` });
+          postIds.add(p.id);
+          if (p.kind === "ad" && !p.adId) ctx.addIssue({ code: "custom", path: ["blocks", bi, "posts", pi, "adId"], message: "Choose an ad for this sponsored post" });
+        });
+      }
       if (b.type === "village" || b.type === "store_choice" || b.type === "online_shop") {
         const prefix = b.variable.toLowerCase();
         if (variables.has(prefix)) {
@@ -607,7 +673,7 @@ export const StudyConfig = z
         ctx.addIssue({ code: "custom", path: ["blocks", bi, "minItems"], message: "Minimum items cannot be more than maximum items" });
       }
       if (b.type === "ad_exposure" && b.order.mode === "factor") factorOf(b.order.factorId, ["order"], "order", "the ad order");
-      const adRules = b.type === "ad_exposure" ? b.rules : b.type === "village" || b.type === "online_shop" ? b.ads : null;
+      const adRules = b.type === "ad_exposure" ? b.rules : b.type === "village" || b.type === "online_shop" || b.type === "social_feed" ? b.ads : null;
       if (adRules?.version.mode === "targeted") factorOf(adRules.version.factorId, ["pick"], "rules", "the targeted ad version");
       if (!isQuestionBlock(b)) return;
       const repeatLevels = repeatFactor ? repeatFactor.levels.map((l) => l.value) : null;
@@ -718,6 +784,7 @@ export function exportVariableNames(q: Question): string[] {
     case "image_choice":
       return q.multiple ? q.options.map((o) => `${q.variable}_${codeSuffix(o.value)}`) : [q.variable];
     case "ranking":
+    case "constant_sum":
       return q.options.map((o) => `${q.variable}_${codeSuffix(o.value)}`);
     case "matrix":
       return q.rows.map((r) => `${q.variable}_${r.code}`);

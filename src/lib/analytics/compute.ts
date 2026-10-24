@@ -33,6 +33,7 @@ export interface NumericStats {
 export type EnvironmentSummary =
   | { kind: "village"; blockId: string; name: string; n: number; stores: { label: Label; approached: number; entered: number; bought: number }[]; itemsMean: number | null }
   | { kind: "store_choice"; blockId: string; name: string; n: number; bars: Bar[] }
+  | { kind: "social_feed"; blockId: string; name: string; n: number; posts: { label: Label; liked: number; saved: number; hidden: number; medianSec: number | null }[] }
   | { kind: "online_shop"; blockId: string; name: string; n: number; checkedOut: number; checkoutStarted: number; products: { label: Label; viewed: number; detail: number; bought: number }[]; itemsMean: number | null };
 
 export interface Analytics {
@@ -132,6 +133,13 @@ function summarizeQuestion(block: Block, q: Question, sessions: SessionRecord[])
       });
       return { ...base, kind: "matrix", n: answers.length, rows };
     }
+    case "constant_sum": {
+      const rows = q.options.map((o) => {
+        const vals = answers.filter((a) => a && typeof a === "object" && !Array.isArray(a)).map((a) => (a as Record<string, number>)[String(o.value)] ?? 0);
+        return { label: o.label, n: vals.length, mean: stats(vals).mean };
+      });
+      return { ...base, kind: "matrix", n: answers.length, rows };
+    }
     case "ranking": {
       const rows = q.options.map((o) => {
         const ranks = answers.filter(Array.isArray).map((a) => (a as number[]).indexOf(o.value) + 1).filter((r) => r > 0);
@@ -176,6 +184,24 @@ function summarizeEnvironment(block: Block, cfg: StudyConfig, sessions: SessionR
     }));
     bars.push({ label: "none", count: done.filter((s) => (s.answers[block.variable] as { store: string | null }).store === null).length });
     return { kind: "store_choice", blockId: block.id, name, n: done.length, bars: block.allowNone ? bars : bars.slice(0, -1) };
+  }
+  if (block.type === "social_feed") {
+    const done = sessions.filter((s) => s.answers[block.variable] !== undefined);
+    const ans = done.map((s) => s.answers[block.variable] as { liked?: string[]; saved?: string[]; hidden?: string[] });
+    const posts = block.posts.map((p) => {
+      const ad = p.adId ? lib.ads[p.adId] : undefined;
+      const who = p.author.en || p.author.ar ? p.author : ad?.name;
+      const label: Label = who ? { en: `${p.id} · ${who.en ?? ""}`, ar: `${p.id} · ${who.ar ?? ""}` } : p.id;
+      const secs = sessions.map((s) => s.env[block.id]?.feed?.visibleMs[p.id]).filter((ms): ms is number => typeof ms === "number").map((ms) => ms / 1000);
+      return {
+        label,
+        liked: ans.filter((a) => a.liked?.includes(p.id)).length,
+        saved: ans.filter((a) => a.saved?.includes(p.id)).length,
+        hidden: ans.filter((a) => a.hidden?.includes(p.id)).length,
+        medianSec: stats(secs).median,
+      };
+    });
+    return { kind: "social_feed", blockId: block.id, name, n: done.length, posts };
   }
   if (block.type === "online_shop") {
     const done = sessions.filter((s) => s.answers[block.variable] !== undefined);

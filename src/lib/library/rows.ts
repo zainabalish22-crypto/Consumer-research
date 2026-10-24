@@ -126,6 +126,7 @@ export function referencedIds(config: StudyConfig, full: LibrarySnapshot) {
       if (b.offers.mode === "fixed") Object.values(b.offers.byStore).forEach(addAny);
     }
     if (b.type === "ad_exposure") b.ads.forEach(addAny);
+    if (b.type === "social_feed") b.posts.forEach((p) => p.adId && addAny(p.adId));
     if (b.type === "online_shop") {
       b.products.forEach(addAny);
       if (b.offers.mode === "fixed") Object.values(b.offers.byStore).forEach(addAny);

@@ -66,6 +66,8 @@ export interface EnvSummary {
   details: number;
   /** Online shop blocks only. */
   shop?: ShopSummary;
+  /** Social feed blocks only: ms on screen per post id. */
+  feed?: { visibleMs: Record<string, number> };
 }
 
 export interface ShopSummary {
@@ -264,6 +266,20 @@ function questionColumns(q: Question, block: Block, level?: { value: string; lab
           if (!Array.isArray(v)) return null;
           const idx = (v as number[]).indexOf(o.value);
           return idx >= 0 ? idx + 1 : null;
+        },
+      }));
+    case "constant_sum":
+      return q.options.map((o) => ({
+        ...base,
+        name: name(`${q.variable}_${codeSuffix(o.value)}`),
+        label: { en: `${label.en} — ${o.label.en ?? ""}`, ar: `${label.ar} — ${o.label.ar ?? ""}` },
+        type: "numeric",
+        measure: "scale",
+        rule: `Points given to this option (all options add up to ${q.total})`,
+        cell: (s) => {
+          const v = answer(s);
+          if (!v || typeof v !== "object" || Array.isArray(v)) return null;
+          return (v as Record<string, number>)[String(o.value)] ?? 0;
         },
       }));
     case "matrix":
@@ -579,6 +595,44 @@ function environmentColumns(cfg: StudyConfig): Column[] {
           col({ sourceBlock: b.id, name: `${P}_ad_${ad.code}_visible_sec`, label: { en: `${n}: seconds visible`, ar: `${nAr}: ثوانٍ ظاهرة` }, type: "numeric", rule: "Sum of media_visible durations for this ad (any placement in the study)", cell: (s) => (m(s) ? Math.round(m(s)!.visibleMs / 100) / 10 : null) }),
         );
       }
+    }
+    if (b.type === "social_feed") {
+      const P = b.variable;
+      const a = (s: SessionRecord) => assignmentOf(s);
+      const order = (s: SessionRecord) => orderItems(b.posts.map((p) => p.id), b.postOrder, cfg, a(s), `${s.id}:${b.id}`);
+      const answer = (s: SessionRecord) => s.answers[P] as { liked?: string[]; saved?: string[]; hidden?: string[] } | undefined;
+      const feed = (s: SessionRecord) => (s.env[b.id] ? (s.env[b.id].feed ?? { visibleMs: {} }) : null);
+      const has = (s: SessionRecord, list: "liked" | "saved" | "hidden", id: string) => {
+        const v = answer(s);
+        return v ? ((v[list] ?? []).includes(id) ? 1 : 0) : null;
+      };
+      for (const p of b.posts) {
+        const ad = p.adId ? lib.ads[p.adId] : undefined;
+        const name = lt(p.author, "en") || (ad ? lt(ad.name, "en") : "") || p.id;
+        const nameAr = lt(p.author, "ar") || (ad ? lt(ad.name, "ar") : "") || name;
+        const base = { sourceBlock: b.id };
+        const K = `${P}_${p.id}`;
+        out.push(
+          col({ ...base, name: `${K}_pos`, label: { en: `Post ${p.id} (${name}): position`, ar: `المنشور ${p.id} (${nameAr}): الموضع` }, type: "numeric", measure: "ordinal", rule: "1 = first post in the feed", cell: (s) => order(s).indexOf(p.id) + 1 || null }),
+          col({ ...base, name: `${K}_liked`, label: { en: `Post ${p.id}: liked`, ar: `المنشور ${p.id}: أُعجب به` }, type: "numeric", measure: "nominal", valueLabels: yesNo, rule: "Liked when leaving the feed", cell: (s) => has(s, "liked", p.id) }),
+          col({ ...base, name: `${K}_saved`, label: { en: `Post ${p.id}: saved`, ar: `المنشور ${p.id}: حُفظ` }, type: "numeric", measure: "nominal", valueLabels: yesNo, cell: (s) => has(s, "saved", p.id) }),
+          col({ ...base, name: `${K}_hidden`, label: { en: `Post ${p.id}: hidden`, ar: `المنشور ${p.id}: أُخفي` }, type: "numeric", measure: "nominal", valueLabels: yesNo, cell: (s) => has(s, "hidden", p.id) }),
+          col({ ...base, name: `${K}_visible_sec`, label: { en: `Post ${p.id}: seconds on screen`, ar: `المنشور ${p.id}: ثوانٍ على الشاشة` }, type: "numeric", rule: "Time at least half of the post was on screen (post_visible events)", cell: (s) => { const f = feed(s); return f ? Math.round((f.visibleMs[p.id] ?? 0) / 100) / 10 : null; } }),
+        );
+        if (ad) {
+          const shown = (s: SessionRecord) => resolveAd(ad, b.ads, cfg, a(s));
+          out.push(
+            col({ ...base, name: `${K}_ad_version`, label: { en: `Post ${p.id}: ad version shown`, ar: `المنشور ${p.id}: نسخة الإعلان` }, type: "string", measure: "nominal", cell: (s) => shown(s).versionKey }),
+            col({ ...base, name: `${K}_ad_disclosed`, label: { en: `Post ${p.id}: disclosure label shown`, ar: `المنشور ${p.id}: ظهرت علامة الإفصاح` }, type: "numeric", measure: "nominal", valueLabels: yesNo, cell: (s) => (shown(s).disclosed ? 1 : 0) }),
+          );
+        }
+      }
+      const count = (s: SessionRecord, list: "liked" | "saved" | "hidden") => { const v = answer(s); return v ? (v[list] ?? []).length : null; };
+      out.push(
+        col({ sourceBlock: b.id, name: `${P}_n_liked`, label: { en: "Posts liked", ar: "عدد المنشورات المُعجب بها" }, type: "numeric", cell: (s) => count(s, "liked") }),
+        col({ sourceBlock: b.id, name: `${P}_n_saved`, label: { en: "Posts saved", ar: "عدد المنشورات المحفوظة" }, type: "numeric", cell: (s) => count(s, "saved") }),
+        col({ sourceBlock: b.id, name: `${P}_n_hidden`, label: { en: "Posts hidden", ar: "عدد المنشورات المخفية" }, type: "numeric", cell: (s) => count(s, "hidden") }),
+      );
     }
     if (b.type === "ad_exposure") {
       const order = (s: SessionRecord) => orderItems(b.ads, b.order, cfg, assignmentOf(s), `${s.id}:${b.id}`);

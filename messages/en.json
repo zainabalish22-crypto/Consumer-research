@@ -276,7 +276,8 @@
       "ad_exposure": "Ad exposure",
       "store_choice": "Store choice task",
       "village": "Shopping village",
-      "online_shop": "Online shop"
+      "online_shop": "Online shop",
+      "social_feed": "Social media feed"
     },
     "issuesTitle": "{n, plural, one {# problem to fix before publishing} other {# problems to fix before publishing}}",
     "editor": "Block editor",
@@ -440,7 +441,8 @@
         "numeric": "Number",
         "text": "Text",
         "date": "Date",
-        "image_choice": "Image choice"
+        "image_choice": "Image choice",
+        "constant_sum": "Constant sum (split points)"
       },
       "variable": "Variable name",
       "variableHint": "Column name in the export. Keep it stable.",
@@ -493,7 +495,9 @@
       "addOption": "Add option",
       "untitled": "Untitled question",
       "duplicate": "Duplicate",
-      "add": "Add question"
+      "add": "Add question",
+      "sumTotal": "Total to split",
+      "sumUnit": "Unit (e.g. points, %)"
     },
     "logic": {
       "addRule": "Add a rule",
@@ -792,7 +796,31 @@
       "requireCheckout": "Participants must go through checkout to finish",
       "requireCheckoutHint": "When off, a “Leave the shop” button lets participants finish without ordering.",
       "shopProductOrder": "Product order in the listing",
-      "shopPrefixHint": "Export columns start with this, e.g. {prefix}_P1_qty."
+      "shopPrefixHint": "Export columns start with this, e.g. {prefix}_P1_qty.",
+      "feedPrefixHint": "Export columns start with this, e.g. {prefix}_p1_liked.",
+      "platformName": "Feed name shown at the top",
+      "feedPosts": "Posts",
+      "feedPostsHint": "Organic posts are written here. Sponsored posts show an ad from your library, with its version and disclosure rules. Like counts are stimuli you set, not real data.",
+      "sponsoredPost": "Sponsored post (ad)",
+      "organicPost": "Post",
+      "moveDown": "Move down",
+      "removePost": "Remove post",
+      "chooseAd": "Choose an ad…",
+      "postAuthorAd": "Account name (leave empty to use the ad's name)",
+      "postAuthor": "Account name",
+      "postText": "Post text",
+      "removeMedia": "Remove image",
+      "addPostMedia": "Add image or video",
+      "postLikes": "Likes shown",
+      "addOrganicPost": "Add post",
+      "addSponsoredPost": "Add sponsored post",
+      "postOrder": "Post order",
+      "feedLike": "Participants can like posts",
+      "feedSave": "Participants can save posts",
+      "feedHide": "Participants can hide posts (“Not interested”)",
+      "showCounts": "Show like counts",
+      "showCountsHint": "The counts are the numbers you set on each post, plus one if the participant likes it.",
+      "minSeconds": "Minimum seconds before continuing"
     },
     "analytics": "Analytics"
   },
@@ -1071,7 +1099,23 @@
     "backToCart": "Back to cart",
     "placeOrder": "Place order",
     "leaveShop": "Leave the shop",
-    "advert": "Advert"
+    "advert": "Advert",
+    "feedTitle": "Feed",
+    "feedPosts": "Posts",
+    "feedEnd": "You're all caught up.",
+    "postHidden": "Post hidden.",
+    "undo": "Undo",
+    "likesCount": "{n} likes",
+    "like": "Like",
+    "liked": "Liked",
+    "save": "Save",
+    "saved": "Saved",
+    "hidePost": "Hide",
+    "err_sum": "The amounts must add up to the total.",
+    "sumHint": "Split {total} {unit} across the options.",
+    "sumLeft": "{n} {unit} left to give.",
+    "sumOver": "{n} {unit} too many.",
+    "sumDone": "All {total} {unit} given."
   },
   "library": {
     "title": "Library",
@@ -1280,7 +1324,11 @@
     "item": "Item",
     "mean": "Mean",
     "meanRank": "Mean rank (1 = top)",
-    "textNote": "Open text answers are in the CSV export."
+    "textNote": "Open text answers are in the CSV export.",
+    "post": "Post",
+    "likedCount": "Liked",
+    "savedCount": "Saved",
+    "hiddenCount": "Hidden"
   },
   "templates": {
     "title": "Templates",

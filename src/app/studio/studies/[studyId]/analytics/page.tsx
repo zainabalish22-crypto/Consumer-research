@@ -197,6 +197,13 @@ export default async function AnalyticsPage({
                       max={e.n}
                     />
                   )}
+                  {e.kind === "social_feed" && (
+                    <BarTable
+                      head={[t("post"), t("likedCount"), t("savedCount"), t("hiddenCount"), t("medianSeconds")]}
+                      rows={e.posts.map((p, i) => ({ key: String(i), label: L(p.label), value: p.liked, extra: [String(p.saved), String(p.hidden), fmt(p.medianSec)] }))}
+                      max={Math.max(1, e.n)}
+                    />
+                  )}
                   {e.kind === "online_shop" && (
                     <>
                       <p className="text-sm">

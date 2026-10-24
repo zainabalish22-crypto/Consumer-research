@@ -9,7 +9,7 @@ import { useTranslations } from "next-intl";
 import type { Block, BlockType, Language, Logic, MediaRef, Question, QuestionType, StudyConfig } from "@/lib/study/schema";
 import { BLOCK_ROLES, QUESTION_TYPES } from "@/lib/study/schema";
 import { LogicEditor } from "./LogicEditor";
-import { AdExposureEditor, OnlineShopEditor, StoreChoiceEditor, VillageEditor } from "./EnvironmentEditors";
+import { AdExposureEditor, OnlineShopEditor, SocialFeedEditor, StoreChoiceEditor, VillageEditor } from "./EnvironmentEditors";
 import { newQuestion, nextVariable, usedVariables, shortId } from "@/lib/study/factories";
 import { Button, Select } from "@/components/ui";
 import { LocalizedField } from "./LocalizedField";
@@ -367,6 +367,7 @@ const EDITORS: { [K in BlockType]: (p: EditorProps<K>) => React.ReactNode } = {
   store_choice: StoreChoiceEditor,
   village: VillageEditor,
   online_shop: OnlineShopEditor,
+  social_feed: SocialFeedEditor,
   welcome: WelcomeEditor,
   consent: ConsentEditor,
   screening: ScreeningEditor,
@@ -383,7 +384,7 @@ const EDITORS: { [K in BlockType]: (p: EditorProps<K>) => React.ReactNode } = {
 function DisplayLogic({ block, config, onChange }: { block: Block; config: StudyConfig; onChange: (b: Block) => void }) {
   const t = useTranslations("builder.display");
   const d = config.design;
-  const fixed = block.type === "consent" || block.type === "end" || block.type === "village" || block.type === "store_choice" || block.type === "online_shop";
+  const fixed = block.type === "consent" || block.type === "end" || block.type === "village" || block.type === "store_choice" || block.type === "online_shop" || block.type === "social_feed";
   const summary = [
     block.showTo.length ? t("summaryConditions", { list: block.showTo.join(", ") }) : null,
     block.showIf ? t("summaryRule") : null,

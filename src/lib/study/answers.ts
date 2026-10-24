@@ -12,7 +12,8 @@ export type AnswerError =
   | "max"
   | "tooLong"
   | "selectMin"
-  | "selectMax";
+  | "selectMax"
+  | "sum";
 
 type Result = { ok: true; value: AnswerValue } | { ok: false; error: AnswerError };
 
@@ -112,6 +113,18 @@ export function validateAnswer(q: Question, raw: unknown): Result {
       const given = [...raw].sort((a, b) => a - b);
       const sameSet = allowed.length === given.length && allowed.every((v, i) => v === given[i]);
       return sameSet ? { ok: true, value: raw } : { ok: false, error: "invalid" };
+    }
+    case "constant_sum": {
+      if (typeof raw !== "object" || Array.isArray(raw) || raw === null) return { ok: false, error: "invalid" };
+      const allowed = new Set(q.options.map((o) => String(o.value)));
+      const out: Record<string, number> = {};
+      for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+        if (!allowed.has(k) || !isInt(v) || v < 0 || v > q.total) return { ok: false, error: "invalid" };
+        if (v > 0) out[k] = v;
+      }
+      const sum = Object.values(out).reduce((s, v) => s + v, 0);
+      if (sum !== q.total) return { ok: false, error: "sum" };
+      return { ok: true, value: out };
     }
     case "matrix": {
       if (typeof raw !== "object" || Array.isArray(raw) || raw === null) return { ok: false, error: "invalid" };

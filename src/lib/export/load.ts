@@ -100,7 +100,7 @@ export async function loadExportData(supabase: SupabaseClient, studyId: string, 
       .from("events")
       .select("session_id, type, block_key, data")
       .eq("study_id", studyId)
-      .in("type", ["store_approach", "store_enter", "store_leave", "store_pass", "product_view", "product_detail", "shop_search", "shop_filter", "shop_sort", "checkout_start", "scroll_depth", "popup_close"])
+      .in("type", ["store_approach", "store_enter", "store_leave", "store_pass", "product_view", "product_detail", "shop_search", "shop_filter", "shop_sort", "checkout_start", "scroll_depth", "popup_close", "post_visible"])
       .order("id")
       .range(from, to),
   );
@@ -140,7 +140,7 @@ export async function loadExportData(supabase: SupabaseClient, studyId: string, 
   for (const r of responses) {
     const s = bySession.get(r.session_id);
     if (!s) continue;
-    if (r.block_type === "village" || r.block_type === "online_shop") villageDone.push({ session_id: r.session_id, block_id: r.block_key, shop: r.block_type === "online_shop" });
+    if (r.block_type === "village" || r.block_type === "online_shop" || r.block_type === "social_feed") villageDone.push({ session_id: r.session_id, block_id: r.block_key, shop: r.block_type === "online_shop" });
     s.blocksDone!.push(r.block_key);
     const level = r.block_key.includes("#") ? r.block_key.split("#")[1] : null;
     for (const [k, v] of Object.entries(r.answers ?? {})) s.answers[level ? `${k}_${level}` : k] = v;
@@ -182,6 +182,11 @@ export async function loadExportData(supabase: SupabaseClient, studyId: string, 
       env.productsViewed += 1;
       if (st) st.views += 1;
     } else if (e.type === "product_detail") env.details += 1;
+    if (e.type === "post_visible" && typeof e.data?.post === "string") {
+      const f = (env.feed ??= { visibleMs: {} });
+      f.visibleMs[e.data.post] = (f.visibleMs[e.data.post] ?? 0) + (Number(e.data.ms) || 0);
+      continue;
+    }
     if (store) continue;
     // Online shop events carry a product instead of a store.
     const product = typeof e.data?.product === "string" ? e.data.product : null;

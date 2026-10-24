@@ -28,7 +28,8 @@ import { EventLogger, type EventData, type EventType } from "./events";
 import { AdExposureView } from "./environment/AdExposureView";
 import { StoreChoiceView } from "./environment/StoreChoiceView";
 import { VillageView } from "./environment/VillageView";
-import { validateShopAnswer, validateStoreChoice, validateVillageAnswer } from "@/lib/study/envAnswers";
+import { validateFeedAnswer, validateShopAnswer, validateStoreChoice, validateVillageAnswer } from "@/lib/study/envAnswers";
+import { FeedView } from "./environment/FeedView";
 import { ShopView } from "./environment/ShopView";
 
 type Mode = "live" | "test" | "preview";
@@ -298,13 +299,15 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
     if (!block || !step) return;
     setProblem(null);
     let payload: Record<string, unknown> = {};
-    if (block.type === "village" || block.type === "store_choice" || block.type === "online_shop") {
+    if (block.type === "village" || block.type === "store_choice" || block.type === "online_shop" || block.type === "social_feed") {
       const v =
         block.type === "village"
           ? validateVillageAnswer(block, config, assignment, envValue)
           : block.type === "online_shop"
             ? validateShopAnswer(block, config, assignment, envValue)
-            : validateStoreChoice(block, envValue);
+            : block.type === "social_feed"
+              ? validateFeedAnswer(block, envValue)
+              : validateStoreChoice(block, envValue);
       if (!v.ok) return setErrors({ [block.variable]: v.error as AnswerError });
       payload = { [block.variable]: v.value };
     }
@@ -692,6 +695,27 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
     case "store_choice":
       body = (
         <StoreChoiceView
+          key={step.key}
+          block={block}
+          config={config}
+          assignment={assignment}
+          seed={seed}
+          lang={lang}
+          fallback={fallback}
+          mediaUrls={mediaUrls}
+          tr={tr}
+          t={t}
+          log={logEvent}
+          busy={busy}
+          error={errors[block.variable]}
+          onSubmit={(v) => void submitBlock(v)}
+          heading={heading}
+        />
+      );
+      break;
+    case "social_feed":
+      body = (
+        <FeedView
           key={step.key}
           block={block}
           config={config}

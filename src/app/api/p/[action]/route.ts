@@ -10,7 +10,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { StudyConfig, isQuestionBlock } from "@/lib/study/schema";
 import { validateBlockAnswers } from "@/lib/study/answers";
-import { validateShopAnswer, validateStoreChoice, validateVillageAnswer } from "@/lib/study/envAnswers";
+import { validateFeedAnswer, validateShopAnswer, validateStoreChoice, validateVillageAnswer } from "@/lib/study/envAnswers";
 import { signMedia } from "@/lib/study/media";
 import { contextFor, evalLogic, nextStepIndex, resolveSteps, type Assignment } from "@/lib/study/flow";
 import { clientKey, rateLimit } from "@/lib/rate-limit";
@@ -195,7 +195,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         const v = validateBlockAnswers(block, b.answers);
         if (!v.ok) return fail(422, "invalidAnswers", { errors: v.errors });
         answers = v.answers;
-      } else if (block.type === "village" || block.type === "store_choice" || block.type === "online_shop") {
+      } else if (block.type === "village" || block.type === "store_choice" || block.type === "online_shop" || block.type === "social_feed") {
         // Stores, products, offers and budget are checked against the published version.
         const raw = b.answers[block.variable];
         const v =
@@ -203,7 +203,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             ? validateVillageAnswer(block, config, s.assignment, raw)
             : block.type === "online_shop"
               ? validateShopAnswer(block, config, s.assignment, raw)
-              : validateStoreChoice(block, raw);
+              : block.type === "social_feed"
+                ? validateFeedAnswer(block, raw)
+                : validateStoreChoice(block, raw);
         if (!v.ok || Object.keys(b.answers).length !== 1) return fail(422, "invalidAnswers", { errors: { [block.variable]: v.ok ? "invalid" : v.error } });
         answers = { [block.variable]: v.value };
       } else if (Object.keys(b.answers).length) {

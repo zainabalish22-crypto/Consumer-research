@@ -36,6 +36,7 @@ const ADDABLE: BlockType[] = [
   "questionnaire",
   "media",
   "ad_exposure",
+  "social_feed",
   "store_choice",
   "village",
   "online_shop",

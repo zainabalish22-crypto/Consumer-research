@@ -1,14 +1,17 @@
 "use client";
 /** Editors for the advertising and shopping-environment blocks (Phase 3). */
+import { useState } from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import type { AdRules, Block, ItemOrder, Language, LocalizedText, OfferRule, StudyConfig } from "@/lib/study/schema";
+import type { AdRules, Block, FeedPost, ItemOrder, Language, LocalizedText, OfferRule, StudyConfig } from "@/lib/study/schema";
+import { shortId } from "@/lib/study/factories";
 import { lt } from "@/lib/study/text";
 import { IdList } from "@/components/IdList";
-import { Select } from "@/components/ui";
+import { Button, Select } from "@/components/ui";
 import { LocalizedField } from "./LocalizedField";
 import { Checkbox, NumberField, TextField } from "./controls";
 import { useLibrary } from "./LibraryContext";
+import { MediaPicker } from "./MediaPicker";
 
 type P<T extends Block["type"]> = {
   block: Extract<Block, { type: T }>;
@@ -412,6 +415,140 @@ export function VillageEditor({ block, config, languages, onChange }: P<"village
         languages={languages}
         onChange={(v: LocalizedText) => set({ considerationPrompt: v.en?.trim() || v.ar?.trim() ? v : undefined })}
       />
+    </>
+  );
+}
+
+export function SocialFeedEditor({ block, config, languages, onChange }: P<"social_feed">) {
+  const t = useTranslations("builder.env");
+  const ads = useOptions("ads");
+  const [picking, setPicking] = useState<number | null>(null);
+  const setPost = (i: number, patch: Partial<FeedPost>) => onChange({ ...block, posts: block.posts.map((p, j) => (j === i ? { ...p, ...patch } : p)) });
+  const move = (i: number, d: number) => {
+    const posts = [...block.posts];
+    const [p] = posts.splice(i, 1);
+    posts.splice(i + d, 0, p);
+    onChange({ ...block, posts });
+  };
+  const add = (kind: FeedPost["kind"]) =>
+    onChange({ ...block, posts: [...block.posts, { id: shortId("p"), kind, author: { en: "", ar: "" }, text: { en: "", ar: "" }, ...(kind === "post" ? { likes: 0 } : {}) }] });
+  return (
+    <>
+      <LibraryLink />
+      <TextField
+        label={t("variablePrefix")}
+        hint={t("feedPrefixHint", { prefix: block.variable })}
+        value={block.variable}
+        dir="ltr"
+        mono
+        onChange={(v) => onChange({ ...block, variable: v.replace(/[^A-Za-z0-9_]/g, "").slice(0, 30) })}
+      />
+      <LocalizedField label={t("heading")} value={block.heading} languages={languages} onChange={(v) => onChange({ ...block, heading: v })} />
+      <LocalizedField label={t("intro")} value={block.intro} languages={languages} multiline onChange={(v) => onChange({ ...block, intro: v })} />
+      <LocalizedField label={t("platformName")} value={block.platformName} languages={languages} onChange={(v) => onChange({ ...block, platformName: v ?? { en: "", ar: "" } })} />
+
+      <fieldset className="flex flex-col gap-3 rounded-lg border border-line p-3">
+        <legend className="px-1 text-sm font-medium">{t("feedPosts")}</legend>
+        <p className="text-xs text-muted">{t("feedPostsHint")}</p>
+        {block.posts.map((p, i) => (
+          <div key={p.id} className="flex flex-col gap-2 rounded-lg border border-line bg-paper/50 p-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">
+                {i + 1}. {p.kind === "ad" ? t("sponsoredPost") : t("organicPost")}
+              </span>
+              <span className="font-mono text-xs text-muted" dir="ltr">
+                {p.id}
+              </span>
+              <span className="flex-1" />
+              <Button variant="ghost" size="sm" disabled={i === 0} onClick={() => move(i, -1)} aria-label={t("moveUp")}>
+                ↑
+              </Button>
+              <Button variant="ghost" size="sm" disabled={i === block.posts.length - 1} onClick={() => move(i, 1)} aria-label={t("moveDown")}>
+                ↓
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={block.posts.length === 1}
+                onClick={() => onChange({ ...block, posts: block.posts.filter((_, j) => j !== i) })}
+                aria-label={t("removePost")}
+              >
+                ✕
+              </Button>
+            </div>
+            {p.kind === "ad" && (
+              <Select aria-label={t("chooseAd")} value={p.adId ?? ""} onChange={(e) => setPost(i, { adId: e.target.value || undefined })}>
+                <option value="">{t("chooseAd")}</option>
+                {ads.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.label}
+                  </option>
+                ))}
+              </Select>
+            )}
+            <LocalizedField
+              label={p.kind === "ad" ? t("postAuthorAd") : t("postAuthor")}
+              value={p.author}
+              languages={languages}
+              onChange={(v) => setPost(i, { author: v ?? { en: "", ar: "" } })}
+            />
+            <LocalizedField label={t("postText")} value={p.text} languages={languages} multiline onChange={(v) => setPost(i, { text: v ?? { en: "", ar: "" } })} />
+            {p.kind === "post" && (
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                {p.media ? (
+                  <>
+                    <span className="truncate text-muted" dir="ltr">
+                      {p.media.storagePath.split("/").pop()?.replace(/^[0-9a-f-]{36}-/, "")}
+                    </span>
+                    <Button variant="ghost" size="sm" onClick={() => setPost(i, { media: undefined })}>
+                      {t("removeMedia")}
+                    </Button>
+                  </>
+                ) : (
+                  <Button variant="secondary" size="sm" onClick={() => setPicking(i)}>
+                    {t("addPostMedia")}
+                  </Button>
+                )}
+              </div>
+            )}
+            {block.showCounts && (
+              <NumberField label={t("postLikes")} value={p.likes ?? 0} min={0} max={10_000_000} onChange={(v) => setPost(i, { likes: v ?? 0 })} />
+            )}
+          </div>
+        ))}
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" size="sm" disabled={block.posts.length >= 60} onClick={() => add("post")}>
+            {t("addOrganicPost")}
+          </Button>
+          <Button variant="secondary" size="sm" disabled={block.posts.length >= 60} onClick={() => add("ad")}>
+            {t("addSponsoredPost")}
+          </Button>
+        </div>
+      </fieldset>
+      {picking !== null && (
+        <MediaPicker
+          kinds={["image", "video"]}
+          onClose={() => setPicking(null)}
+          onPick={(ref) => {
+            setPost(picking, { media: ref });
+            setPicking(null);
+          }}
+        />
+      )}
+
+      <label className="flex flex-col gap-1 text-sm">
+        <span className="font-medium">{t("postOrder")}</span>
+        <Select value={block.postOrder.mode === "random" ? "random" : "listed"} onChange={(e) => onChange({ ...block, postOrder: { mode: e.target.value as "listed" | "random" } })}>
+          <option value="listed">{t("order.listed")}</option>
+          <option value="random">{t("order.random")}</option>
+        </Select>
+      </label>
+      <AdRulesEditor rules={block.ads} config={config} onChange={(r) => onChange({ ...block, ads: r })} />
+      <Checkbox label={t("feedLike")} checked={block.actions.like} onChange={(v) => onChange({ ...block, actions: { ...block.actions, like: v } })} />
+      <Checkbox label={t("feedSave")} checked={block.actions.save} onChange={(v) => onChange({ ...block, actions: { ...block.actions, save: v } })} />
+      <Checkbox label={t("feedHide")} checked={block.actions.hide} onChange={(v) => onChange({ ...block, actions: { ...block.actions, hide: v } })} />
+      <Checkbox label={t("showCounts")} hint={t("showCountsHint")} checked={block.showCounts} onChange={(v) => onChange({ ...block, showCounts: v })} />
+      <NumberField label={t("minSeconds")} value={block.minSeconds} min={0} max={3600} onChange={(v) => onChange({ ...block, minSeconds: v ?? 0 })} />
     </>
   );
 }

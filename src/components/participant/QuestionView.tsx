@@ -323,6 +323,9 @@ export function QuestionView({ q, lang, fallback, value, onChange, error, seed, 
       );
     }
 
+    case "constant_sum":
+      return <ConstantSum q={q} options={orderedOptions} name={name} value={value} onChange={onChange} text={text} tr={tr} header={header} errorLine={errorLine} described={described} error={error} />;
+
     case "ranking":
       return <Ranking q={q} options={orderedOptions} value={value} onChange={onChange} text={text} tr={tr} header={header} errorLine={errorLine} />;
 
@@ -444,6 +447,74 @@ function Ranking({
           </li>
         ))}
       </ol>
+      {errorLine}
+    </fieldset>
+  );
+}
+
+function ConstantSum({
+  q,
+  options,
+  name,
+  value,
+  onChange,
+  text,
+  tr,
+  header,
+  errorLine,
+  described,
+  error,
+}: {
+  q: Extract<Question, { type: "constant_sum" }>;
+  options: Extract<Question, { type: "constant_sum" }>["options"];
+  name: string;
+  value: unknown;
+  onChange: (v: unknown) => void;
+  text: (t: Parameters<typeof lt>[0]) => string;
+  tr: Tr;
+  header: React.ReactNode;
+  errorLine: React.ReactNode;
+  described?: string;
+  error?: string;
+}) {
+  const v = (value && typeof value === "object" && !Array.isArray(value) ? value : {}) as Record<string, number>;
+  const sum = Object.values(v).reduce((s, x) => s + (Number.isFinite(x) ? x : 0), 0);
+  const left = q.total - sum;
+  const unit = text(q.unit);
+  const set = (key: string, raw: string) => {
+    const n = Number(normalizeDigits(raw).replace(/[^0-9]/g, ""));
+    const next = { ...v };
+    if (!raw.trim() || !Number.isFinite(n) || n === 0) delete next[key];
+    else next[key] = Math.min(q.total, Math.round(n));
+    onChange(next);
+  };
+  return (
+    <fieldset aria-describedby={described} aria-invalid={!!error}>
+      {header}
+      <p className="mb-2 text-sm text-muted">{tr("sumHint", { total: q.total, unit })}</p>
+      <div className="flex flex-col gap-2">
+        {options.map((o) => {
+          const id = `${name}_${o.value}`;
+          return (
+            <label key={o.id} htmlFor={id} className="flex items-center gap-3 rounded-lg border border-line bg-surface px-3 py-2">
+              <span className="flex-1">{text(o.label)}</span>
+              <input
+                id={id}
+                inputMode="numeric"
+                dir="ltr"
+                value={v[String(o.value)] ?? ""}
+                onChange={(e) => set(String(o.value), e.target.value)}
+                className="w-20 rounded-md border border-line px-2 py-1.5 text-end tabular-nums"
+                aria-label={text(o.label)}
+              />
+              {unit && <span className="w-14 text-sm text-muted">{unit}</span>}
+            </label>
+          );
+        })}
+      </div>
+      <p role="status" className={cx("mt-2 text-sm tabular-nums", left === 0 ? "text-accent" : left < 0 ? "text-danger" : "text-muted")}>
+        {left === 0 ? tr("sumDone", { total: q.total, unit }) : left > 0 ? tr("sumLeft", { n: left, unit }) : tr("sumOver", { n: -left, unit })}
+      </p>
       {errorLine}
     </fieldset>
   );
