@@ -13,7 +13,11 @@ create table auth.users (
 create function auth.uid() returns uuid language sql stable as $$
   select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
 $$;
+create function auth.jwt() returns jsonb language sql stable security definer as $$
+  select jsonb_build_object('sub', auth.uid(), 'email', (select email from auth.users where id = auth.uid()))
+$$;
 grant usage on schema auth to anon, authenticated;
+grant execute on function auth.jwt() to anon, authenticated;
 grant execute on function auth.uid() to anon, authenticated;
 
 create schema storage;

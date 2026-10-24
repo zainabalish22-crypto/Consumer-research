@@ -1,4 +1,6 @@
 import "server-only";
+import { cookies } from "next/headers";
+import { WORKSPACE_COOKIE } from "./workspace-constants";
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -31,22 +33,47 @@ export interface StudyRow {
   updated_at: string;
 }
 
-/** Signed-in researcher with their (personal) workspace. Redirects to login if needed. */
+export type WorkspaceRole = "owner" | "editor" | "viewer";
+export interface WorkspaceInfo {
+  id: string;
+  name: string;
+  isPersonal: boolean;
+  role: WorkspaceRole;
+}
+
+/**
+ * Signed-in researcher and the workspace they are working in: the one chosen
+ * with the workspace switcher (a cookie, checked against their memberships),
+ * otherwise their personal workspace. Redirects to login if needed.
+ */
 export const getSession = cache(async () => {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-  const { data: membership } = await supabase
+  const { data: rows } = await supabase
     .from("workspace_members")
-    .select("workspace_id, role, workspaces(id, name, is_personal)")
+    .select("workspace_id, role, created_at, workspaces(id, name, is_personal)")
     .eq("user_id", user.id)
-    .order("created_at")
-    .limit(1)
-    .single();
+    .order("created_at");
+  const workspaces: WorkspaceInfo[] = (rows ?? []).map((r) => {
+    const w = (Array.isArray(r.workspaces) ? r.workspaces[0] : r.workspaces) as { id: string; name: string; is_personal: boolean } | null;
+    return { id: r.workspace_id as string, name: w?.name ?? "", isPersonal: !!w?.is_personal, role: r.role as WorkspaceRole };
+  });
+  const personal = workspaces.find((w) => w.isPersonal) ?? workspaces[0];
+  const chosen = (await cookies()).get(WORKSPACE_COOKIE)?.value;
+  const current = workspaces.find((w) => w.id === chosen) ?? personal;
   const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
-  return { supabase, user, workspaceId: membership?.workspace_id as string, profile };
+  return {
+    supabase,
+    user,
+    workspaceId: current?.id as string,
+    workspace: current,
+    workspaces,
+    personalWorkspaceId: personal?.id as string,
+    profile,
+  };
 });
 
 export async function sessionCounts(studyIds: string[]) {

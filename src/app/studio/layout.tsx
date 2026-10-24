@@ -3,11 +3,12 @@ import { getTranslations } from "next-intl/server";
 import { LanguageSwitch } from "@/components/LanguageSwitch";
 import { signOut } from "@/lib/actions/auth";
 import { getSession } from "@/lib/data";
+import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 
 export default async function StudioLayout({ children }: { children: React.ReactNode }) {
   const t = await getTranslations("studio.nav");
   const tc = await getTranslations("common");
-  const { profile, user } = await getSession();
+  const { profile, user, workspaces, workspaceId } = await getSession();
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-20 border-b border-line bg-surface/95 backdrop-blur">
@@ -33,6 +34,7 @@ export default async function StudioLayout({ children }: { children: React.React
             </Link>
           </nav>
           <div className="flex items-center gap-2">
+            <WorkspaceSwitcher workspaces={workspaces} currentId={workspaceId} />
             <span className="hidden text-sm text-muted sm:inline" dir="auto">
               {profile?.display_name || user.email}
             </span>

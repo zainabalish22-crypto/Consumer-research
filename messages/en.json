@@ -225,7 +225,12 @@
     "tooLarge": "The study is too large to save.",
     "invalidConfig": "The study has problems that must be fixed before publishing.",
     "publishFailed": "Publishing failed. Please try again.",
-    "chooseTool": "Choose at least one research tool."
+    "chooseTool": "Choose at least one research tool.",
+    "alreadyMember": "That person is already a member of this workspace.",
+    "needsOwner": "A workspace must always have at least one owner.",
+    "personalWorkspace": "Personal workspaces can't be shared. Create a team workspace instead.",
+    "notAllowed": "Only owners of this workspace can do that.",
+    "tooMany": "You've reached the limit for this workspace."
   },
   "builder": {
     "missingTranslation": "One language is still empty.",
@@ -946,7 +951,7 @@
     "language": "Interface language",
     "languageHint": "This changes the studio language. Each study has its own participant languages.",
     "dataTitle": "Your data",
-    "dataBody": "Only you can see your projects, studies and participant data. You can export every study's data from its Participants & data page.",
+    "dataBody": "Only you can see the projects, studies and participant data in your personal workspace. In a team workspace, its members can see them too. You can export every study's data from its Participants & data page.",
     "retentionNote": "Automatic deletion after a retention period is planned. Until then, delete studies or sessions yourself when your ethics approval requires it.",
     "deleteTitle": "Delete account",
     "deleteBody": "This permanently deletes your account, all projects and studies, all participant data and all media files. Export anything you need first.",
@@ -955,7 +960,9 @@
     "save": "Save",
     "deleteFailed": "Deleting the account failed. Please try again.",
     "typeEmail": "Type your email address to confirm: {email}",
-    "deleteButton": "Delete my account and all data"
+    "deleteButton": "Delete my account and all data",
+    "teamsTitle": "Team workspaces",
+    "teamsBody": "Share projects, studies, the library and templates with colleagues. Everyone in a team workspace sees its participant data, so only invite people covered by your ethics approval."
   },
   "participant": {
     "notSure": "Not sure",
@@ -1355,5 +1362,41 @@
     "description": "Description",
     "copySuffix": "(copy)",
     "facts": "{blocks} blocks · {conditions} conditions · {factors} factors"
+  },
+  "teams": {
+    "switchLabel": "Workspace",
+    "personal": "Personal workspace",
+    "viewOnly": "View only",
+    "yourInvitations": "Invitations for you",
+    "invitedTo": "You're invited to “{workspace}” as {role}.",
+    "accept": "Accept",
+    "decline": "Decline",
+    "current": "Current workspace: {name}",
+    "personalHint": "This is your personal workspace; it can't be shared. Create a team workspace below, or switch to one with the workspace menu at the top.",
+    "name": "Workspace name",
+    "rename": "Rename",
+    "renamed": "Workspace renamed.",
+    "you": "you",
+    "roleFor": "Role for {name}",
+    "remove": "Remove",
+    "rolesHint": "Owners manage members. Editors create and change projects, studies and the library. Viewers can see everything, including participant data, but can't change anything.",
+    "inviteTitle": "Invite a colleague",
+    "inviteHint": "No email is sent. Tell your colleague to sign in (or sign up) with this address; the invitation will appear here in their Settings.",
+    "email": "Email address",
+    "role": "Role",
+    "invite": "Invite",
+    "invited": "Invitation created for {email}.",
+    "pending": "Pending invitations",
+    "cancelInvite": "Cancel",
+    "leave": "Leave this workspace",
+    "newTeam": "New team workspace",
+    "newTeamPlaceholder": "e.g. Consumer behaviour lab",
+    "create": "Create",
+    "created": "Team workspace created and opened.",
+    "roles": {
+      "owner": "Owner",
+      "editor": "Editor",
+      "viewer": "Viewer"
+    }
   }
 }

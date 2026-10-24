@@ -31,7 +31,7 @@ export function ProfileForm({ displayName }: { displayName: string }) {
   );
 }
 
-export function DeleteAccount({ workspaceId, email }: { workspaceId: string; email: string }) {
+export function DeleteAccount({ workspaceIds, email }: { workspaceIds: string[]; email: string }) {
   const t = useTranslations("settings");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -41,11 +41,14 @@ export function DeleteAccount({ workspaceId, email }: { workspaceId: string; ema
       setError(null);
       const supabase = createClient();
       // Remove media files first; Storage is not cascaded by the database.
-      for (;;) {
-        const { data } = await supabase.storage.from("media").list(workspaceId, { limit: 100 });
-        if (!data?.length) break;
-        const { error: rmErr } = await supabase.storage.from("media").remove(data.map((f) => `${workspaceId}/${f.name}`));
-        if (rmErr) return setError(t("deleteFailed"));
+      // Only workspaces deleted with the account; shared team workspaces keep their files.
+      for (const workspaceId of workspaceIds) {
+        for (;;) {
+          const { data } = await supabase.storage.from("media").list(workspaceId, { limit: 100 });
+          if (!data?.length) break;
+          const { error: rmErr } = await supabase.storage.from("media").remove(data.map((f) => `${workspaceId}/${f.name}`));
+          if (rmErr) return setError(t("deleteFailed"));
+        }
       }
       const { error: delErr } = await supabase.rpc("delete_my_account");
       if (delErr) return setError(t("deleteFailed"));
