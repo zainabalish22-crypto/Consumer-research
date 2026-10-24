@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getSession, getStudy } from "@/lib/data";
 import { normalizeDraft } from "@/lib/study/factories";
 import { loadLibrary } from "@/lib/library/load";
+import { aiEnabled } from "@/lib/ai/assistant";
 import { Builder } from "./Builder";
 
 export default async function StudyPage({ params }: { params: Promise<{ studyId: string }> }) {
@@ -25,6 +26,7 @@ export default async function StudyPage({ params }: { params: Promise<{ studyId:
       initialConfig={normalizeDraft(study.draft_config)}
       versions={versions}
       library={lib}
+      aiEnabled={aiEnabled()}
     />
   );
 }

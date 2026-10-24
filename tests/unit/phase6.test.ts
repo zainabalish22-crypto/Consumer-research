@@ -99,3 +99,31 @@ describe("constant sum question", () => {
     expect(q.options.map((o) => cols.find((c) => c.name === `${q.variable}_${o.value}`)?.cell(s))).toEqual([70, 0, 30]);
   });
 });
+
+describe("AI outline to draft study", () => {
+  it("builds a valid draft with conditions, measure pages and a manipulation check", async () => {
+    const { outlineToConfig } = await import("@/lib/ai/outline");
+    const cfg = outlineToConfig({
+      title: "Disclosure and trust",
+      summary: "",
+      design: "between",
+      conditions: [
+        { id: "No Label", label: "No label", description: "" },
+        { id: "no label", label: "Duplicate id", description: "" },
+        { id: "123", label: "Starts with digits", description: "" },
+      ],
+      measures: [{ construct: "Trust", rationale: "", scaleNote: "", items: [{ en: "I trust this brand.", ar: "أثق بهذه العلامة." }, { en: "It is honest.", ar: "إنها صادقة." }] }],
+      manipulationChecks: [{ en: "Was the ad labelled as AI-generated?", ar: "هل كان الإعلان موسومًا؟" }],
+      confounds: [],
+      counterbalancing: "",
+      analyses: [],
+      caveats: [],
+    });
+    expect(StudyConfig.safeParse(cfg).success).toBe(true);
+    expect(cfg.design.conditions.map((c) => c.id)).toEqual(["no_label", "no_label_2", "c3"]);
+    const pages = cfg.blocks.filter((b) => b.type === "questionnaire");
+    expect(pages.map((p) => p.name)).toEqual(["Trust (AI draft, not validated)", "Manipulation check (AI draft)"]);
+    expect(pages[0].type === "questionnaire" && pages[0].questions.map((q) => q.variable)).toEqual(["m1_1", "m1_2"]);
+    expect(cfg.blocks.at(-1)?.type).toBe("end");
+  });
+});

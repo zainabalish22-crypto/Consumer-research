@@ -99,6 +99,15 @@ Use a process manager (systemd, pm2) to keep it running. `npm start` (`next star
 2. Create a project and a study, publish it, and open its **test link**.
 3. Take part once, then check **Participants & data** and **Analytics**, and download the CSV.
 
+## Optional AI assistant
+
+The assistant is off unless you add an Anthropic API key to the **server** environment. This is a runtime setting, so no rebuild is needed:
+
+- `ANTHROPIC_API_KEY`: from the Claude Console. On Vercel, add it under **Settings → Environment Variables** as a **Secret**, without a `NEXT_PUBLIC_` prefix, then redeploy.
+- `AI_DAILY_LIMIT` (optional): requests per researcher per 24 hours, 30 by default.
+
+The host pays for usage. It uses Claude Opus 5.5, with Anthropic's automatic fallback if a request is declined. Only the study text being worked on is sent, never participant data. The `ai_requests` table records only the request kind and token counts.
+
 ## Changing limits
 
 Upload size, blocks per study and questions per page live in `src/config/platform.ts`. The storage bucket's own size limit is set in the foundation migration. On self-hosted Supabase, raise both, together with the storage server's `FILE_SIZE_LIMIT`. The platform's name is in the same config file and in `messages/*.json` (`common.platformName`).

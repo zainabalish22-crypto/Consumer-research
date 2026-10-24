@@ -87,7 +87,8 @@
       "settings": "Settings",
       "signOut": "Sign out",
       "library": "Library",
-      "templates": "Templates"
+      "templates": "Templates",
+      "assistant": "Assistant"
     },
     "dashboard": {
       "title": "Dashboard",
@@ -230,7 +231,11 @@
     "needsOwner": "A workspace must always have at least one owner.",
     "personalWorkspace": "Personal workspaces can't be shared. Create a team workspace instead.",
     "notAllowed": "Only owners of this workspace can do that.",
-    "tooMany": "You've reached the limit for this workspace."
+    "tooMany": "You've reached the limit for this workspace.",
+    "aiDisabled": "The AI assistant is not set up on this instance.",
+    "aiLimit": "You've reached today's limit for the AI assistant. Try again tomorrow.",
+    "aiRefused": "The assistant declined this request. Try rephrasing it.",
+    "aiFailed": "The assistant couldn't complete this request. Please try again."
   },
   "builder": {
     "missingTranslation": "One language is still empty.",
@@ -252,7 +257,8 @@
       "flow": "Flow",
       "settings": "Settings",
       "share": "Share & versions",
-      "design": "Design"
+      "design": "Design",
+      "assistant": "Assistant"
     },
     "flow": {
       "label": "Study flow",
@@ -1398,5 +1404,61 @@
       "editor": "Editor",
       "viewer": "Viewer"
     }
+  },
+  "assistant": {
+    "title": "AI assistant",
+    "subtitle": "Optional help with designing studies. Everything it writes is a suggestion for you to review; it never changes a published study.",
+    "disabled": "The AI assistant is optional and is not set up on this instance. The platform works fully without it. To turn it on, the host adds an Anthropic API key (ANTHROPIC_API_KEY) to the server settings; see docs/SELF_HOSTING.md.",
+    "note": "Suggestions only: check everything before using it. The assistant may be wrong, does not cite sources, and its draft items are not validated scales. Only study text is sent to the AI service, never participant data.",
+    "usage": "{used} of {limit} requests used in the last 24 hours.",
+    "working": "Working…",
+    "ideaLabel": "Describe your research idea",
+    "ideaPlaceholder": "e.g. Does labelling an ad as AI-generated change trust in the brand and purchase intention for coffee shops in Bahrain?",
+    "draftOutline": "Draft a study outline",
+    "designs": {
+      "between": "Between-subjects",
+      "within": "Within-subjects",
+      "mixed": "Mixed design",
+      "single_group": "Single group"
+    },
+    "conditions": "Conditions",
+    "measures": "Measures (draft items, not validated)",
+    "manipulationChecks": "Manipulation checks",
+    "confounds": "Possible confounds",
+    "counterbalancing": "Counterbalancing",
+    "analyses": "Analyses to consider",
+    "caveats": "Still to decide or check",
+    "createHint": "Create a normal draft study from this outline: conditions, one page per measure, a manipulation check and demographics. You can edit or delete anything afterwards.",
+    "needProject": "Create a project first.",
+    "project": "Project",
+    "createStudy": "Create draft study",
+    "critiqueTitle": "Check question wording",
+    "critiqueHint": "Looks for leading, double-barrelled, ambiguous or loaded wording, and checks that the English and Arabic say the same thing. Uses the last saved draft.",
+    "noQuestionPages": "This study has no question pages yet.",
+    "page": "Page",
+    "critique": "Check this page",
+    "noIssues": "No problems found.",
+    "suggested": "Suggested wording",
+    "apply": "Use this wording",
+    "applied": "Applied",
+    "issues": {
+      "leading": "Leading",
+      "double_barrelled": "Double-barrelled",
+      "ambiguous": "Ambiguous",
+      "loaded": "Loaded",
+      "jargon": "Jargon",
+      "double_negative": "Double negative",
+      "too_long": "Too long",
+      "other": "Other"
+    },
+    "translateTitle": "Fill in missing translations",
+    "translateHint": "{n} text fields have only one language written. Review the translations before applying them.",
+    "oneLanguage": "This study uses one language.",
+    "translate": "Translate missing text",
+    "applyAll": "Apply {n} translations",
+    "analysisTitle": "Suggest an analysis plan",
+    "analysisHint": "Uses the design and variable names only, never participant data. Check the plan with a statistician.",
+    "suggest": "Suggest analyses",
+    "method": "Method"
   }
 }

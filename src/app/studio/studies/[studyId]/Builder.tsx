@@ -16,6 +16,7 @@ import {
   setStudyStatus,
 } from "@/lib/actions/studio";
 import { saveAsTemplate } from "@/lib/actions/templates";
+import { AssistantPanel } from "@/components/builder/AssistantPanel";
 import type { StudyStatus } from "@/lib/data";
 import { Alert, Badge, Button, Card, Field, Input, Select, cx } from "@/components/ui";
 import { FlowList } from "@/components/builder/FlowList";
@@ -50,6 +51,8 @@ interface Props {
   initialConfig: StudyConfig;
   versions: { id: string; version_number: number; locked: boolean; published_at: string }[];
   library: LibrarySnapshot;
+  /** The optional AI assistant is configured on this instance. */
+  aiEnabled: boolean;
 }
 
 type SaveState = "saved" | "dirty" | "saving" | "error";
@@ -62,14 +65,14 @@ export function Builder(props: Props) {
   );
 }
 
-function BuilderInner({ study, initialConfig, versions }: Props) {
+function BuilderInner({ study, initialConfig, versions, aiEnabled }: Props) {
   const t = useTranslations("builder");
   const te = useTranslations("errors");
   const locale = useLocale() as Language;
   const router = useRouter();
   const [config, setConfig] = useState<StudyConfig>(initialConfig);
   const [selectedId, setSelectedId] = useState<string | null>(initialConfig.blocks[0]?.id ?? null);
-  const [tab, setTab] = useState<"flow" | "design" | "settings" | "share">("flow");
+  const [tab, setTab] = useState<"flow" | "design" | "settings" | "share" | "assistant">("flow");
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [publishMsg, setPublishMsg] = useState<{ tone: "ok" | "danger" | "neutral"; text: string; issues?: { path: string; message: string }[] } | null>(null);
   const [pending, start] = useTransition();
@@ -254,7 +257,7 @@ function BuilderInner({ study, initialConfig, versions }: Props) {
       )}
 
       <div role="tablist" className="flex gap-1 border-b border-line">
-        {(["flow", "design", "settings", "share"] as const).map((k) => (
+        {(["flow", "design", "settings", "share", "assistant"] as const).map((k) => (
           <button
             key={k}
             role="tab"
@@ -377,6 +380,16 @@ function BuilderInner({ study, initialConfig, versions }: Props) {
       {tab === "design" && <DesignEditor config={config} onChange={update} />}
 
       {tab === "settings" && <SettingsTab config={config} onChange={update} />}
+
+      {tab === "assistant" && (
+        <AssistantPanel
+          studyId={study.id}
+          config={config}
+          onChange={update}
+          enabled={aiEnabled}
+          ensureSaved={async () => (saveState === "saved" ? true : !!(await doSave()))}
+        />
+      )}
 
       {tab === "share" && <ShareTab study={study} versions={versions} conditions={config.design.conditions.map((c) => ({ id: c.id, label: c.label }))} />}
     </div>

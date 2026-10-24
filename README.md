@@ -6,7 +6,7 @@ A free, bilingual (Arabic/English) platform for consumer-behaviour research: bui
 
 ## Status
 
-**Phases 1–5 built and tested locally, and all migrations are applied to the hosted database (Frankfurt).** Templates, the online shop and the analytics page's empty state have been checked in preview. No study has yet been published and run by real participants, so the analytics charts have only been tested with unit-test data (see `KNOWN_ISSUES.md`).
+**Phases 1–6 built and tested locally, and all migrations are applied to the hosted database (Frankfurt).** Templates, the online shop and the analytics page's empty state have been checked in preview. No study has yet been published and run by real participants, so the analytics charts have only been tested with unit-test data (see `KNOWN_ISSUES.md`).
 
 | Area | State |
 |---|---|
@@ -42,7 +42,11 @@ A free, bilingual (Arabic/English) platform for consumer-behaviour research: bui
 | Self-hosting guide, Dockerfile and Compose file | Done (standalone Node server tested; Docker image not yet built) |
 | Running costs and limits documentation | Done ([`docs/LIMITS.md`](docs/LIMITS.md)) |
 | Accessibility check: axe on participant pages (both languages, village, shop with pop-up) and all studio pages | No violations left in what was checked; a manual screen-reader test is still to do |
-| AI features and other extensions (Phase 6) | Not started |
+| Social media feed environment: organic and sponsored posts (library ads with versions and disclosure), like / save / hide, seconds on screen per post | Done |
+| Constant-sum question type | Done |
+| Village themes: minimal, neutral, playful, luxury district, souq-inspired | Done |
+| Team workspaces: create, invite by email (accepted in the app, no mail server needed), owner / editor / viewer, switcher | Done |
+| Optional AI assistant (Claude): study outline from an idea, wording check, missing translations, analysis plan; off without a key | Done (needs `ANTHROPIC_API_KEY`; not yet tried with a real key) |
 
 ### Known limitations
 

@@ -86,6 +86,21 @@ Reasonable, reversible defaults chosen where the brief left room. Newest at the 
 - **Self-hosting** needs Supabase (self-hosted or cloud), because the app relies on its sign-in, storage and row-level security; plain PostgreSQL on its own is not enough. The app needs only the public URL and publishable key, which are build-time values.
 - **Landmarks:** the studio has one `<main>`. The participant page uses `<main>` when live, but not inside the studio preview, so landmarks never nest.
 
+## Phase 6: extensions
+
+- **Social feed** is a block like the village and the shop. Organic posts are written in the block; sponsored posts show library ads, so AI versions and disclosure labels work the same way as everywhere else. Like counts are stimuli set by the researcher, and the builder says so. Viewing time is recorded per post (at least half on screen). Posts appear as listed or in random order; factor-based order is not offered, because posts are not library items.
+- **Constant sum** stores `{option value: points}` and must add up to the total exactly, checked on the server. Unallocated options export as 0.
+- **Themes** change colours and paving only. Souq-inspired uses warm stone and arcade paving, with no figures, costumes or other stereotyped imagery.
+- **Team workspaces** reuse the existing `workspace_members` roles. Invitations are matched to the invitee's signed-in email and accepted in Settings, so no mail server is needed. The database enforces every rule (owners invite and change roles, a workspace always keeps an owner, personal workspaces cannot be shared). Deleting an account now keeps shared team workspaces and hands them to the longest-standing member. Previously, deleting the creator would have deleted colleagues' work.
+- **Viewers** are enforced by row-level security. The interface shows "View only", but editing controls are not yet hidden, so a viewer who tries to change something gets a save error.
+- **AI assistant** is optional and off without `ANTHROPIC_API_KEY`:
+  - It uses one instance-wide key, server-only. Researchers' own keys are not supported yet, because storing keys safely needs encryption at rest.
+  - It runs structured (JSON schema) requests on Claude Opus 5.5 with server-side refusal fallback.
+  - The system prompt forbids invented references, claims that items are validated, and guarantees of validity or ethical approval.
+  - Only study text is sent. Analysis suggestions receive the design and variable names, never responses.
+  - Outputs are suggestions: wording and translations are applied per item by the researcher, into the draft only. An outline becomes a new draft study only when the researcher clicks Create.
+  - Each researcher gets a daily request limit, logged as counts only.
+
 ## Hosting region
 
 - The hosted instance uses a Supabase project in **eu-central-1 (Frankfurt)** (`research-platform-eu`). Some ethics committees and data-protection laws (e.g. Bahrain's PDPL) care where data is stored; EU storage under GDPR is generally the easiest location to justify, and Supabase has no Gulf region. An earlier empty project in Tokyo (ap-northeast-1) is not used. This is not legal advice: check any storage-location rule your institution has.
