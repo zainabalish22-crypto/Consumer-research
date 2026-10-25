@@ -650,8 +650,8 @@ function ItemCard({
   const locale = useLocale() as Language;
   const x = item as unknown as Record<string, unknown>;
   const brand = typeof x.brandId === "string" ? lib.brands[x.brandId] : kind === "brand" ? (item as unknown as LibrarySnapshot["brands"][string]) : undefined;
-  const tone = brand?.colors.secondary ?? (kind === "offer" ? "#fcebd5" : kind === "ad" ? "#eee7f7" : "#e1efee");
-  const ink = brand?.colors.primary ?? (kind === "offer" ? "#b45309" : kind === "ad" ? "#6d4aa8" : "#0f6e6e");
+  const tone = brand?.colors.secondary ?? (kind === "offer" ? "#fcebd5" : kind === "ad" ? "#e1efee" : "#efe9fa");
+  const ink = brand?.colors.primary ?? (kind === "offer" ? "#b45309" : kind === "ad" ? "#0f6e6e" : "#6a3fb5");
   const en = lt(item.name, "en");
   const ar = lt(item.name, "ar");
   const primary = (locale === "ar" ? ar || en : en || ar) || t("untitled");

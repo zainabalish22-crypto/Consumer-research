@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { LanguageSwitch } from "@/components/LanguageSwitch";
-import { LogoMark } from "@/components/Logo";
+import { LogoMark, Wordmark } from "@/components/Logo";
 import { PLATFORM } from "@/config/platform";
 
 const FEATURES = ["questionnaires", "experiments", "village", "shop", "feed", "export"] as const;
@@ -9,14 +9,13 @@ const STEPS = ["choose", "preview", "share"] as const;
 
 export default async function Home() {
   const t = await getTranslations("home");
-  const tc = await getTranslations("common");
   return (
     <div className="min-h-screen">
       <header className="border-b border-line bg-surface">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:px-6">
           <Link href="/" className="flex items-center gap-2 font-semibold">
-            <LogoMark size={28} />
-            {tc("platformName")}
+            <LogoMark size={30} />
+            <Wordmark />
           </Link>
           <nav aria-label={t("navLabel")} className="hidden gap-5 text-sm text-muted md:flex">
             <a href="#features" className="hover:text-ink">
@@ -130,9 +129,9 @@ export default async function Home() {
 /** A stylised online-shop screen: what a participant might see in an experiment. Decorative only. */
 function ShopIllustration({ t }: { t: Awaited<ReturnType<typeof getTranslations<"home">>> }) {
   const items = [
-    { name: t("demo.iced"), price: "2.000", tone: "#e1efee" },
+    { name: t("demo.iced"), price: "2.000", tone: "#efe9fa" },
     { name: t("demo.cappuccino"), price: "1.800", tone: "#fcebd5" },
-    { name: t("demo.arabic"), price: "1.500", tone: "#eee7f7" },
+    { name: t("demo.arabic"), price: "1.500", tone: "#e1efee" },
   ];
   return (
     <div aria-hidden="true" className="relative pb-10">

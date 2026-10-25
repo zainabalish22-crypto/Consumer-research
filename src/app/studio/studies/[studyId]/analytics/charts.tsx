@@ -5,7 +5,7 @@
 import { cx } from "@/components/ui";
 
 /** Distinct in lightness as well as hue, so neighbours stay distinguishable. */
-export const SERIES = ["#0F6E6E", "#6D4AA8", "#B45309", "#475569", "#7FBDB8", "#B9A3DD", "#E8B07E", "#9AA5B1"];
+export const SERIES = ["#6A3FB5", "#0F6E6E", "#B45309", "#475569", "#B9A3DD", "#7FBDB8", "#E8B07E", "#9AA5B1"];
 
 export function Ring({ pct, label }: { pct: number | null; label: string }) {
   const p = Math.max(0, Math.min(100, pct ?? 0));
@@ -58,7 +58,7 @@ export function GroupedColumns({
   series: string[];
 }) {
   const max = Math.max(1, ...groups.flatMap((g) => g.values));
-  const tones = ["bg-[#B9DAD7]", "bg-accent"];
+  const tones = ["bg-[#CDBDEB]", "bg-accent"];
   return (
     <div className="flex flex-col gap-3">
       <div className="flex h-40 items-end gap-6 border-b border-line px-2" aria-hidden>

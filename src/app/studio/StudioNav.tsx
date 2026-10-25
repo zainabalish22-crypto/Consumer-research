@@ -6,7 +6,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogoMark } from "@/components/Logo";
+import { LogoMark, Wordmark } from "@/components/Logo";
 import { cx } from "@/components/ui";
 
 type Item = { href: string; label: string; icon: React.ReactNode; exact?: boolean };
@@ -49,14 +49,12 @@ export const NAV_ICONS = {
 };
 
 export function StudioNav({
-  platformName,
   label,
   menuLabel,
   items,
   workspace,
   footer,
 }: {
-  platformName: string;
   label: string;
   menuLabel: string;
   items: { href: string; label: string; icon: keyof typeof NAV_ICONS; exact?: boolean }[];
@@ -74,7 +72,7 @@ export function StudioNav({
       <div className="flex items-center gap-2.5 px-4 py-3 lg:px-5 lg:pt-5">
         <Link href="/studio" className="flex items-center gap-2.5 font-bold">
           <LogoMark size={30} />
-          <span>{platformName}</span>
+          <Wordmark />
         </Link>
         <span className="flex-1" />
         <button

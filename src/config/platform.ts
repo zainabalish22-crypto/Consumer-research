@@ -1,9 +1,9 @@
 /**
  * The platform's name and fixed limits live here so they can be changed in one place.
- * The final name has not been decided; this is a working placeholder.
+ * "Why & Wren" is a brand name and is kept in English in both languages.
  */
 export const PLATFORM = {
-  name: { en: "Research Platform", ar: "منصة البحث" },
+  name: { en: "Why & Wren", ar: "Why & Wren" },
   /** Shown in the footer and docs. Keep honest: no licence chosen yet. */
   repositoryUrl: "https://github.com/zainabalish22-crypto/Consumer-research" as string | null,
 } as const;

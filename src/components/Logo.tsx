@@ -1,9 +1,36 @@
-/** The platform's mark: a rounded tile with four bars (data, in either language). */
+/**
+ * Why & Wren's mark: a small wren with its tail cocked up, perched on a line, on a
+ * rounded purple tile. The name is a brand and is never translated, so the
+ * wordmark always renders in English, left to right. src/app/icon.svg is the same
+ * drawing with fixed colours.
+ */
 export function LogoMark({ size = 32, className }: { size?: number; className?: string }) {
+  const accent = "var(--color-accent, #6a3fb5)";
   return (
     <svg width={size} height={size} viewBox="0 0 44 44" aria-hidden="true" className={className}>
-      <rect width="44" height="44" rx="12" fill="var(--color-accent)" />
-      <path d="M12 30V20M19 30V14M26 30V23M33 30V17" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" />
+      <rect width="44" height="44" rx="12" fill={accent} />
+      {/* Tail, body, head */}
+      <path d="M25.5 21.5 Q28.2 14.6 31 9.2 Q33.4 8.3 34.4 10.3 Q32.9 16.6 31 24 Z" fill="#fff" />
+      <ellipse cx="21.5" cy="25" rx="9.6" ry="7.4" fill="#fff" />
+      <circle cx="14.6" cy="19.2" r="5.6" fill="#fff" />
+      {/* Beak and eye */}
+      <path d="M9.4 18.2 L5.6 19.6 L9.6 20.6 Z" fill="#f2a23a" />
+      <circle cx="13.6" cy="18.2" r="1.25" fill="#1c1726" />
+      {/* Barred wing */}
+      <path d="M18.4 23.4 Q23.6 19.6 30 22.2 Q27.6 28 20.6 27.2 Q17.8 26 18.4 23.4 Z" fill="#d9ccf0" />
+      <path d="M22.4 22.4 L23.4 26.6 M25.6 21.9 L26.4 26.2" stroke={accent} strokeWidth="1.1" strokeLinecap="round" />
+      {/* Legs and perch */}
+      <path d="M19 32 L18 35.6 M24 32 L25 35.6" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M9 36 L35 36" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" opacity=".55" />
     </svg>
+  );
+}
+
+/** "Why & Wren" with the ampersand in the accent colour. Always English and left to right. */
+export function Wordmark({ className }: { className?: string }) {
+  return (
+    <span dir="ltr" lang="en" translate="no" className={className}>
+      Why <span className="text-accent">&amp;</span> Wren
+    </span>
   );
 }

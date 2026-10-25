@@ -7,12 +7,10 @@ import { StudioNav } from "./StudioNav";
 
 export default async function StudioLayout({ children }: { children: React.ReactNode }) {
   const t = await getTranslations("studio.nav");
-  const tc = await getTranslations("common");
   const { profile, user, workspaces, workspaceId } = await getSession();
   return (
     <div className="min-h-screen lg:flex">
       <StudioNav
-        platformName={tc("platformName")}
         label={t("label")}
         menuLabel={t("menu")}
         items={[

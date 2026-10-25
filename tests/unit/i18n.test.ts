@@ -20,8 +20,11 @@ describe("interface translations", () => {
   it("no Arabic message is empty or left in English by mistake", () => {
     const flat = (o: object, p = ""): [string, string][] =>
       Object.entries(o).flatMap(([k, v]) => (typeof v === "object" ? flat(v, `${p}${k}.`) : [[`${p}${k}`, String(v)]]));
+    // The brand name is deliberately kept in English in both languages.
+    const brand = new Set(["common.platformName"]);
     for (const [k, v] of flat(ar)) {
       expect(v.trim(), k).not.toBe("");
+      if (brand.has(k)) continue;
       // Every Arabic message should contain at least one Arabic letter.
       expect(/[؀-ۿ]/.test(v), `${k}: ${v}`).toBe(true);
     }

@@ -1,4 +1,4 @@
-﻿# Research Platform (working name)
+﻿# Why & Wren
 
 A free, bilingual (Arabic/English) platform for consumer-behaviour research: build a study as an ordered flow of blocks, run it with participants, and export clean data. See `docs/PLATFORM_BRIEF.md` for the full product brief and `DECISIONS.md` for choices made during the build.
 

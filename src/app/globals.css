@@ -2,15 +2,15 @@
 
 @theme {
   --font-sans: var(--font-latin), var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
-  --color-ink: #13201f;
-  --color-muted: #5b6866;
-  --color-line: #dde2df;
-  --color-line-strong: #c9d1ce;
-  --color-paper: #f5f6f3;
+  --color-ink: #1c1726;
+  --color-muted: #625d6e;
+  --color-line: #e3e0e8;
+  --color-line-strong: #cfcad8;
+  --color-paper: #f7f6f9;
   --color-surface: #ffffff;
-  --color-accent: #0f6e6e;
-  --color-accent-strong: #0b5050;
-  --color-accent-soft: #e1efee;
+  --color-accent: #6a3fb5;
+  --color-accent-strong: #4c2a87;
+  --color-accent-soft: #efe9fa;
   --color-danger: #b42318;
   --color-danger-soft: #fdecea;
   --color-warn: #8a5a00;
@@ -18,8 +18,8 @@
   --color-ok: #1f7a3a;
   --color-ok-soft: #e6f4ea;
   /* Block-type families: media and ads; shopping environments. */
-  --color-media: #6d4aa8;
-  --color-media-soft: #eee7f7;
+  --color-media: #0f6e6e;
+  --color-media-soft: #e1efee;
   --color-shop: #b45309;
   --color-shop-soft: #fcebd5;
   --color-flow: #475569;
