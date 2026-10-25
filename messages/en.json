@@ -5,32 +5,79 @@
   },
   "home": {
     "signIn": "Sign in",
-    "headline": "A free, bilingual platform for consumer behaviour research",
-    "lede": "Build anything from a simple questionnaire to an interactive experiment, run it with participants in Arabic or English, and export clean data for analysis. No fees, no institutional licence, no code.",
+    "navLabel": "Page sections",
+    "nav": {
+      "features": "Features",
+      "how": "How it works",
+      "selfHosting": "Self-hosting",
+      "source": "Source code"
+    },
+    "ctaShort": "Create free account",
+    "eyebrow": "Free for researchers · Arabic and English",
+    "headline": "Run consumer experiments that feel like real shopping.",
+    "lede": "Build questionnaires, walkable shopping streets, online shops and social feeds, randomise conditions properly, and export clean data with Arabic and English labels. No code, no fees.",
     "cta": "Create a free account",
+    "promises": {
+      "noTiers": "No paid tiers",
+      "notSold": "Participant data never sold",
+      "selfHost": "Self-hostable by universities"
+    },
+    "featuresTitle": "Everything a consumer study needs",
     "features": {
       "questionnaires": {
         "title": "Questionnaires",
-        "body": "Twelve question types, attention checks and reusable blocks, arranged in any order you choose."
+        "body": "Thirteen question types, attention checks, branching and reusable blocks."
       },
       "experiments": {
-        "title": "Media experiments",
-        "body": "Show images, video and audio with exposure control. Conditions, shopping environments and online shops are on the roadmap."
+        "title": "Proper experiments",
+        "body": "Balanced conditions, Latin squares and counterbalancing, assigned securely on the server."
       },
-      "bilingual": {
-        "title": "Arabic and English",
-        "body": "Right-to-left and left-to-right done properly, for both researchers and participants."
+      "village": {
+        "title": "Shopping village",
+        "body": "A walkable street of stores: stopping, entering, browsing and buying are all recorded."
+      },
+      "shop": {
+        "title": "Online shop",
+        "body": "Search, filters, product pages, sponsored ads and a simulated checkout."
+      },
+      "feed": {
+        "title": "Social feed and ads",
+        "body": "Organic and sponsored posts with ad versions and disclosure labels, likes and viewing time."
       },
       "export": {
-        "title": "Clean exports",
-        "body": "One row per participant, a codebook with Arabic and English labels, and the exact study version used."
-      },
-      "free": {
-        "title": "Free, always",
-        "body": "No subscriptions, no paid tiers, no selling of participant data. Designed to be self-hosted by universities."
+        "title": "Analytics and exports",
+        "body": "Live results, CSV with a codebook, and SPSS syntax with Arabic or English labels."
       }
     },
-    "footer": "A research tool, not a commercial product. Limits exist only to keep the free service stable and are explained in the documentation."
+    "howTitle": "From idea to data in three steps",
+    "steps": {
+      "choose": {
+        "title": "Choose your tools",
+        "body": "Questionnaire, village, shop, feed, or several at once, from a template or from scratch."
+      },
+      "preview": {
+        "title": "Preview every condition",
+        "body": "See exactly what each group will see, in both languages, before you publish."
+      },
+      "share": {
+        "title": "Share one link",
+        "body": "Works with participant panels; data arrives ready for SPSS or R."
+      }
+    },
+    "bilingualTitle": "Built in Arabic and English from day one",
+    "bilingualBody": "Right-to-left layouts that are designed, not mirrored as an afterthought. Participants choose their language; your data keeps one set of variables.",
+    "demo": {
+      "shop": "Pearl Bean",
+      "cart": "Cart · 2",
+      "sponsored": "SPONSORED · AI-GENERATED",
+      "offer": "Saffron latte: buy one, get one free",
+      "iced": "Iced latte",
+      "cappuccino": "Cappuccino",
+      "arabic": "Arabic coffee",
+      "condition": "Condition: label shown",
+      "recorded": "Searches, views and cart recorded"
+    },
+    "footer": "A research tool, not a commercial product. Limits exist only to keep the free service stable."
   },
   "auth": {
     "title": "Sign in",
@@ -1323,7 +1370,9 @@
     "reviewAuthor": "Reviewer name",
     "reviewStars": "Stars",
     "reviewText": "Review",
-    "addReview": "Add review"
+    "addReview": "Add review",
+    "versionCount": "{n, plural, one {# version} other {# versions}}",
+    "productCount": "{n, plural, =0 {No products} one {# product} other {# products}}"
   },
   "analytics": {
     "title": "Analytics",

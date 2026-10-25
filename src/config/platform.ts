@@ -5,7 +5,7 @@
 export const PLATFORM = {
   name: { en: "Research Platform", ar: "منصة البحث" },
   /** Shown in the footer and docs. Keep honest: no licence chosen yet. */
-  repositoryUrl: null as string | null,
+  repositoryUrl: "https://github.com/zainabalish22-crypto/Consumer-research" as string | null,
 } as const;
 
 /**

@@ -78,11 +78,13 @@ export function LibraryManager({
   lib,
   meta,
   initialTab,
+  thumbs = {},
 }: {
   workspaceId: string;
   lib: LibrarySnapshot;
   meta: Record<string, LibraryMeta>;
   initialTab?: string;
+  thumbs?: Record<string, string>;
 }) {
   const t = useTranslations("library");
   const locale = useLocale() as Language;
@@ -99,24 +101,55 @@ export function LibraryManager({
 
   return (
     <div className="flex flex-col gap-4">
-      <div role="tablist" className="flex flex-wrap gap-1 border-b border-line">
-        {LIBRARY_KINDS.map((k) => (
-          <button
-            key={k}
-            role="tab"
-            type="button"
-            aria-selected={kind === k}
-            onClick={() => {
-              setKind(k);
-              setEditing(null);
-            }}
-            className={cx("-mb-px border-b-2 px-3 py-2 text-sm font-medium", kind === k ? "border-accent" : "border-transparent text-muted hover:text-ink")}
-          >
-            {t(`kinds.${k}`)} <span className="text-xs text-muted">({Object.keys(lib[KEY[k]]).length})</span>
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center gap-3">
+        <div role="tablist" className="flex flex-wrap gap-1.5">
+          {LIBRARY_KINDS.map((k) => (
+            <button
+              key={k}
+              role="tab"
+              type="button"
+              aria-selected={kind === k}
+              onClick={() => {
+                setKind(k);
+                setEditing(null);
+              }}
+              className={cx("rounded-full px-3.5 py-1.5 text-sm", kind === k ? "bg-ink text-white" : "border border-line bg-surface hover:bg-paper")}
+            >
+              {t(`kinds.${k}`)} <span className={kind === k ? "opacity-75" : "text-muted"}>{Object.keys(lib[KEY[k]]).length}</span>
+            </button>
+          ))}
+        </div>
+        <span className="flex-1" />
+        {editing === null && (
+          <div className="flex gap-2">
+            <input
+              aria-label={t("search")}
+              placeholder={t("search")}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-56 rounded-lg border border-line bg-surface px-3 py-2 text-sm"
+              dir="auto"
+            />
+            <Button onClick={() => setEditing(blank(kind, lib))}>{t("new")}</Button>
+          </div>
+        )}
       </div>
 
+      {editing === null && (
+        items.length === 0 ? (
+          <EmptyState title={t("empty")}>{t(`emptyHint.${kind}`)}</EmptyState>
+        ) : (
+          <ul className="grid grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] gap-4">
+            {items.map((x) => (
+              <li key={x.id}>
+                <ItemCard item={x} kind={kind} lib={lib} thumb={thumbs[x.id]} folder={meta[x.id]?.folder} onOpen={() => setEditing(structuredClone(x) as unknown as Record<string, unknown>)} />
+              </li>
+            ))}
+          </ul>
+        )
+      )}
+
+      {editing !== null && (
       <div className="grid gap-6 lg:grid-cols-[20rem_1fr]">
         <section className="flex flex-col gap-3">
           <div className="flex gap-2">
@@ -176,6 +209,7 @@ export function LibraryManager({
           )}
         </section>
       </div>
+      )}
     </div>
   );
 }
@@ -593,5 +627,81 @@ function AdFields({ item, set }: FieldsProps) {
         </div>
       </fieldset>
     </>
+  );
+}
+
+/** A library item as a card: its picture (or its brand's colour), names in both languages and key facts. */
+function ItemCard({
+  item,
+  kind,
+  lib,
+  thumb,
+  folder,
+  onOpen,
+}: {
+  item: AnyItem;
+  kind: LibraryKind;
+  lib: LibrarySnapshot;
+  thumb?: string;
+  folder?: string | null;
+  onOpen: () => void;
+}) {
+  const t = useTranslations("library");
+  const locale = useLocale() as Language;
+  const x = item as unknown as Record<string, unknown>;
+  const brand = typeof x.brandId === "string" ? lib.brands[x.brandId] : kind === "brand" ? (item as unknown as LibrarySnapshot["brands"][string]) : undefined;
+  const tone = brand?.colors.secondary ?? (kind === "offer" ? "#fcebd5" : kind === "ad" ? "#eee7f7" : "#e1efee");
+  const ink = brand?.colors.primary ?? (kind === "offer" ? "#b45309" : kind === "ad" ? "#6d4aa8" : "#0f6e6e");
+  const en = lt(item.name, "en");
+  const ar = lt(item.name, "ar");
+  const primary = (locale === "ar" ? ar || en : en || ar) || t("untitled");
+  const secondary = locale === "ar" ? (ar ? en : "") : en ? ar : "";
+  const product = kind === "product" ? (item as unknown as LibrarySnapshot["products"][string]) : null;
+  const offer = kind === "offer" ? (item as unknown as LibrarySnapshot["offers"][string]) : null;
+  const ad = kind === "ad" ? (item as unknown as LibrarySnapshot["ads"][string]) : null;
+  const store = kind === "store" ? (item as unknown as LibrarySnapshot["stores"][string]) : null;
+  return (
+    <button type="button" onClick={onOpen} className="flex h-full w-full flex-col overflow-hidden rounded-2xl border border-line bg-surface text-start hover:border-accent/60 hover:shadow-sm">
+      <span className="relative flex h-28 w-full items-center justify-center" style={{ background: tone }}>
+        {thumb ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={thumb} alt="" className="h-full w-full object-cover" loading="lazy" />
+        ) : kind === "brand" ? (
+          <span className="size-12 rounded-full" style={{ background: ink }} aria-hidden />
+        ) : offer ? (
+          <span className="rounded-full px-3 py-1 text-sm font-bold text-white" style={{ background: ink }} dir="auto">
+            {lt(offer.displayText, locale, locale === "ar" ? "en" : "ar") || t(`offerKinds.${offer.kind}`)}
+          </span>
+        ) : (
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke={ink} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            {ad ? <path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1zM15 9a3 3 0 0 1 0 6" /> : store ? <path d="M4 10l2-5h12l2 5M4 10h16v9H4zM9 19v-5h6v5" /> : <path d="M6 7h12l-1 13H7zM9 7a3 3 0 0 1 6 0" />}
+          </svg>
+        )}
+        {brand && kind !== "brand" && (
+          <span className="absolute start-2 top-2 max-w-[80%] truncate rounded-full bg-white/95 px-2 py-0.5 text-[11px] font-semibold" style={{ color: ink }} dir="auto">
+            {lt(brand.name, locale, locale === "ar" ? "en" : "ar")}
+          </span>
+        )}
+      </span>
+      <span className="flex flex-1 flex-col gap-0.5 p-3">
+        <span className="font-mono text-[11px] text-muted" dir="ltr">
+          {item.code}
+        </span>
+        <span className="font-semibold leading-snug" dir="auto">
+          {primary}
+        </span>
+        {secondary && (
+          <span className="text-sm text-muted" dir="auto" lang={locale === "ar" ? "en" : "ar"}>
+            {secondary}
+          </span>
+        )}
+        <span className="mt-auto pt-1 text-sm">
+          {product && `${product.currency} ${product.basePrice.toFixed(3)}`}
+          {ad && t("versionCount", { n: ad.versions.length })}
+          {store && t("productCount", { n: store.productIds.length })}
+        </span>
+        {folder && <span className="text-xs text-muted">{folder}</span>}
+      </span>
+    </button>
   );
 }
