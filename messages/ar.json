@@ -115,7 +115,38 @@
       "newProject": "مشروع جديد",
       "recentStudies": "أحدث الدراسات",
       "noStudies": "لا توجد دراسات بعد.",
-      "completedShort": "أكمل {n}"
+      "completedShort": "أكمل {n}",
+      "hello": "مرحبًا، {name}",
+      "summary": "{live, plural, =0 {لا توجد دراسات منشورة حاليًا} one {دراسة واحدة منشورة} two {دراستان منشورتان} few {# دراسات منشورة} many {# دراسة منشورة} other {# دراسة منشورة}}. {completed, plural, =0 {لم يُنهِ أي مشارك بعد.} one {أنهى مشارك واحد.} two {أنهى مشاركان.} few {أنهى # مشاركين.} many {أنهى # مشاركًا.} other {أنهى # مشارك.}}",
+      "liveStudies": "دراسات منشورة",
+      "completionRate": "نسبة الإكمال",
+      "ofStarted": "{n} من {total}",
+      "drafts": "مسودات",
+      "studies": "الدراسات",
+      "filterStudies": "عرض الدراسات",
+      "filters": {
+        "all": "الكل",
+        "active": "منشورة",
+        "draft": "مسودات",
+        "closed": "متوقفة أو مغلقة"
+      },
+      "colStudy": "الدراسة",
+      "colStatus": "الحالة",
+      "colParticipants": "المشاركون",
+      "colUpdated": "آخر تحديث",
+      "finishedOf": "أنهى {n} من {total}",
+      "noParticipantsYet": "لا مشاركين بعد",
+      "gettingStarted": "خطوات البداية",
+      "steps": {
+        "project": "أنشئ مشروعًا",
+        "study": "أنشئ دراسة",
+        "publish": "انشر دراسة",
+        "test": "جرّب دراستك بنفسك من رابط الاختبار",
+        "real": "اجمع أول ردود حقيقية"
+      },
+      "stepsDone": "أُنجز {n} من {total}",
+      "done": "منجز",
+      "notDone": "لم يُنجز بعد"
     },
     "projects": {
       "name": "اسم المشروع",

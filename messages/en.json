@@ -115,7 +115,38 @@
       "newProject": "New project",
       "recentStudies": "Recent studies",
       "noStudies": "No studies yet.",
-      "completedShort": "{n} completed"
+      "completedShort": "{n} completed",
+      "hello": "Hello, {name}",
+      "summary": "{live, plural, =0 {No studies are live} one {# study is live} other {# studies are live}}. {completed, plural, =0 {No participants have finished yet.} one {# participant has finished.} other {# participants have finished.}}",
+      "liveStudies": "Live studies",
+      "completionRate": "Completion rate",
+      "ofStarted": "{n} of {total}",
+      "drafts": "Drafts",
+      "studies": "Studies",
+      "filterStudies": "Show studies",
+      "filters": {
+        "all": "All",
+        "active": "Live",
+        "draft": "Drafts",
+        "closed": "Paused or closed"
+      },
+      "colStudy": "Study",
+      "colStatus": "Status",
+      "colParticipants": "Participants",
+      "colUpdated": "Updated",
+      "finishedOf": "{n} of {total} finished",
+      "noParticipantsYet": "No participants yet",
+      "gettingStarted": "Getting started",
+      "steps": {
+        "project": "Create a project",
+        "study": "Create a study",
+        "publish": "Publish a study",
+        "test": "Take your study yourself from its test link",
+        "real": "Collect your first real responses"
+      },
+      "stepsDone": "{n} of {total} done",
+      "done": "done",
+      "notDone": "not done yet"
     },
     "projects": {
       "name": "Project name",
