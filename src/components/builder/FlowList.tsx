@@ -14,6 +14,7 @@ import { CSS } from "@dnd-kit/utilities";
 import type { Block, Language } from "@/lib/study/schema";
 import { cx } from "@/components/ui";
 import { IconButton } from "./controls";
+import { BlockIcon } from "./BlockIcon";
 
 function blockTitle(b: Block, lang: Language): string {
   if (b.name) return b.name;
@@ -67,7 +68,8 @@ function Row({
       >
         ⠿
       </button>
-      <button type="button" onClick={onSelect} aria-current={selected} className="flex min-w-0 flex-1 flex-col items-start py-1 text-start">
+      <BlockIcon type={block.type} className="ms-0.5" />
+      <button type="button" onClick={onSelect} aria-current={selected} className="ms-1 flex min-w-0 flex-1 flex-col items-start py-1 text-start">
         <span className="flex items-center gap-2 text-xs text-muted">
           <span className="tabular-nums">{index + 1}</span>
           <span>{tt(block.type)}</span>

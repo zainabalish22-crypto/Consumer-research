@@ -46,6 +46,9 @@ interface Props {
   /** Test links / preview: force a condition or factor values. */
   overrides?: Partial<Assignment>;
   previewLanguage?: Language;
+  /** Live preview inside the builder: no banners or preview toolbar, opened at one block. */
+  embedded?: boolean;
+  startBlockId?: string;
 }
 
 type Answers = Record<string, Record<string, unknown>>;
@@ -77,7 +80,7 @@ function fillRedirect(url: string, vars: Record<string, string>) {
   return url.replace(/\{([A-Za-z0-9_]+)\}/g, (m, k: string) => (k in vars ? encodeURIComponent(vars[k]) : m));
 }
 
-export function StudyRunner({ mode, slug, config: initialConfig, messages, params: initialParams = {}, initialMediaUrls = {}, overrides, previewLanguage }: Props) {
+export function StudyRunner({ mode, slug, config: initialConfig, messages, params: initialParams = {}, initialMediaUrls = {}, overrides, previewLanguage, embedded, startBlockId }: Props) {
   const storageKey = slug ? `rp:${slug}:${mode}` : "";
   const isPreview = mode === "preview";
   const [config, setConfig] = useState(initialConfig);
@@ -86,9 +89,9 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
   const fallback = langs.find((l) => l !== lang) ?? lang;
   const tr = useMemo(() => makeTr(messages[lang]), [messages, lang]);
 
-  const [previewOverrides, setPreviewOverrides] = useState<Partial<Assignment>>({});
+  const [previewOverrides, setPreviewOverrides] = useState<Partial<Assignment>>(isPreview ? (overrides ?? {}) : {});
   const [assignment, setAssignment] = useState<Assignment>(() =>
-    isPreview ? previewAssignment(initialConfig, "preview") : EMPTY_ASSIGNMENT,
+    isPreview ? previewAssignment(initialConfig, "preview", overrides ?? {}) : EMPTY_ASSIGNMENT,
   );
   const [params, setParams] = useState<Record<string, string>>(initialParams);
   const [session, setSession] = useState<{ id: string; token: string; isTest: boolean } | null>(null);
@@ -96,7 +99,13 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
   const steps = useMemo(() => resolveSteps(config, assignment, seed), [config, assignment, seed]);
 
   const [phase, setPhase] = useState<Phase>(isPreview ? "block" : "loading");
-  const [index, setIndex] = useState(() => (isPreview ? Math.max(0, nextStepIndex(initialConfig, resolveSteps(initialConfig, previewAssignment(initialConfig, "preview"), "preview"), -1, previewAssignment(initialConfig, "preview"), {}, initialParams)) : 0));
+  const [index, setIndex] = useState(() => {
+    if (!isPreview) return 0;
+    const a = previewAssignment(initialConfig, "preview", overrides ?? {});
+    const s = resolveSteps(initialConfig, a, "preview");
+    const at = startBlockId ? s.findIndex((x) => x.blockId === startBlockId) : -1;
+    return at >= 0 ? at : Math.max(0, nextStepIndex(initialConfig, s, -1, a, {}, initialParams));
+  });
   const [answers, setAnswers] = useState<Answers>({});
   const [errors, setErrors] = useState<Record<string, AnswerError>>({});
   const [identifier, setIdentifier] = useState("");
@@ -409,7 +418,7 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
   const Main = isPreview ? "div" : "main";
   const shell = (content: React.ReactNode) => (
     <div lang={lang} dir={dirFor(lang)} className="min-h-screen bg-paper">
-      {mode !== "live" && (
+      {mode !== "live" && !embedded && (
         <section aria-label={tr(isPreview ? "previewBanner" : "testBanner")}>
           <div className={cx("px-4 py-2 text-center text-sm", isPreview ? "bg-warn-soft text-warn" : "bg-accent-soft text-accent-strong")}>
             {isPreview ? tr("previewBanner") : tr("testBanner")}

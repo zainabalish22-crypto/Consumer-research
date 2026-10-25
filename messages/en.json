@@ -872,7 +872,14 @@
       "showCountsHint": "The counts are the numbers you set on each post, plus one if the participant likes it.",
       "minSeconds": "Minimum seconds before continuing"
     },
-    "analytics": "Analytics"
+    "analytics": "Analytics",
+    "livePreview": {
+      "label": "Live preview",
+      "show": "Show preview",
+      "hide": "Hide preview",
+      "hint": "Shows the saved draft and updates after each save.",
+      "pending": "Updates when your changes are saved…"
+    }
   },
   "data": {
     "title": "Participants & data",

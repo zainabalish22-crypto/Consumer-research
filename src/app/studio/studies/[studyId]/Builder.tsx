@@ -73,6 +73,10 @@ function BuilderInner({ study, initialConfig, versions, aiEnabled }: Props) {
   const router = useRouter();
   const [config, setConfig] = useState<StudyConfig>(initialConfig);
   const [selectedId, setSelectedId] = useState<string | null>(initialConfig.blocks[0]?.id ?? null);
+  // Live preview: reloads after every successful save (savedRev), shown beside the editor on wide screens.
+  const [showPreview, setShowPreview] = useState(true);
+  const [previewLang, setPreviewLang] = useState<Language>(initialConfig.settings.defaultLanguage);
+  const [savedRev, setSavedRev] = useState(0);
   const [tab, setTab] = useState<"flow" | "design" | "settings" | "share" | "assistant">("flow");
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [publishMsg, setPublishMsg] = useState<{ tone: "ok" | "danger" | "neutral"; text: string; issues?: { path: string; message: string }[] } | null>(null);
@@ -114,6 +118,7 @@ function BuilderInner({ study, initialConfig, versions, aiEnabled }: Props) {
     setSaveState("saving");
     const r = await saveDraft(study.id, configRef.current);
     setSaveState(r.ok ? "saved" : "error");
+    if (r.ok) setSavedRev((n) => n + 1);
     return r.ok;
   }, [study.id]);
 
@@ -275,7 +280,7 @@ function BuilderInner({ study, initialConfig, versions, aiEnabled }: Props) {
       </div>
 
       {tab === "flow" && (
-        <div className="grid gap-6 lg:grid-cols-[22rem_1fr]">
+        <div className={cx("grid gap-6 lg:grid-cols-[20rem_1fr]", showPreview && "2xl:grid-cols-[18rem_1fr_21rem]")}>
           <section aria-label={t("flow.label")} className="flex flex-col gap-3">
             <p className="text-xs text-muted">{t("flow.hint")}</p>
             <FlowList
@@ -361,7 +366,17 @@ function BuilderInner({ study, initialConfig, versions, aiEnabled }: Props) {
           <section aria-label={t("editor")} className="min-w-0">
             {selected ? (
               <Card>
-                <h2 className="mb-4 font-semibold">{t(`blockTypes.${selected.type}`)}</h2>
+                <div className="mb-4 flex items-center gap-2">
+                  <h2 className="flex-1 font-semibold">{t(`blockTypes.${selected.type}`)}</h2>
+                  <button
+                    type="button"
+                    onClick={() => setShowPreview((v) => !v)}
+                    aria-pressed={showPreview}
+                    className="hidden rounded-lg border border-line px-2.5 py-1 text-xs hover:bg-paper 2xl:inline-block"
+                  >
+                    {showPreview ? t("livePreview.hide") : t("livePreview.show")}
+                  </button>
+                </div>
                 <BlockEditor
                   key={selected.id}
                   block={selected}
@@ -375,6 +390,34 @@ function BuilderInner({ study, initialConfig, versions, aiEnabled }: Props) {
               </Card>
             )}
           </section>
+          {showPreview && selected && (
+            <section aria-label={t("livePreview.label")} className="sticky top-4 hidden flex-col items-center gap-2 self-start 2xl:flex">
+              <div className="flex flex-wrap items-center justify-center gap-1.5 text-xs">
+                <span className="text-muted">{t("livePreview.label")}</span>
+                {config.settings.languages.map((l) => (
+                  <button
+                    key={l}
+                    type="button"
+                    onClick={() => setPreviewLang(l)}
+                    aria-pressed={previewLang === l}
+                    lang={l}
+                    className={cx("rounded-full px-2.5 py-1", previewLang === l ? "bg-ink text-white" : "border border-line bg-surface")}
+                  >
+                    {l === "ar" ? "العربية" : "English"}
+                  </button>
+                ))}
+              </div>
+              <div className="h-[640px] w-[320px] overflow-hidden rounded-[2rem] border-[9px] border-ink bg-paper shadow-xl">
+                <iframe
+                  key={`${selected.id}:${previewLang}:${savedRev}`}
+                  title={t("livePreview.label")}
+                  src={`/embed/preview/${study.id}?block=${encodeURIComponent(selected.id)}&lang=${previewLang}`}
+                  className="h-full w-full border-0"
+                />
+              </div>
+              <p className="max-w-[320px] text-center text-xs text-muted">{saveState === "saved" ? t("livePreview.hint") : t("livePreview.pending")}</p>
+            </section>
+          )}
         </div>
       )}
 
