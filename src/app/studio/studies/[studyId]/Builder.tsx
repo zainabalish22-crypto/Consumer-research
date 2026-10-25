@@ -20,6 +20,7 @@ import { AssistantPanel } from "@/components/builder/AssistantPanel";
 import type { StudyStatus } from "@/lib/data";
 import { Alert, Badge, Button, Card, Field, Input, Select, cx } from "@/components/ui";
 import { FlowList } from "@/components/builder/FlowList";
+import { LocalizedField } from "@/components/builder/LocalizedField";
 import { BlockEditor } from "@/components/builder/BlockEditor";
 import { Checkbox, moveItem } from "@/components/builder/controls";
 import { DesignEditor } from "@/components/builder/DesignEditor";
@@ -465,6 +466,12 @@ function SettingsTab({ config, onChange }: { config: StudyConfig; onChange: (c: 
           </Select>
         </Field>
       )}
+      <fieldset className="flex flex-col gap-3">
+        <legend className="mb-1 text-sm font-medium">{t("branding")}</legend>
+        <p className="-mt-1 text-xs text-muted">{t("brandingHint")}</p>
+        <LocalizedField label={t("brandingTitle")} value={s.branding?.title} languages={s.languages} onChange={(v) => set({ branding: { title: v ?? {}, organisation: s.branding?.organisation ?? {} } })} />
+        <LocalizedField label={t("brandingOrganisation")} value={s.branding?.organisation} languages={s.languages} onChange={(v) => set({ branding: { title: s.branding?.title ?? {}, organisation: v ?? {} } })} />
+      </fieldset>
       <Checkbox label={t("showProgress")} checked={s.showProgress} onChange={(v) => set({ showProgress: v })} />
       <Checkbox label={t("allowResume")} hint={t("allowResumeHint")} checked={s.allowResume} onChange={(v) => set({ allowResume: v })} />
       <Checkbox label={t("usesDeception")} hint={t("usesDeceptionHint")} checked={s.usesDeception} onChange={(v) => set({ usesDeception: v })} />

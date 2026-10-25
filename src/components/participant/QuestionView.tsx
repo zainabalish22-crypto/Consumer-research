@@ -173,14 +173,13 @@ export function QuestionView({ q, lang, fallback, value, onChange, error, seed, 
       return (
         <fieldset aria-describedby={described} aria-invalid={!!error}>
           {header}
-          <div
-            className="flex flex-col gap-2 sm:grid sm:gap-1"
-            style={{ gridTemplateColumns: `repeat(${vals.length}, minmax(0, 1fr))` }}
-          >
+          {/* A row of numbered boxes with the end labels underneath; when every point has a
+              label, the chosen point's label is shown too, so no wording is lost. */}
+          <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${vals.length}, minmax(0, 1fr))` }}>
             {vals.map((v, i) => (
               <label
                 key={v}
-                className={cx(choiceRow, "sm:flex-col sm:justify-start sm:px-1 sm:py-3 sm:text-center sm:text-sm")}
+                className="flex h-12 cursor-pointer items-center justify-center rounded-lg border border-line-strong bg-surface text-base tabular-nums hover:border-accent/60 has-[:checked]:border-accent has-[:checked]:bg-accent has-[:checked]:font-semibold has-[:checked]:text-white has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent has-[:focus-visible]:ring-offset-2"
               >
                 <input
                   type="radio"
@@ -188,12 +187,24 @@ export function QuestionView({ q, lang, fallback, value, onChange, error, seed, 
                   value={v}
                   checked={value === v}
                   onChange={() => onChange(v)}
-                  className="size-5 shrink-0 accent-[var(--color-accent)]"
+                  aria-label={text(q.labels[i]) ? `${v}, ${text(q.labels[i])}` : String(v)}
+                  className="sr-only"
                 />
-                <span>{text(q.labels[i]) || <span className="text-muted">{v}</span>}</span>
+                <span aria-hidden>{v}</span>
               </label>
             ))}
           </div>
+          {(text(q.labels[0]) || text(q.labels[vals.length - 1])) && (
+            <div className="mt-1.5 flex justify-between gap-4 text-sm text-muted" aria-hidden>
+              <span>{text(q.labels[0])}</span>
+              <span className="text-end">{text(q.labels[vals.length - 1])}</span>
+            </div>
+          )}
+          {vals.length > 2 && q.labels.slice(1, -1).some((l) => text(l)) && typeof value === "number" && vals.includes(value) && (
+            <p className="mt-1 text-center text-sm font-medium text-accent-strong" aria-live="polite">
+              {text(q.labels[vals.indexOf(value)])}
+            </p>
+          )}
           {specials(q.special).length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
               {specials(q.special).map((s) => (

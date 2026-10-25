@@ -1,21 +1,29 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-plex-arabic), ui-sans-serif, system-ui, sans-serif;
-  --color-ink: #1c2430;
-  --color-muted: #5b6573;
-  --color-line: #dde2e8;
-  --color-paper: #f6f7f9;
+  --font-sans: var(--font-latin), var(--font-arabic), ui-sans-serif, system-ui, sans-serif;
+  --color-ink: #13201f;
+  --color-muted: #5b6866;
+  --color-line: #dde2df;
+  --color-line-strong: #c9d1ce;
+  --color-paper: #f5f6f3;
   --color-surface: #ffffff;
   --color-accent: #0f6e6e;
-  --color-accent-strong: #0b5555;
-  --color-accent-soft: #e3f1f0;
+  --color-accent-strong: #0b5050;
+  --color-accent-soft: #e1efee;
   --color-danger: #b42318;
   --color-danger-soft: #fdecea;
   --color-warn: #8a5a00;
   --color-warn-soft: #fff4dc;
   --color-ok: #1f7a3a;
   --color-ok-soft: #e6f4ea;
+  /* Block-type families: media and ads; shopping environments. */
+  --color-media: #6d4aa8;
+  --color-media-soft: #eee7f7;
+  --color-shop: #b45309;
+  --color-shop-soft: #fcebd5;
+  --color-flow: #475569;
+  --color-flow-soft: #e9ecef;
 }
 
 html {

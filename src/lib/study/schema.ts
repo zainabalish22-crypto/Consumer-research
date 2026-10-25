@@ -581,6 +581,10 @@ export const StudySettings = z.object({
   events: z
     .object({ navigation: z.boolean().default(true), media: z.boolean().default(true), environment: z.boolean().default(true) })
     .default({ navigation: true, media: true, environment: true }),
+  /** Shown in the participant header: the study's public name and who runs it. */
+  branding: z
+    .object({ title: LocalizedText.default({}), organisation: LocalizedText.default({}) })
+    .default({ title: {}, organisation: {} }),
   /** Methodological warnings the researcher chose to dismiss. */
   dismissedWarnings: z.array(z.string().max(120)).max(100).default([]),
 });

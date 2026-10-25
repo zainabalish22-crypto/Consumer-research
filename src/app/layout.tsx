@@ -1,14 +1,21 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans_Arabic } from "next/font/google";
+import { IBM_Plex_Sans, Noto_Sans_Arabic } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import { PLATFORM } from "@/config/platform";
 import "./globals.css";
 
-const plex = IBM_Plex_Sans_Arabic({
-  subsets: ["arabic", "latin"],
+// Latin text uses IBM Plex Sans; Arabic text uses Noto Sans Arabic, a plain, highly legible face.
+const plex = IBM_Plex_Sans({
+  subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
-  variable: "--font-plex-arabic",
+  variable: "--font-latin",
+  display: "swap",
+});
+const noto = Noto_Sans_Arabic({
+  subsets: ["arabic"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-arabic",
   display: "swap",
 });
 
@@ -21,7 +28,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const locale = await getLocale();
   const messages = await getMessages();
   return (
-    <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"} className={plex.variable}>
+    <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"} className={`${plex.variable} ${noto.variable}`}>
       <body className="min-h-screen">
         <NextIntlClientProvider locale={locale} messages={messages}>
           {children}

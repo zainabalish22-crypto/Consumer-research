@@ -88,7 +88,8 @@
       "signOut": "Sign out",
       "library": "Library",
       "templates": "Templates",
-      "assistant": "Assistant"
+      "assistant": "Assistant",
+      "menu": "Menu"
     },
     "dashboard": {
       "title": "Dashboard",
@@ -317,7 +318,11 @@
       "eventsMediaHint": "Used for computed variables such as seconds an advert was visible or the percentage of a video watched.",
       "eventsNever": "Never recorded: keystrokes, mouse movements, camera, microphone or location.",
       "eventsEnvironment": "Shopping behaviour: walking past, stopping at and entering stores, product views, basket changes, choices",
-      "eventsEnvironmentHint": "Needed for the village's computed variables (entered, dwell time, products viewed)."
+      "eventsEnvironmentHint": "Needed for the village's computed variables (entered, dwell time, products viewed).",
+      "branding": "Participant header",
+      "brandingHint": "Shown at the top of every participant page. Leave empty to show only the progress bar.",
+      "brandingTitle": "Study name for participants",
+      "brandingOrganisation": "Run by (e.g. your university or department)"
     },
     "share": {
       "copied": "Copied",
@@ -1131,7 +1136,10 @@
     "sumHint": "Split {total} {unit} across the options.",
     "sumLeft": "{n} {unit} left to give.",
     "sumOver": "{n} {unit} too many.",
-    "sumDone": "All {total} {unit} given."
+    "sumDone": "All {total} {unit} given.",
+    "questionOf": "Question {n} of {total}",
+    "stepOf": "Step {n} of {total}",
+    "estimatedMinutesShort": "about {n} minutes"
   },
   "library": {
     "title": "Library",

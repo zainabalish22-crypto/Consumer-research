@@ -440,12 +440,16 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
         </section>
       )}
       <Main>
-      {config.settings.showProgress && phase === "block" && total > 1 && (
-        <div className="h-1.5 w-full bg-line" role="progressbar" aria-valuemin={0} aria-valuemax={total - 1} aria-valuenow={index} aria-label={tr("progress")}>
-          <div className="h-full bg-accent transition-all" style={{ width: `${(index / (total - 1)) * 100}%` }} />
-        </div>
-      )}
-      <div className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-8 sm:py-12">{content}</div>
+      <ParticipantHeader
+        title={t(config.settings.branding?.title) || ""}
+        organisation={t(config.settings.branding?.organisation) || ""}
+        minutes={(config.blocks.find((b) => b.type === "welcome") as { estimatedMinutes?: number } | undefined)?.estimatedMinutes}
+        progress={config.settings.showProgress && phase === "block" && total > 1 ? { index, total } : null}
+        otherLanguage={langs.length > 1 && phase !== "language" ? langs.find((l) => l !== lang) ?? null : null}
+        onLanguage={setLang}
+        tr={tr}
+      />
+      <div className="mx-auto flex max-w-2xl flex-col gap-6 px-4 pt-6 pb-4 sm:pt-10">{content}</div>
       </Main>
     </div>
   );
@@ -531,11 +535,14 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
     </h1>
   );
 
+  // Pinned to the bottom of the screen so the next step is always in reach on a phone.
   const nextButton = (label = tr("next"), disabled = false) => (
-    <div className="flex justify-end">
-      <Button onClick={() => void submitBlock()} disabled={busy || disabled} className="min-w-32 py-3 text-base">
-        {busy ? tr("saving") : label}
-      </Button>
+    <div className="sticky bottom-0 z-10 -mx-4 mt-2 border-t border-line bg-surface/95 px-4 py-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+      <div className="flex justify-end">
+        <Button onClick={() => void submitBlock()} disabled={busy || disabled} className="w-full py-3 text-base sm:w-auto sm:min-w-36">
+          {busy ? tr("saving") : label}
+        </Button>
+      </div>
     </div>
   );
 
@@ -628,8 +635,9 @@ export function StudyRunner({ mode, slug, config: initialConfig, messages, param
           {block.heading && t(block.heading) ? heading(t(block.heading)) : srHeading(tr("questions"))}
           {block.intro && t(block.intro) && <p className="prose-study text-muted">{t(block.intro)}</p>}
           {Object.keys(errors).length > 0 && <Alert tone="danger">{tr("fixErrors")}</Alert>}
-          {qs.map((q) => (
-            <div key={q.id} id={`q_${q.id}`} className="rounded-xl border border-line bg-surface p-4 sm:p-5">
+          {qs.map((q, qi) => (
+            <div key={q.id} id={`q_${q.id}`} className="rounded-2xl border border-line bg-surface p-4 sm:p-5">
+              {qs.length > 1 && <p className="mb-1 text-xs font-medium text-muted">{tr("questionOf", { n: qi + 1, total: qs.length })}</p>}
               <QuestionView
                 q={q}
                 lang={lang}
@@ -985,5 +993,74 @@ function PreviewBar({
         </div>
       )}
     </div>
+  );
+}
+
+/** Participant header: who runs the study, how long it takes, progress, and the other language. */
+function ParticipantHeader({
+  title,
+  organisation,
+  minutes,
+  progress,
+  otherLanguage,
+  onLanguage,
+  tr,
+}: {
+  title: string;
+  organisation: string;
+  minutes?: number;
+  progress: { index: number; total: number } | null;
+  otherLanguage: Language | null;
+  onLanguage: (l: Language) => void;
+  tr: Tr;
+}) {
+  const sub = [organisation, minutes ? tr("estimatedMinutesShort", { n: minutes }) : ""].filter(Boolean).join(" · ");
+  if (!title && !sub && !progress && !otherLanguage) return null;
+  return (
+    <header className="border-b border-line bg-surface">
+      <div className="mx-auto flex max-w-2xl flex-col gap-3 px-4 py-3">
+        {(title || sub || otherLanguage) && (
+          <div className="flex items-center gap-3">
+            <div className="min-w-0 flex-1">
+              {title && (
+                <p className="truncate text-sm font-semibold" dir="auto">
+                  {title}
+                </p>
+              )}
+              {sub && (
+                <p className="truncate text-xs text-muted" dir="auto">
+                  {sub}
+                </p>
+              )}
+            </div>
+            {otherLanguage && (
+              <button
+                type="button"
+                lang={otherLanguage}
+                onClick={() => onLanguage(otherLanguage)}
+                className="shrink-0 rounded-lg border border-line px-3 py-1.5 text-sm hover:bg-paper"
+              >
+                {otherLanguage === "ar" ? "العربية" : "English"}
+              </button>
+            )}
+          </div>
+        )}
+        {progress && (
+          <div className="flex items-center gap-3">
+            <div
+              className="h-1.5 flex-1 overflow-hidden rounded-full bg-line"
+              role="progressbar"
+              aria-valuemin={1}
+              aria-valuemax={progress.total}
+              aria-valuenow={progress.index + 1}
+              aria-label={tr("progress")}
+            >
+              <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${((progress.index + 1) / progress.total) * 100}%` }} />
+            </div>
+            <span className="shrink-0 text-xs text-muted tabular-nums">{tr("stepOf", { n: progress.index + 1, total: progress.total })}</span>
+          </div>
+        )}
+      </div>
+    </header>
   );
 }
