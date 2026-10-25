@@ -1390,7 +1390,9 @@
     "post": "المنشور",
     "likedCount": "أُعجب به",
     "savedCount": "حُفظ",
-    "hiddenCount": "أُخفي"
+    "hiddenCount": "أُخفي",
+    "conditionCaption": "بدأ {started} · أكمل {completed} ({rate})",
+    "biggestDrop": "أكبر انخفاض: غادر {n} بين «{from}» و«{to}»."
   },
   "templates": {
     "title": "القوالب",

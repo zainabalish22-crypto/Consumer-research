@@ -8,6 +8,7 @@ import type { Language } from "@/lib/study/schema";
 import { lt } from "@/lib/study/text";
 import { Card, EmptyState } from "@/components/ui";
 import { StatusBadge } from "../../../StatusBadge";
+import { Funnel, GroupedColumns, Ring, StackedBar } from "./charts";
 
 /**
  * Basic analytics from recorded sessions. Charts are plain HTML bars with the
@@ -100,22 +101,35 @@ export default async function AnalyticsPage({
         <EmptyState title={t("noData")}>{t("noDataHint")}</EmptyState>
       ) : (
         <>
-          <section className="grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label={t("summary")}>
-            {[
-              { k: "started", v: fmt(a.totals.started, 0) },
-              { k: "completed", v: fmt(a.totals.completed, 0) },
-              { k: "completionRate", v: a.totals.rate === null ? "–" : `${fmt(a.totals.rate)}%` },
-              { k: "medianMinutes", v: fmt(a.totals.medianMinutes) },
-              { k: "inProgress", v: fmt(a.totals.inProgress, 0) },
-              { k: "declined", v: fmt(a.totals.declined, 0) },
-              { k: "screened", v: fmt(a.totals.screened, 0) },
-              { k: "withdrawn", v: fmt(a.totals.withdrawn, 0) },
-            ].map((s) => (
-              <Card key={s.k} className="p-4">
-                <p className="text-xs text-muted">{t(`stats.${s.k}`)}</p>
-                <p className="text-2xl font-semibold tabular-nums">{s.v}</p>
+          <section className="flex flex-col gap-2" aria-label={t("summary")}>
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <Card className="p-4">
+                <p className="text-sm text-muted">{t("stats.started")}</p>
+                <p className="text-3xl font-bold tabular-nums">{fmt(a.totals.started, 0)}</p>
               </Card>
-            ))}
+              <Card className="p-4">
+                <p className="text-sm text-muted">{t("stats.completed")}</p>
+                <p className="text-3xl font-bold tabular-nums">{fmt(a.totals.completed, 0)}</p>
+              </Card>
+              <Card className="flex items-center gap-3 p-4">
+                <Ring pct={a.totals.rate} label={a.totals.rate === null ? t("stats.completionRate") : `${fmt(a.totals.rate)}%`} />
+                <div>
+                  <p className="text-sm text-muted">{t("stats.completionRate")}</p>
+                  <p className="text-3xl font-bold tabular-nums">{a.totals.rate === null ? "–" : `${fmt(a.totals.rate, 0)}%`}</p>
+                </div>
+              </Card>
+              <Card className="p-4">
+                <p className="text-sm text-muted">{t("stats.medianMinutes")}</p>
+                <p className="text-3xl font-bold tabular-nums">{fmt(a.totals.medianMinutes)}</p>
+              </Card>
+            </div>
+            <p className="flex flex-wrap gap-x-5 gap-y-1 px-1 text-sm text-muted">
+              {(["inProgress", "declined", "screened", "withdrawn"] as const).map((k) => (
+                <span key={k}>
+                  {t(`stats.${k}`)}: <span className="font-semibold text-ink tabular-nums">{fmt(a.totals[k], 0)}</span>
+                </span>
+              ))}
+            </p>
           </section>
 
           <div className="grid gap-4 lg:grid-cols-2">
@@ -135,10 +149,14 @@ export default async function AnalyticsPage({
 
             {a.conditions.length > 0 && (
               <Section title={t("byCondition")}>
-                <BarTable
-                  head={[td("cols.condition"), t("stats.started"), t("stats.completed"), t("stats.completionRate")]}
-                  rows={a.conditions.map((c) => ({ key: c.id, label: c.label, value: c.started, extra: [String(c.completed), pct(c.completed, c.started)] }))}
-                  max={Math.max(...a.conditions.map((c) => c.started))}
+                <GroupedColumns
+                  series={[t("stats.started"), t("stats.completed")]}
+                  groups={a.conditions.map((c) => ({
+                    key: c.id,
+                    label: c.label,
+                    values: [c.started, c.completed],
+                    caption: t("conditionCaption", { started: c.started, completed: c.completed, rate: pct(c.completed, c.started) }),
+                  }))}
                 />
               </Section>
             )}
@@ -158,10 +176,10 @@ export default async function AnalyticsPage({
           </div>
 
           <Section title={t("funnel")} hint={t("funnelHint")}>
-            <BarTable
-              head={[t("block"), t("reached"), t("ofStarted")]}
-              rows={a.funnel.map((f, i) => ({ key: f.blockId, label: `${i + 1}. ${blockName(f)}`, value: f.reached, extra: [pct(f.reached, a.totals.started)] }))}
-              max={a.totals.started}
+            <Funnel
+              total={a.totals.started}
+              rows={a.funnel.map((f, i) => ({ key: f.blockId, label: `${i + 1}. ${blockName(f)}`, value: f.reached }))}
+              dropNote={(from, to, lost) => t("biggestDrop", { from, to, n: lost })}
             />
           </Section>
 
@@ -227,7 +245,17 @@ export default async function AnalyticsPage({
               <div className="grid gap-4 lg:grid-cols-2">
                 {a.questions.map((q) => (
                   <Section key={`${q.blockId}:${q.variable}`} title={L(q.text) || q.variable} hint={`${q.variable} · n = ${q.n}`}>
-                    {q.kind === "choice" && (
+                    {q.kind === "choice" && !q.multi && (
+                      <StackedBar
+                        total={q.n}
+                        parts={q.bars.map((b: Bar, i) => ({
+                          key: String(i),
+                          label: b.label === "notSure" ? t("notSure") : b.label === "preferNot" ? t("preferNot") : L(b.label),
+                          count: b.count,
+                        }))}
+                      />
+                    )}
+                    {q.kind === "choice" && q.multi && (
                       <>
                         <BarTable
                           head={[t("answer"), t("count"), "%"]}

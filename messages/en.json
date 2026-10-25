@@ -1390,7 +1390,9 @@
     "post": "Post",
     "likedCount": "Liked",
     "savedCount": "Saved",
-    "hiddenCount": "Hidden"
+    "hiddenCount": "Hidden",
+    "conditionCaption": "{started} started · {completed} completed ({rate})",
+    "biggestDrop": "Biggest drop: {n} left between “{from}” and “{to}”."
   },
   "templates": {
     "title": "Templates",
