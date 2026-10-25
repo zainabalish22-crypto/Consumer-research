@@ -1,18 +1,20 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Sans, Noto_Sans_Arabic } from "next/font/google";
+import { IBM_Plex_Sans, IBM_Plex_Sans_Arabic } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import { PLATFORM } from "@/config/platform";
 import "./globals.css";
 
-// Latin text uses IBM Plex Sans; Arabic text uses Noto Sans Arabic, a plain, highly legible face.
+// Latin text uses IBM Plex Sans; Arabic text uses its companion, IBM Plex Sans Arabic, so both scripts read as one family.
 const plex = IBM_Plex_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-latin",
   display: "swap",
+  // Its generated fallback covers every character, which would catch Arabic before the Arabic font in the stack.
+  adjustFontFallback: false,
 });
-const noto = Noto_Sans_Arabic({
+const plexArabic = IBM_Plex_Sans_Arabic({
   subsets: ["arabic"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-arabic",
@@ -28,7 +30,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const locale = await getLocale();
   const messages = await getMessages();
   return (
-    <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"} className={`${plex.variable} ${noto.variable}`}>
+    <html lang={locale} dir={locale === "ar" ? "rtl" : "ltr"} className={`${plex.variable} ${plexArabic.variable}`}>
       <body className="min-h-screen">
         <NextIntlClientProvider locale={locale} messages={messages}>
           {children}
