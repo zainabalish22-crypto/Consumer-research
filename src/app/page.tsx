@@ -1,168 +1,103 @@
-import Link from "next/link";
-import { getTranslations } from "next-intl/server";
-import { LanguageSwitch } from "@/components/LanguageSwitch";
-import { LogoMark, Wordmark } from "@/components/Logo";
-import { PLATFORM } from "@/config/platform";
+import Image from "next/image";
 
-const FEATURES = ["questionnaires", "experiments", "village", "shop", "feed", "export"] as const;
-const STEPS = ["choose", "preview", "share"] as const;
-
-export default async function Home() {
-  const t = await getTranslations("home");
+export default function Home() {
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-line bg-surface">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:px-6">
-          <Link href="/" className="flex items-center gap-2 font-semibold">
-            <LogoMark size={30} />
-            <Wordmark />
-          </Link>
-          <nav aria-label={t("navLabel")} className="hidden gap-5 text-sm text-muted md:flex">
-            <a href="#features" className="hover:text-ink">
-              {t("nav.features")}
-            </a>
-            <a href="#how" className="hover:text-ink">
-              {t("nav.how")}
-            </a>
-            {PLATFORM.repositoryUrl && (
-              <a href={`${PLATFORM.repositoryUrl}#set-up`} className="hover:text-ink">
-                {t("nav.selfHosting")}
-              </a>
-            )}
-          </nav>
-          <div className="ms-auto flex items-center gap-2 text-sm">
-            <LanguageSwitch />
-            <Link href="/login" className="rounded-lg px-3 py-1.5 font-medium hover:bg-paper">
-              {t("signIn")}
-            </Link>
-            <Link href="/login?mode=signup" className="hidden rounded-lg bg-accent px-3.5 py-1.5 font-medium text-white hover:bg-accent-strong sm:inline-block">
-              {t("ctaShort")}
-            </Link>
-          </div>
+    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
+      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
+        <Image
+          className="dark:invert"
+          src="/next.svg"
+          alt="Next.js logo"
+          width={180}
+          height={38}
+          priority
+        />
+        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
+          <li className="mb-2 tracking-[-.01em]">
+            Get started by editing{" "}
+            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
+              src/app/page.tsx
+            </code>
+            .
+          </li>
+          <li className="tracking-[-.01em]">
+            Save and see your changes instantly.
+          </li>
+        </ol>
+
+        <div className="flex gap-4 items-center flex-col sm:flex-row">
+          <a
+            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
+            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Image
+              className="dark:invert"
+              src="/vercel.svg"
+              alt="Vercel logomark"
+              width={20}
+              height={20}
+            />
+            Deploy now
+          </a>
+          <a
+            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
+            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Read our docs
+          </a>
         </div>
-      </header>
-
-      <main>
-        <section className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[1.1fr_1fr] lg:py-20">
-          <div className="flex flex-col gap-5">
-            <p className="w-fit rounded-full bg-accent-soft px-3 py-1 text-sm font-medium text-accent-strong">{t("eyebrow")}</p>
-            <h1 className="text-4xl font-bold leading-tight tracking-tight sm:text-5xl">{t("headline")}</h1>
-            <p className="max-w-xl text-lg text-muted">{t("lede")}</p>
-            <div className="flex flex-wrap gap-3">
-              <Link href="/login?mode=signup" className="rounded-lg bg-accent px-5 py-3 font-medium text-white hover:bg-accent-strong">
-                {t("cta")}
-              </Link>
-              <Link href="/login" className="rounded-lg border border-line-strong bg-surface px-5 py-3 font-medium hover:bg-paper">
-                {t("signIn")}
-              </Link>
-            </div>
-            <ul className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted">
-              {(["noTiers", "notSold", "selfHost"] as const).map((k) => (
-                <li key={k} className="inline-flex items-center gap-1.5">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M5 12l5 5L20 7" />
-                  </svg>
-                  {t(`promises.${k}`)}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <ShopIllustration t={t} />
-        </section>
-
-        <section id="features" className="border-y border-line bg-surface">
-          <div className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
-            <h2 className="text-2xl font-bold">{t("featuresTitle")}</h2>
-            <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {FEATURES.map((f) => (
-                <li key={f} className="rounded-2xl border border-line bg-paper p-5">
-                  <p className="font-semibold">{t(`features.${f}.title`)}</p>
-                  <p className="mt-1.5 text-sm text-muted">{t(`features.${f}.body`)}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-
-        <section id="how" className="mx-auto max-w-6xl px-4 py-14 sm:px-6">
-          <h2 className="text-2xl font-bold">{t("howTitle")}</h2>
-          <ol className="mt-8 grid gap-6 md:grid-cols-3">
-            {STEPS.map((s, i) => (
-              <li key={s} className="flex gap-4">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent font-bold text-white">{i + 1}</span>
-                <div>
-                  <p className="font-semibold">{t(`steps.${s}.title`)}</p>
-                  <p className="mt-1 text-sm text-muted">{t(`steps.${s}.body`)}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </section>
-
-        <section className="mx-auto max-w-6xl px-4 pb-14 sm:px-6">
-          <div className="grid items-center gap-6 rounded-3xl bg-accent-strong p-8 text-white md:grid-cols-[1.2fr_1fr]">
-            <div>
-              <h2 className="text-2xl font-bold">{t("bilingualTitle")}</h2>
-              <p className="mt-2 text-white/80">{t("bilingualBody")}</p>
-            </div>
-            <p lang="ar" dir="rtl" className="text-xl leading-relaxed font-semibold">
-              صُممت لتعمل بالعربية والإنجليزية بالقدر نفسه من العناية.
-            </p>
-          </div>
-        </section>
       </main>
-
-      <footer className="border-t border-line">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-6 text-sm text-muted sm:px-6">
-          <span>{t("footer")}</span>
-          {PLATFORM.repositoryUrl && (
-            <a href={PLATFORM.repositoryUrl} className="ms-auto hover:text-ink">
-              {t("nav.source")}
-            </a>
-          )}
-        </div>
+      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
+        <a
+          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
+          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Image
+            aria-hidden
+            src="/file.svg"
+            alt="File icon"
+            width={16}
+            height={16}
+          />
+          Learn
+        </a>
+        <a
+          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
+          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Image
+            aria-hidden
+            src="/window.svg"
+            alt="Window icon"
+            width={16}
+            height={16}
+          />
+          Examples
+        </a>
+        <a
+          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
+          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Image
+            aria-hidden
+            src="/globe.svg"
+            alt="Globe icon"
+            width={16}
+            height={16}
+          />
+          Go to nextjs.org →
+        </a>
       </footer>
-    </div>
-  );
-}
-
-/** A stylised online-shop screen: what a participant might see in an experiment. Decorative only. */
-function ShopIllustration({ t }: { t: Awaited<ReturnType<typeof getTranslations<"home">>> }) {
-  const items = [
-    { name: t("demo.iced"), price: "2.000", tone: "#efe9fa" },
-    { name: t("demo.cappuccino"), price: "1.800", tone: "#fcebd5" },
-    { name: t("demo.arabic"), price: "1.500", tone: "#e1efee" },
-  ];
-  return (
-    <div aria-hidden="true" className="relative pb-10">
-      <div className="overflow-hidden rounded-3xl border border-line bg-surface shadow-xl">
-        <div className="flex items-center gap-2 border-b border-line px-4 py-3 text-sm">
-          <span className="size-6 rounded-md bg-shop" />
-          <span className="font-semibold">{t("demo.shop")}</span>
-          <span className="ms-auto rounded-full bg-paper px-2.5 py-1 text-xs">{t("demo.cart")}</span>
-        </div>
-        <div className="p-4">
-          <div className="rounded-2xl bg-media-soft p-4">
-            <p className="text-[11px] font-bold tracking-wide text-media">{t("demo.sponsored")}</p>
-            <p className="mt-1 font-semibold">{t("demo.offer")}</p>
-          </div>
-          <div className="mt-3 grid grid-cols-3 gap-3">
-            {items.map((x) => (
-              <div key={x.name} className="rounded-xl border border-line p-2">
-                <div className="h-16 rounded-lg" style={{ background: x.tone }} />
-                <p className="mt-2 truncate text-xs font-medium">{x.name}</p>
-                <p className="text-xs text-muted" dir="ltr">
-                  BHD {x.price}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-      <div className="absolute bottom-0 end-6 rounded-xl border border-line bg-surface px-3 py-2 text-xs shadow-md">
-        <p className="font-semibold">{t("demo.condition")}</p>
-        <p className="text-muted">{t("demo.recorded")}</p>
-      </div>
     </div>
   );
 }

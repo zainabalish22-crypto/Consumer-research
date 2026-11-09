@@ -12,3 +12,6 @@ test-results/
 supabase/.temp/
 tsconfig.tsbuildinfo
 /.next-prod/
+
+# Prototype 3D assets (downloaded, see public/proto/CREDITS.md once added)
+/public/proto/
