@@ -10,6 +10,6 @@ All assets are free to use without payment or subscription. The files themselves
 | Avatars: Female_Adult_01, Male_Adult_01, and walk animations f/m_walk_neutral | [Microsoft Rocketbox](https://github.com/microsoft/Microsoft-Rocketbox) | MIT |
 | Photos: café storefronts, interiors and drinks (8) | Unsplash: JQgWhib1FA0, PyHrr8nZXvs, V_AZ3zBj8aU, WmWaMDf4yCY, RPDCA2KiLAQ, 3qMEJJZ9i6Y, L-sm1B4L1Ns, 7ZkoxdZLrog | [Unsplash Licence](https://unsplash.com/license) |
 
-Processing: avatar TGA skins were converted to 1024 px JPG/PNG; photos resized to 1024 px wide.
+Processing: avatar TGA skins were converted to 1024 px JPG/PNG; photos resized to 1024 px wide; Poly Haven models were simplified with [glTF-Transform](https://gltf-transform.dev) (MIT) into `public/proto/env/models-lite` (for example the street lamp from 30,610 to 3,876 triangles).
 
 Note: interior photo WmWaMDf4yCY shows a real café's name on its menu screen. It is fine for an internal prototype but must not appear in a published study; researchers supply their own photos.

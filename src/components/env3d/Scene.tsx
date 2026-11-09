@@ -1,8 +1,8 @@
 "use client";
 
 import { Environment, useGLTF, useTexture } from "@react-three/drei";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { Suspense, useEffect, useMemo, useRef } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Suspense, memo, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { Participant, type MoveInput, type Pose } from "./Avatar";
 import { STORES, STREET, frontZ, type AvatarChoice, type VillageStore, type WallTexture } from "./village";
@@ -58,7 +58,7 @@ function Ground() {
         <planeGeometry args={[140, 90]} />
         <meshStandardMaterial {...grass} />
       </mesh>
-      <mesh rotation-x={-Math.PI / 2} position-y={0.012} receiveShadow>
+      <mesh rotation-x={-Math.PI / 2} position-y={0.012} receiveShadow userData={{ walkable: true }}>
         <planeGeometry args={[STREET.length, depth]} />
         <meshStandardMaterial {...paving} />
       </mesh>
@@ -77,7 +77,7 @@ function Storefront({ store }: { store: VillageStore }) {
   const offer = useLabel(store.offer ?? "", "#F7E27A", "#1A1A1A", 512, 256, "700 54px Arial, sans-serif");
   const rotation = store.side === -1 ? 0 : Math.PI;
   return (
-    <group position={[store.x, 0, frontZ(store.side)]} rotation-y={rotation}>
+    <group position={[store.x, 0, frontZ(store.side)]} rotation-y={rotation} userData={{ storeId: store.id }}>
       {/* Building body */}
       <mesh position={[0, H / 2, -D / 2]} castShadow receiveShadow>
         <boxGeometry args={[W, H, D]} />
@@ -95,7 +95,7 @@ function Storefront({ store }: { store: VillageStore }) {
       </mesh>
       <mesh position={[-1, 1.75, 0.06]}>
         <planeGeometry args={[5.4, 2.7]} />
-        <meshPhysicalMaterial color="#9fb3bf" transparent opacity={0.16} roughness={0.05} metalness={0.1} clearcoat={1} />
+        <meshStandardMaterial color="#9fb3bf" transparent opacity={0.16} roughness={0.05} metalness={0.1} />
       </mesh>
       {/* Window frame */}
       {[
@@ -112,7 +112,7 @@ function Storefront({ store }: { store: VillageStore }) {
       {/* Door */}
       <mesh position={[3, 1.25, 0.04]}>
         <planeGeometry args={[1.5, 2.5]} />
-        <meshPhysicalMaterial color="#15181b" roughness={0.1} metalness={0.3} clearcoat={1} />
+        <meshStandardMaterial color="#15181b" roughness={0.12} metalness={0.3} />
       </mesh>
       <mesh position={[3, 2.55, 0.08]}>
         <boxGeometry args={[1.7, 0.1, 0.12]} />
@@ -140,7 +140,7 @@ function Storefront({ store }: { store: VillageStore }) {
         <group key={x} position={[x, 5.15, 0.03]}>
           <mesh>
             <planeGeometry args={[1.3, 1.5]} />
-            <meshPhysicalMaterial color="#2a3238" roughness={0.08} metalness={0.4} clearcoat={1} />
+            <meshStandardMaterial color="#2a3238" roughness={0.1} metalness={0.4} />
           </mesh>
           <mesh position={[0, -0.82, 0.06]}>
             <boxGeometry args={[1.5, 0.08, 0.2]} />
@@ -153,12 +153,12 @@ function Storefront({ store }: { store: VillageStore }) {
 }
 
 function Prop({ id, position, rotation = 0, scale = 1 }: { id: string; position: [number, number, number]; rotation?: number; scale?: number }) {
-  const { scene } = useGLTF(`${ENV}/models/${id}/${id}.gltf`);
+  const { scene } = useGLTF(`${ENV}/models-lite/${id}/${id}.gltf`);
   const obj = useMemo(() => {
     const c = scene.clone(true);
     c.traverse((o) => {
       if ((o as THREE.Mesh).isMesh) {
-        o.castShadow = true;
+        o.castShadow = false;
         o.receiveShadow = true;
       }
     });
@@ -171,7 +171,7 @@ function Prop({ id, position, rotation = 0, scale = 1 }: { id: string; position:
 function Garden() {
   const edge = STREET.width / 2 + 0.7;
   const items: { id: string; p: [number, number, number]; r?: number; s?: number }[] = [];
-  for (let x = -28; x <= 28; x += 8) {
+  for (let x = -24; x <= 24; x += 12) {
     items.push({ id: "street_lamp_01", p: [x, 0, -edge], r: 0 });
     items.push({ id: "street_lamp_01", p: [x + 4, 0, edge], r: Math.PI });
   }
@@ -195,7 +195,9 @@ function Garden() {
 
 function FpsProbe({ onSample }: { onSample: (fps: number) => void }) {
   const acc = useRef({ t: 0, n: 0 });
-  useFrame((_, dt) => {
+  useFrame(({ gl }, dt) => {
+    // Prototype diagnostics: draw calls and triangles per frame, readable from the console.
+    (window as unknown as { __tessRender?: unknown }).__tessRender = { calls: gl.info.render.calls, triangles: gl.info.render.triangles, textures: gl.info.memory.textures, geometries: gl.info.memory.geometries };
     acc.current.t += dt;
     acc.current.n += 1;
     if (acc.current.t >= 1) {
@@ -206,19 +208,74 @@ function FpsProbe({ onSample }: { onSample: (fps: number) => void }) {
   return null;
 }
 
+/**
+ * Screen point to what is under it: a store (tap to enter) or a spot on the street (tap to walk).
+ * The page calls this through `pick`.
+ */
+export type PickResult = { store: string } | { ground: [number, number] } | null;
+export type PickFn = (clientX: number, clientY: number) => PickResult;
+function Picker({ pick }: { pick: React.RefObject<PickFn | null> }) {
+  const { camera, gl, scene } = useThree();
+  const ray = useMemo(() => new THREE.Raycaster(), []);
+  useEffect(() => {
+    pick.current = (cx, cy) => {
+      const r = gl.domElement.getBoundingClientRect();
+      ray.setFromCamera(new THREE.Vector2(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1), camera);
+      for (const hit of ray.intersectObjects(scene.children, true)) {
+        if (hit.object.userData.walkable) return { ground: [hit.point.x, hit.point.z] };
+        let o: THREE.Object3D | null = hit.object;
+        while (o && !o.userData.storeId) o = o.parent;
+        if (o) return { store: o.userData.storeId as string };
+      }
+      return null;
+    };
+    return () => {
+      pick.current = null;
+    };
+  }, [camera, gl, scene, ray, pick]);
+  return null;
+}
+
+/** A soft ring on the ground where the participant tapped to walk; hidden when there is no target. */
+function GoalMarker({ input }: { input: React.RefObject<MoveInput> }) {
+  const ring = useRef<THREE.Mesh>(null);
+  useFrame(({ clock }) => {
+    const g = input.current?.goto;
+    const m = ring.current;
+    if (!m) return;
+    m.visible = !!g && !g.store;
+    if (g) {
+      m.position.set(g.x, 0.03, g.z);
+      const s = 1 + 0.08 * Math.sin(clock.elapsedTime * 5);
+      m.scale.set(s, s, s);
+    }
+  });
+  return (
+    <mesh ref={ring} rotation-x={-Math.PI / 2} visible={false}>
+      <ringGeometry args={[0.32, 0.42, 48]} />
+      <meshBasicMaterial color="#ffffff" transparent opacity={0.85} />
+    </mesh>
+  );
+}
+
 /** Mounts once everything inside the Suspense boundary has loaded. */
 function Ready({ onReady }: { onReady: () => void }) {
   useEffect(onReady, [onReady]);
   return null;
 }
 
-export default function VillageScene({
+/**
+ * Memoised so page updates (the fps readout, store cards, the event log) never re-render the
+ * 3D tree; all props are stable refs or callbacks.
+ */
+export default memo(function VillageScene({
   avatar,
   input,
   pose,
   high,
   onFps,
   onReady,
+  pick,
 }: {
   avatar: AvatarChoice;
   input: React.RefObject<MoveInput>;
@@ -226,16 +283,20 @@ export default function VillageScene({
   high: boolean;
   onFps: (fps: number) => void;
   onReady: () => void;
+  pick: React.RefObject<PickFn | null>;
 }) {
+  // Fixed sharpness per quality setting. (Automatic adjustment misread throttled background
+  // tabs as slow devices and blurred the picture, so the participant or researcher chooses.)
+  const dpr = high ? 1.5 : 1;
   return (
-    <Canvas shadows={high} dpr={high ? [1, 1.75] : [1, 1.25]} camera={{ fov: 55, near: 0.1, far: 300, position: [0, 2.5, 8] }} gl={{ antialias: high }}>
+    <Canvas shadows={high} dpr={dpr} camera={{ fov: 55, near: 0.1, far: 300, position: [0, 2.5, 8] }} gl={{ antialias: high, powerPreference: "high-performance" }}>
       <Suspense fallback={null}>
         <Environment files={`${ENV}/sunny_rose_garden_2k.hdr`} background environmentIntensity={0.9} />
         <directionalLight
           position={[18, 26, 12]}
           intensity={2.4}
           castShadow={high}
-          shadow-mapSize={[2048, 2048]}
+          shadow-mapSize={[1024, 1024]}
           shadow-camera-left={-36}
           shadow-camera-right={36}
           shadow-camera-top={24}
@@ -248,9 +309,11 @@ export default function VillageScene({
         ))}
         <Garden />
         <Participant avatar={avatar} input={input} pose={pose} />
+        <GoalMarker input={input} />
         <Ready onReady={onReady} />
       </Suspense>
       <FpsProbe onSample={onFps} />
+      <Picker pick={pick} />
     </Canvas>
   );
-}
+});

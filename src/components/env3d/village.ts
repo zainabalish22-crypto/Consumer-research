@@ -118,9 +118,18 @@ export function doorPoint(s: VillageStore): [number, number] {
 export const APPROACH_RADIUS = 3.2;
 
 /** Answer-to-avatar rule: the automatic assignment the researcher configures. */
-export type AvatarChoice = "Female_Adult_01" | "Male_Adult_01" | null;
+/**
+ * How the participant appears: a realistic person, an abstract circle on the ground ("presence"),
+ * or null for a first-person view with nothing shown.
+ */
+export type AvatarChoice = "Female_Adult_01" | "Male_Adult_01" | "presence" | null;
+
+/**
+ * Answer-to-avatar rule set by the researcher. "Prefer not to say" gets the abstract presence,
+ * so nobody is given a body or gender they did not state.
+ */
 export function avatarFor(answer: "woman" | "man" | "none"): AvatarChoice {
   if (answer === "woman") return "Female_Adult_01";
   if (answer === "man") return "Male_Adult_01";
-  return null;
+  return "presence";
 }

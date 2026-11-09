@@ -7,15 +7,93 @@ import * as THREE from "three";
 import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader.js";
 import { STREET, type AvatarChoice } from "./village";
 
+/**
+ * Walk-to target set by tapping: a spot on the street, or a shop door (`store`, `face`), where
+ * the figure turns to face the shop before arriving.
+ */
+export type GoTo = { x: number; z: number; store?: string; face?: number; onArrive?: () => void };
 /** Movement intent written by the keyboard and touch controls, read every frame. */
-export type MoveInput = { forward: number; turn: number };
-/** Where the participant is; read by the page to detect approaching stores. */
-export type Pose = { x: number; z: number; heading: number };
+export type MoveInput = { forward: number; turn: number; goto?: GoTo | null };
+/**
+ * Where the participant is; read by the page to detect approaching stores.
+ * `v` (metres per second) and `w` (radians per second) are the eased speed and turn rate.
+ */
+export type Pose = { x: number; z: number; heading: number; v?: number; w?: number };
 
-const SPEED = 2.4; // metres per second, a relaxed walk
-const TURN = 2.2; // radians per second
+const SPEED = 1.45; // metres per second at full stick: an ordinary walking pace
+const TURN = 1.9; // radians per second at full stick: an unhurried turn
+const ACCEL = 6; // how quickly speed and turning catch up with the input: about half a second, like a person
 const LIMIT_Z = STREET.width / 2 + STREET.setback - 0.9;
 const LIMIT_X = STREET.length / 2 - 1;
+
+const wrapAngle = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
+const damp = THREE.MathUtils.damp;
+
+/**
+ * Advances the pose by one frame from manual input, or from a tap-to-walk target when the
+ * participant is not steering. Manual input always wins and cancels the target. Speed and
+ * turning ease towards their targets, so starting, stopping and turning never jerk.
+ */
+function advance(p: Pose, i: MoveInput, d: number) {
+  let wantV = i.forward * SPEED;
+  let wantW = -i.turn * TURN;
+  const manual = Math.abs(i.forward) > 0.05 || Math.abs(i.turn) > 0.05;
+  if (manual && i.goto) i.goto = null;
+  if (!manual && i.goto) {
+    const g = i.goto;
+    const dx = g.x - p.x;
+    const dz = g.z - p.z;
+    const dist = Math.hypot(dx, dz);
+    if (dist > 0.25) {
+      const diff = wrapAngle(Math.atan2(dx, dz) - p.heading);
+      wantW = THREE.MathUtils.clamp(diff * 4, -TURN * 1.4, TURN * 1.4);
+      // Slow down while turning sharply and when close, so the figure arrives gently.
+      wantV = SPEED * Math.min(1, dist / 1.2) * Math.max(0.15, Math.cos(Math.min(Math.abs(diff), Math.PI / 2)));
+    } else if (g.face === undefined) {
+      wantV = 0;
+      wantW = 0;
+      i.goto = null;
+      g.onArrive?.();
+    } else {
+      const diff = wrapAngle(g.face - p.heading);
+      wantV = 0;
+      wantW = THREE.MathUtils.clamp(diff * 5, -TURN * 1.4, TURN * 1.4);
+      if (Math.abs(diff) <= 0.06) {
+        i.goto = null;
+        g.onArrive?.();
+      }
+    }
+  }
+  p.v = damp(p.v ?? 0, wantV, ACCEL, d);
+  p.w = damp(p.w ?? 0, wantW, ACCEL * 1.4, d);
+  p.heading += p.w * d;
+  p.x = THREE.MathUtils.clamp(p.x + Math.sin(p.heading) * p.v * d, -LIMIT_X, LIMIT_X);
+  p.z = THREE.MathUtils.clamp(p.z + Math.cos(p.heading) * p.v * d, -LIMIT_Z, LIMIT_Z);
+}
+
+/**
+ * Third-person camera that follows smoothly: it trails the figure's heading rather than
+ * snapping to it, so turning sweeps the view instead of jolting it.
+ */
+function useFollowCamera(distance: number, height: number, lookHeight: number) {
+  const camera = useThree((s) => s.camera);
+  const state = useMemo(() => ({ heading: null as number | null, pos: new THREE.Vector3(), look: new THREE.Vector3(), lookNow: new THREE.Vector3() }), []);
+  return (p: Pose, d: number) => {
+    if (state.heading === null) {
+      state.heading = p.heading;
+      state.lookNow.set(p.x, lookHeight, p.z);
+    }
+    state.heading += wrapAngle(p.heading - state.heading) * (1 - Math.exp(-10 * d));
+    const h = state.heading;
+    state.pos.set(p.x - Math.sin(h) * distance, height, p.z - Math.cos(h) * distance);
+    camera.position.x = damp(camera.position.x, state.pos.x, 14, d);
+    camera.position.y = damp(camera.position.y, state.pos.y, 14, d);
+    camera.position.z = damp(camera.position.z, state.pos.z, 14, d);
+    state.look.set(p.x + Math.sin(h) * 2, lookHeight, p.z + Math.cos(h) * 2);
+    state.lookNow.lerp(state.look, 1 - Math.exp(-16 * d));
+    camera.lookAt(state.lookNow);
+  };
+}
 
 /**
  * The FBX files name their original .tga skins, which are replaced below by compressed copies.
@@ -35,8 +113,10 @@ const withManager = (loader: FBXLoader) => {
   loader.manager = fbxManager;
 };
 
+type Human = "Female_Adult_01" | "Male_Adult_01";
+
 /** Rocketbox skins: the FBX points at .tga files we converted, so maps are assigned here. */
-function useSkin(avatar: Exclude<AvatarChoice, null>) {
+function useSkin(avatar: Human) {
   const base = `/proto/avatars/${avatar}`;
   return useLoader(THREE.TextureLoader, [
     `${base}/body_color.jpg`,
@@ -47,11 +127,11 @@ function useSkin(avatar: Exclude<AvatarChoice, null>) {
   ]);
 }
 
-function Person({ avatar, input, pose }: { avatar: Exclude<AvatarChoice, null>; input: React.RefObject<MoveInput>; pose: React.RefObject<Pose> }) {
+/** A realistic person: Rocketbox model with its own skin textures. */
+function Person({ avatar, input, pose }: { avatar: Human; input: React.RefObject<MoveInput>; pose: React.RefObject<Pose> }) {
   const model = useLoader(FBXLoader, `/proto/avatars/${avatar}/${avatar}.fbx`, withManager);
   const walk = useLoader(FBXLoader, `/proto/avatars/anims/${avatar.startsWith("Female") ? "f" : "m"}_walk_neutral.fbx`, withManager);
   const [bodyC, bodyN, headC, headN, opacity] = useSkin(avatar);
-  const group = useRef<THREE.Group>(null);
 
   const person = useMemo(() => {
     for (const t of [bodyC, headC]) t.colorSpace = THREE.SRGBColorSpace;
@@ -79,56 +159,74 @@ function Person({ avatar, input, pose }: { avatar: Exclude<AvatarChoice, null>; 
     return model;
   }, [model, bodyC, bodyN, headC, headN, opacity]);
 
+  return <Walker object={person} walk={walk} input={input} pose={pose} />;
+}
+
+/** Ground speed the Rocketbox walk cycle covers at normal playback, in metres per second. */
+const CYCLE_SPEED = 1.45;
+
+/**
+ * Shared walking behaviour for a human figure. The walk cycle and a standing pose (the first
+ * frame of the walk) are blended by speed, and the cycle plays in step with the actual ground
+ * speed, so the feet don't slide and the figure never snaps between walking and standing.
+ */
+function Walker({ object, walk, input, pose }: { object: THREE.Object3D; walk: THREE.Group; input: React.RefObject<MoveInput>; pose: React.RefObject<Pose> }) {
+  const group = useRef<THREE.Group>(null);
   const clips = useMemo(() => {
-    const clip = walk.animations[0]?.clone();
-    if (clip) clip.name = "walk";
-    return clip ? [clip] : [];
+    const src = walk.animations[0];
+    if (!src) return [];
+    const w = src.clone();
+    w.name = "walk";
+    const stand = THREE.AnimationUtils.subclip(src, "stand", 0, 1, 30);
+    return [w, stand];
   }, [walk]);
   const { actions } = useAnimations(clips, group);
 
   useEffect(() => {
-    const a = actions.walk;
-    if (!a) return;
-    a.play();
-    a.timeScale = 0;
+    const { walk: w, stand } = actions;
+    if (!w || !stand) return;
+    for (const a of [w, stand]) {
+      a.enabled = true;
+      a.play();
+    }
+    w.setEffectiveWeight(0);
+    stand.setEffectiveWeight(1);
     return () => {
-      a.stop();
+      w.stop();
+      stand.stop();
     };
   }, [actions]);
 
-  const camera = useThree((s) => s.camera);
-  const camTarget = useMemo(() => new THREE.Vector3(), []);
-  const camPos = useMemo(() => new THREE.Vector3(), []);
+  const follow = useFollowCamera(4.6, 2.5, 1.4);
+  const turnTo = useRef<number | null>(null);
 
   useFrame((_, dt) => {
     const p = pose.current!;
-    const i = input.current!;
     const d = Math.min(dt, 0.05);
-    p.heading += -i.turn * TURN * d;
-    const step = i.forward * SPEED * d;
-    p.x = THREE.MathUtils.clamp(p.x + Math.sin(p.heading) * step, -LIMIT_X, LIMIT_X);
-    p.z = THREE.MathUtils.clamp(p.z + Math.cos(p.heading) * step, -LIMIT_Z, LIMIT_Z);
+    advance(p, input.current!, d);
     const g = group.current;
     if (g) {
       g.position.set(p.x, 0, p.z);
-      g.rotation.y = p.heading;
+      // The body turns a touch behind the heading, like a person turning, not a sign rotating.
+      turnTo.current = turnTo.current === null ? p.heading : turnTo.current + wrapAngle(p.heading - turnTo.current) * (1 - Math.exp(-22 * d));
+      g.rotation.y = turnTo.current;
     }
-    const a = actions.walk;
-    if (a) {
-      const moving = Math.abs(i.forward) > 0.05 || Math.abs(i.turn) > 0.05;
-      a.timeScale = THREE.MathUtils.lerp(a.timeScale, moving ? Math.max(0.6, Math.abs(i.forward)) * Math.sign(i.forward || 1) : 0, 0.2);
-      if (!moving && Math.abs(a.timeScale) < 0.02) a.time = 0;
+    const { walk: w, stand } = actions;
+    if (w && stand) {
+      const speed = Math.abs(p.v ?? 0);
+      const walkWeight = THREE.MathUtils.clamp(speed / 0.7, 0, 1);
+      // Turning on the spot also takes small steps.
+      const stepping = Math.max(walkWeight, Math.min(1, Math.abs(p.w ?? 0) / 2) * 0.6);
+      w.setEffectiveWeight(stepping);
+      stand.setEffectiveWeight(1 - stepping);
+      w.timeScale = Math.max(0.6, speed / CYCLE_SPEED) * Math.sign(p.v || 1);
     }
-    // Third-person camera: behind and above the participant, easing into place.
-    camPos.set(p.x - Math.sin(p.heading) * 4.6, 2.5, p.z - Math.cos(p.heading) * 4.6);
-    camera.position.lerp(camPos, 1 - Math.pow(0.001, d));
-    camTarget.set(p.x + Math.sin(p.heading) * 2, 1.4, p.z + Math.cos(p.heading) * 2);
-    camera.lookAt(camTarget);
+    follow(p, d);
   });
 
   return (
     <group ref={group}>
-      <primitive object={person} scale={0.01} />
+      <primitive object={object} scale={0.01} />
     </group>
   );
 }
@@ -139,12 +237,7 @@ function Eyes({ input, pose }: { input: React.RefObject<MoveInput>; pose: React.
   const look = useMemo(() => new THREE.Vector3(), []);
   useFrame((_, dt) => {
     const p = pose.current!;
-    const i = input.current!;
-    const d = Math.min(dt, 0.05);
-    p.heading += -i.turn * TURN * d;
-    const step = i.forward * SPEED * d;
-    p.x = THREE.MathUtils.clamp(p.x + Math.sin(p.heading) * step, -LIMIT_X, LIMIT_X);
-    p.z = THREE.MathUtils.clamp(p.z + Math.cos(p.heading) * step, -LIMIT_Z, LIMIT_Z);
+    advance(p, input.current!, Math.min(dt, 0.05));
     camera.position.set(p.x, 1.6, p.z);
     look.set(p.x + Math.sin(p.heading), 1.55, p.z + Math.cos(p.heading));
     camera.lookAt(look);
@@ -152,6 +245,40 @@ function Eyes({ input, pose }: { input: React.RefObject<MoveInput>; pose: React.
   return null;
 }
 
+/** Tessellum's brand orange (Signal), used for the presence. */
+const PRESENCE_COLOR = "#FF6A2B";
+
+/**
+ * Abstract presence: a circle on the ground marking where the participant stands. It shows
+ * position without giving them a body, so it carries no gender, age or ethnicity.
+ * Researchers can also use it for every participant.
+ */
+function Presence({ input, pose }: { input: React.RefObject<MoveInput>; pose: React.RefObject<Pose> }) {
+  const group = useRef<THREE.Group>(null);
+  const follow = useFollowCamera(4.2, 2.3, 1.1);
+  useFrame((_, dt) => {
+    const p = pose.current!;
+    const d = Math.min(dt, 0.05);
+    advance(p, input.current!, d);
+    group.current?.position.set(p.x, 0, p.z);
+    follow(p, d);
+  });
+  return (
+    <group ref={group}>
+      {/* A crisp ring on the ground marking where the participant stands */}
+      <mesh rotation-x={-Math.PI / 2} position-y={0.02}>
+        <ringGeometry args={[0.42, 0.5, 64]} />
+        <meshStandardMaterial color={PRESENCE_COLOR} roughness={0.6} />
+      </mesh>
+      <mesh rotation-x={-Math.PI / 2} position-y={0.019}>
+        <circleGeometry args={[0.42, 64]} />
+        <meshStandardMaterial color={PRESENCE_COLOR} transparent opacity={0.18} roughness={0.8} depthWrite={false} />
+      </mesh>
+    </group>
+  );
+}
+
 export function Participant({ avatar, input, pose }: { avatar: AvatarChoice; input: React.RefObject<MoveInput>; pose: React.RefObject<Pose> }) {
+  if (avatar === "presence") return <Presence input={input} pose={pose} />;
   return avatar ? <Person avatar={avatar} input={input} pose={pose} /> : <Eyes input={input} pose={pose} />;
 }
