@@ -13,5 +13,8 @@ supabase/.temp/
 tsconfig.tsbuildinfo
 /.next-prod/
 
-# Prototype 3D assets: kept local for now (see docs/ASSET_CREDITS.md); not on the live site yet.
-/public/proto/
+# 3D assets: the simplified, compressed set is committed (see docs/ASSET_CREDITS.md).
+# The full-size source models stay local; models-lite is made from them.
+/public/proto/env/models/
+# Shows a real café's name; never publish.
+/public/proto/photos/interior_1.jpg

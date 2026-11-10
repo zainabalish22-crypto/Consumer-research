@@ -1,0 +1,252 @@
+{
+  "asset": {
+    "generator": "glTF-Transform v4.5.1",
+    "version": "2.0"
+  },
+  "accessors": [
+    {
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 1323,
+      "bufferView": 0,
+      "byteOffset": 0
+    },
+    {
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 3408,
+      "bufferView": 0,
+      "byteOffset": 2648
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 687,
+      "max": [
+        1.1173019409179688,
+        0.7023147344589233,
+        1.520809531211853
+      ],
+      "min": [
+        -1.1188232898712158,
+        0.0004011094570159912,
+        -1.501520037651062
+      ],
+      "bufferView": 1,
+      "byteOffset": 0
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 687,
+      "bufferView": 1,
+      "byteOffset": 12
+    },
+    {
+      "type": "VEC2",
+      "componentType": 5126,
+      "count": 687,
+      "bufferView": 1,
+      "byteOffset": 24
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 905,
+      "max": [
+        0.6173738241195679,
+        0.7451937198638916,
+        1.4567499160766602
+      ],
+      "min": [
+        -0.6282728910446167,
+        0.6976591348648071,
+        -1.4653818607330322
+      ],
+      "bufferView": 2,
+      "byteOffset": 0
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 905,
+      "bufferView": 2,
+      "byteOffset": 12
+    },
+    {
+      "type": "VEC2",
+      "componentType": 5126,
+      "count": 905,
+      "bufferView": 2,
+      "byteOffset": 24
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 9464,
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 9464,
+      "byteLength": 21984,
+      "byteStride": 32,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 31448,
+      "byteLength": 28960,
+      "byteStride": 32,
+      "target": 34962
+    }
+  ],
+  "samplers": [
+    {
+      "magFilter": 9729,
+      "minFilter": 9987,
+      "wrapS": 10497,
+      "wrapT": 10497
+    }
+  ],
+  "textures": [
+    {
+      "source": 1,
+      "sampler": 0
+    },
+    {
+      "source": 0,
+      "sampler": 0
+    },
+    {
+      "source": 2,
+      "sampler": 0
+    },
+    {
+      "source": 4,
+      "sampler": 0
+    },
+    {
+      "source": 3,
+      "sampler": 0
+    },
+    {
+      "source": 5,
+      "sampler": 0
+    }
+  ],
+  "images": [
+    {
+      "name": "wooden_picnic_table_bottom_nor_gl",
+      "mimeType": "image/jpeg",
+      "uri": "textures/wooden_picnic_table_bottom_nor_gl_1k.jpg"
+    },
+    {
+      "name": "wooden_picnic_table_bottom_diff",
+      "mimeType": "image/jpeg",
+      "uri": "textures/wooden_picnic_table_bottom_diff_1k.jpg"
+    },
+    {
+      "name": "wooden_picnic_table_bottom_metal-wooden_picnic_table_bottom_rough",
+      "mimeType": "image/jpeg",
+      "uri": "textures/wooden_picnic_table_bottom_arm_1k.jpg"
+    },
+    {
+      "name": "wooden_picnic_table_top_nor_gl",
+      "mimeType": "image/jpeg",
+      "uri": "textures/wooden_picnic_table_top_nor_gl_1k.jpg"
+    },
+    {
+      "name": "wooden_picnic_table_top_diff",
+      "mimeType": "image/jpeg",
+      "uri": "textures/wooden_picnic_table_top_diff_1k.jpg"
+    },
+    {
+      "name": "wooden_picnic_table_top_metal-wooden_picnic_table_top_rough",
+      "mimeType": "image/jpeg",
+      "uri": "textures/wooden_picnic_table_top_arm_1k.jpg"
+    }
+  ],
+  "buffers": [
+    {
+      "uri": "wooden_picnic_table.bin",
+      "byteLength": 60408
+    }
+  ],
+  "materials": [
+    {
+      "name": "wooden_picnic_table_bottom",
+      "doubleSided": true,
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 0
+        },
+        "metallicRoughnessTexture": {
+          "index": 2
+        }
+      },
+      "normalTexture": {
+        "index": 1
+      }
+    },
+    {
+      "name": "wooden_picnic_table_table",
+      "doubleSided": true,
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 3
+        },
+        "metallicRoughnessTexture": {
+          "index": 5
+        }
+      },
+      "normalTexture": {
+        "index": 4
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "name": "Cube.003",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 2,
+            "NORMAL": 3,
+            "TEXCOORD_0": 4
+          },
+          "mode": 4,
+          "material": 0,
+          "indices": 0
+        },
+        {
+          "attributes": {
+            "POSITION": 5,
+            "NORMAL": 6,
+            "TEXCOORD_0": 7
+          },
+          "mode": 4,
+          "material": 1,
+          "indices": 1
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "wooden_picnic_table",
+      "mesh": 0
+    }
+  ],
+  "scenes": [
+    {
+      "name": "Scene",
+      "nodes": [
+        0
+      ]
+    }
+  ],
+  "scene": 0
+}

@@ -1,0 +1,341 @@
+{
+  "asset": {
+    "generator": "glTF-Transform v4.5.1",
+    "version": "2.0"
+  },
+  "accessors": [
+    {
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 3858,
+      "bufferView": 0,
+      "byteOffset": 0
+    },
+    {
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 7260,
+      "bufferView": 0,
+      "byteOffset": 7716
+    },
+    {
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 762,
+      "bufferView": 0,
+      "byteOffset": 22236
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 1890,
+      "max": [
+        0.7700682282447815,
+        1.0565910339355469,
+        0.5089085102081299
+      ],
+      "min": [
+        -0.6701914072036743,
+        0.009361915290355682,
+        -0.20477378368377686
+      ],
+      "bufferView": 1,
+      "byteOffset": 0
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 1890,
+      "bufferView": 1,
+      "byteOffset": 12
+    },
+    {
+      "type": "VEC2",
+      "componentType": 5126,
+      "count": 1890,
+      "bufferView": 1,
+      "byteOffset": 24
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 2848,
+      "max": [
+        0.6110244393348694,
+        1.721980333328247,
+        0.5119255781173706
+      ],
+      "min": [
+        -1.397074580192566,
+        0.17277592420578003,
+        -0.5575034618377686
+      ],
+      "bufferView": 2,
+      "byteOffset": 0
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 2848,
+      "bufferView": 2,
+      "byteOffset": 12
+    },
+    {
+      "type": "VEC2",
+      "componentType": 5126,
+      "count": 2848,
+      "bufferView": 2,
+      "byteOffset": 24
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 237,
+      "max": [
+        0.6219784021377563,
+        1.175136923789978,
+        0.4638267457485199
+      ],
+      "min": [
+        0.20412881672382355,
+        1.0557620525360107,
+        -0.1118697002530098
+      ],
+      "bufferView": 3,
+      "byteOffset": 0
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 237,
+      "bufferView": 3,
+      "byteOffset": 12
+    },
+    {
+      "type": "VEC2",
+      "componentType": 5126,
+      "count": 237,
+      "bufferView": 3,
+      "byteOffset": 24
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 23760,
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 23760,
+      "byteLength": 60480,
+      "byteStride": 32,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 84240,
+      "byteLength": 91136,
+      "byteStride": 32,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 175376,
+      "byteLength": 7584,
+      "byteStride": 32,
+      "target": 34962
+    }
+  ],
+  "samplers": [
+    {
+      "magFilter": 9729,
+      "minFilter": 9987,
+      "wrapS": 10497,
+      "wrapT": 10497
+    }
+  ],
+  "textures": [
+    {
+      "source": 1,
+      "sampler": 0
+    },
+    {
+      "source": 0,
+      "sampler": 0
+    },
+    {
+      "source": 2,
+      "sampler": 0
+    },
+    {
+      "source": 4,
+      "sampler": 0
+    },
+    {
+      "source": 3,
+      "sampler": 0
+    },
+    {
+      "source": 5,
+      "sampler": 0
+    }
+  ],
+  "images": [
+    {
+      "name": "CoffeeCart_01_cart_nor_gl",
+      "mimeType": "image/jpeg",
+      "uri": "textures/CoffeeCart_01_cart_nor_gl_1k.jpg"
+    },
+    {
+      "name": "CoffeeCart_01_cart_diff",
+      "mimeType": "image/jpeg",
+      "uri": "textures/CoffeeCart_01_cart_diff_1k.jpg"
+    },
+    {
+      "name": "CoffeeCart_01_cart_metallic-CoffeeCart_01_cart_roughness",
+      "mimeType": "image/jpeg",
+      "uri": "textures/CoffeeCart_01_cart_arm_1k.jpg"
+    },
+    {
+      "name": "CoffeeCart_01_props_nor_gl",
+      "mimeType": "image/jpeg",
+      "uri": "textures/CoffeeCart_01_props_nor_gl_1k.jpg"
+    },
+    {
+      "name": "CoffeeCart_01_props_diff",
+      "mimeType": "image/jpeg",
+      "uri": "textures/CoffeeCart_01_props_diff_1k.jpg"
+    },
+    {
+      "name": "CoffeeCart_01_props_metallic-CoffeeCart_01_props_roughness",
+      "mimeType": "image/jpeg",
+      "uri": "textures/CoffeeCart_01_props_arm_1k.jpg"
+    }
+  ],
+  "buffers": [
+    {
+      "uri": "CoffeeCart_01.bin",
+      "byteLength": 182960
+    }
+  ],
+  "materials": [
+    {
+      "name": "CoffeeCart_01_cart",
+      "doubleSided": true,
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 0
+        },
+        "metallicRoughnessTexture": {
+          "index": 2
+        }
+      },
+      "normalTexture": {
+        "index": 1
+      }
+    },
+    {
+      "name": "CoffeeCart_01_props",
+      "doubleSided": true,
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 3
+        },
+        "metallicRoughnessTexture": {
+          "index": 5
+        }
+      },
+      "normalTexture": {
+        "index": 4
+      }
+    },
+    {
+      "name": "CoffeeCart_01_mugs",
+      "doubleSided": true,
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0.800000011920929,
+          0.800000011920929,
+          0.800000011920929,
+          1
+        ],
+        "roughnessFactor": 0.15454545617103577,
+        "metallicFactor": 0
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "name": "Bottom_Cart",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 3,
+            "NORMAL": 4,
+            "TEXCOORD_0": 5
+          },
+          "mode": 4,
+          "material": 0,
+          "indices": 0
+        }
+      ]
+    },
+    {
+      "name": "Top_Cart",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 6,
+            "NORMAL": 7,
+            "TEXCOORD_0": 8
+          },
+          "mode": 4,
+          "material": 1,
+          "indices": 1
+        }
+      ]
+    },
+    {
+      "name": "Mugs",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 9,
+            "NORMAL": 10,
+            "TEXCOORD_0": 11
+          },
+          "mode": 4,
+          "material": 2,
+          "indices": 2
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "CoffeeCart_01_cart",
+      "mesh": 0
+    },
+    {
+      "name": "CoffeeCart_01_props",
+      "mesh": 1
+    },
+    {
+      "name": "CoffeeCart_01_mugs",
+      "mesh": 2
+    }
+  ],
+  "scenes": [
+    {
+      "name": "Scene",
+      "nodes": [
+        0,
+        1,
+        2
+      ]
+    }
+  ],
+  "scene": 0
+}

@@ -22,9 +22,9 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   const t = await getTranslations();
   const other = locale === "ar" ? "en" : "ar";
   const modules = [
-    { key: "village", status: "prototype" },
-    { key: "shop", status: "design" },
-    { key: "forms", status: "design" },
+    { key: "village", status: "prototype", href: SCENES_LIVE ? "/prototype/scenes" : null },
+    { key: "shop", status: "prototype", href: "/studio?module=shop" },
+    { key: "forms", status: "prototype", href: "/studio?module=form" },
   ] as const;
 
   return (
@@ -53,11 +53,9 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             <Link href="/" locale={other} lang={other} aria-label={t("nav.otherLanguageLabel")} className="px-3 py-3 hover:text-signal">
               {t("nav.otherLanguage")}
             </Link>
-            {SCENES_LIVE && (
-              <NextLink href="/prototype/scenes" className="tracked border border-photon px-4 py-[11px] uppercase tracking-[0.06em] hover:border-signal hover:text-signal">
-                {t("nav.scenes")}
-              </NextLink>
-            )}
+            <Link href="/studio" className="tracked border border-photon px-4 py-[11px] uppercase tracking-[0.06em] hover:border-signal hover:text-signal">
+              {t("nav.studio")}
+            </Link>
           </div>
         </header>
 
@@ -105,8 +103,8 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
               {t("modules.title")}
             </h2>
             <div className="grid gap-px border border-line bg-line md:grid-cols-3">
-              {modules.map(({ key, status }) => (
-                <article key={key} className="flex flex-col gap-3 bg-void p-7">
+              {modules.map(({ key, status, href }) => (
+                <article key={key} className="group relative flex flex-col gap-3 bg-void p-7 hover:bg-carbon">
                   <div className="flex items-center justify-between gap-3 font-mono text-xs">
                     <span dir="ltr" className="text-faint">{t(`modules.${key}.code`)}</span>
                     <span className={status === "prototype" ? "text-signal" : "text-faint"}>
@@ -114,12 +112,32 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
                       {t(`modules.status.${status}`)}
                     </span>
                   </div>
-                  <h3 className="font-display text-2xl font-normal">{t(`modules.${key}.name`)}</h3>
+                  <h3 className="font-display text-2xl font-normal">
+                    {href ? (
+                      // The whole card is the link (the stretched ::after covers it).
+                      key === "village" ? (
+                        <NextLink href={href} className="after:absolute after:inset-0 group-hover:text-signal">
+                          {t(`modules.${key}.name`)}
+                        </NextLink>
+                      ) : (
+                        <Link href={href} className="after:absolute after:inset-0 group-hover:text-signal">
+                          {t(`modules.${key}.name`)}
+                        </Link>
+                      )
+                    ) : (
+                      t(`modules.${key}.name`)
+                    )}
+                  </h3>
                   <p className="text-sm text-ice">{t(`modules.${key}.kind`)}</p>
                   <p className="text-[15px] leading-[1.65] text-dim">{t(`modules.${key}.body`)}</p>
                   <p className="mt-auto border-t border-line-2 pt-3 text-[13px] leading-[1.6] text-faint">
                     <span className="tracked font-mono text-[11px] uppercase tracking-[0.12em] text-mist">{t("modules.recordsLabel")}</span> · {t(`modules.${key}.records`)}
                   </p>
+                  {href && (
+                    <span aria-hidden="true" className="tracked font-mono text-xs uppercase tracking-[0.12em] text-signal">
+                      {t("modules.open")} →
+                    </span>
+                  )}
                 </article>
               ))}
             </div>

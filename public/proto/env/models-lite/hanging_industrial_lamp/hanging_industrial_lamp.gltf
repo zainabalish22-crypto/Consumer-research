@@ -1,0 +1,267 @@
+{
+  "asset": {
+    "generator": "glTF-Transform v4.5.1",
+    "version": "2.0"
+  },
+  "accessors": [
+    {
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 4092,
+      "bufferView": 0,
+      "byteOffset": 0
+    },
+    {
+      "type": "SCALAR",
+      "componentType": 5123,
+      "count": 822,
+      "bufferView": 0,
+      "byteOffset": 8184
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 1880,
+      "max": [
+        0.2748033106327057,
+        0.015337204560637474,
+        0.2748030722141266
+      ],
+      "min": [
+        -0.27480319142341614,
+        -1.3400129079818726,
+        -0.27480337023735046
+      ],
+      "bufferView": 1,
+      "byteOffset": 0
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 1880,
+      "bufferView": 1,
+      "byteOffset": 12
+    },
+    {
+      "type": "VEC2",
+      "componentType": 5126,
+      "count": 1880,
+      "bufferView": 1,
+      "byteOffset": 24
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 388,
+      "max": [
+        0.24996089935302734,
+        -1.0371685028076172,
+        0.24996091425418854
+      ],
+      "min": [
+        -0.24996091425418854,
+        -1.3290307521820068,
+        -0.24996091425418854
+      ],
+      "bufferView": 2,
+      "byteOffset": 0
+    },
+    {
+      "type": "VEC3",
+      "componentType": 5126,
+      "count": 388,
+      "bufferView": 2,
+      "byteOffset": 12
+    },
+    {
+      "type": "VEC2",
+      "componentType": 5126,
+      "count": 388,
+      "bufferView": 2,
+      "byteOffset": 24
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 9828,
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 9828,
+      "byteLength": 60160,
+      "byteStride": 32,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 69988,
+      "byteLength": 12416,
+      "byteStride": 32,
+      "target": 34962
+    }
+  ],
+  "samplers": [
+    {
+      "magFilter": 9729,
+      "minFilter": 9987,
+      "wrapS": 10497,
+      "wrapT": 10497
+    }
+  ],
+  "textures": [
+    {
+      "source": 2,
+      "sampler": 0
+    },
+    {
+      "source": 0,
+      "sampler": 0
+    },
+    {
+      "source": 1,
+      "sampler": 0
+    },
+    {
+      "source": 3,
+      "sampler": 0
+    },
+    {
+      "source": 4,
+      "sampler": 0
+    }
+  ],
+  "images": [
+    {
+      "name": "hanging_industrial_lamp_emissive",
+      "mimeType": "image/jpeg",
+      "uri": "textures/hanging_industrial_lamp_emissive_1k.jpg"
+    },
+    {
+      "name": "hanging_industrial_lamp_nor_gl",
+      "mimeType": "image/jpeg",
+      "uri": "textures/hanging_industrial_lamp_nor_gl_1k.jpg"
+    },
+    {
+      "name": "hanging_industrial_lamp_diff",
+      "mimeType": "image/jpeg",
+      "uri": "textures/hanging_industrial_lamp_diff_1k.jpg"
+    },
+    {
+      "name": "hanging_industrial_lamp_metal-hanging_industrial_lamp_rough",
+      "mimeType": "image/jpeg",
+      "uri": "textures/hanging_industrial_lamp_arm_1k.jpg"
+    },
+    {
+      "name": "hanging_industrial_lamp_glass_nor_gl",
+      "mimeType": "image/jpeg",
+      "uri": "textures/hanging_industrial_lamp_glass_nor_gl_1k.jpg"
+    }
+  ],
+  "buffers": [
+    {
+      "uri": "hanging_industrial_lamp.bin",
+      "byteLength": 82404
+    }
+  ],
+  "materials": [
+    {
+      "name": "hanging_industrial_lamp",
+      "doubleSided": true,
+      "pbrMetallicRoughness": {
+        "baseColorTexture": {
+          "index": 0
+        },
+        "metallicRoughnessTexture": {
+          "index": 3
+        }
+      },
+      "emissiveFactor": [
+        1,
+        1,
+        1
+      ],
+      "emissiveTexture": {
+        "index": 1
+      },
+      "normalTexture": {
+        "index": 2
+      },
+      "extensions": {
+        "KHR_materials_emissive_strength": {
+          "emissiveStrength": 24.999998092651367
+        }
+      }
+    },
+    {
+      "name": "hanging_industrial_lamp_glass",
+      "doubleSided": true,
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0.800000011920929,
+          0.800000011920929,
+          0.800000011920929,
+          1
+        ],
+        "roughnessFactor": 0.10000000149011612,
+        "metallicFactor": 0
+      },
+      "normalTexture": {
+        "index": 4
+      },
+      "extensions": {
+        "KHR_materials_transmission": {
+          "transmissionFactor": 1
+        }
+      }
+    }
+  ],
+  "meshes": [
+    {
+      "name": "Cylinder",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 2,
+            "NORMAL": 3,
+            "TEXCOORD_0": 4
+          },
+          "mode": 4,
+          "material": 0,
+          "indices": 0
+        },
+        {
+          "attributes": {
+            "POSITION": 5,
+            "NORMAL": 6,
+            "TEXCOORD_0": 7
+          },
+          "mode": 4,
+          "material": 1,
+          "indices": 1
+        }
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "hanging_industrial_lamp",
+      "mesh": 0
+    }
+  ],
+  "scenes": [
+    {
+      "name": "Scene",
+      "nodes": [
+        0
+      ]
+    }
+  ],
+  "scene": 0,
+  "extensionsUsed": [
+    "KHR_materials_emissive_strength",
+    "KHR_materials_transmission"
+  ]
+}

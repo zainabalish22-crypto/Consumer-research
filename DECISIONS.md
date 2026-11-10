@@ -2,6 +2,16 @@
 
 Choices made during the rebuild, newest first. `docs/PLATFORM_BRIEF.md` is the functional specification; where a decision here changes it, the decision says so.
 
+## 2026-11-10 · Form builder and e-commerce simulator (browser-first)
+
+- **One study engine for both modules** (`src/lib/study`): a study is an ordered flow of blocks (welcome, consent, instructions, questions, media, online shop, end). The form builder edits the flow and the 13 question types; the e-commerce simulator is the shop block plus its own editor (store, categories, products with offers, sponsored placements, researcher-created ratings and reviews, banners).
+- **Saved in the browser for now (IndexedDB)**, behind a small async repository (`repo.ts`) so a free database (Neon Postgres) can replace it without changing the screens. Until then, participant links only work in the researcher's own browser, which is fine for previews and test sessions. The studio says so on every page.
+- **Participant view is light** with the researcher's accent colour; studio is dark. Both in Arabic and English. Participants choose the language when the study has both; sessions resume after a refresh; preview sessions (`?test=1`) are flagged; URL parameters (e.g. a panel ID) are stored; consent version is recorded.
+- **Recorded:** answers, attention-check failures, block timings, and in the shop: page views, product clicks and views, searches, category and offer filters, sort, add/remove from basket, checkout start and completion, ad impressions, banner clicks and scroll depth. No keystrokes, mouse streams, camera or location.
+- **Exports:** participants.csv (wide), events.csv (long), codebook.csv; UTF-8 with Arabic intact.
+- **Starter shop** uses two Unsplash drink photos in `public/samples/` (checked: no brands). A storefront photo with real business names was rejected.
+- **Homepage module cards link to their modules**; the 3D scenes are now on by default (`NEXT_PUBLIC_SCENES_LIVE=0` hides them) and their compressed files are committed.
+
 ## 2026-11-10 · Homepage (Phase 4)
 
 - **Built from the approved B-Home mockup**, with the three modules named as the owner names them, in this order: **M-01 Shopping village** (3D, prototype), **M-02 E-commerce simulator** (in design), **M-03 Forms** (in design). Each card says what the participant does and what is recorded, so the modules read as distinct.
