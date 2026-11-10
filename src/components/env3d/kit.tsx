@@ -16,7 +16,7 @@ export function usePbr(id: string, rx: number, ry: number) {
       const c = t.clone();
       c.wrapS = c.wrapT = THREE.RepeatWrapping;
       c.repeat.set(rx, ry);
-      c.anisotropy = 8;
+      c.anisotropy = 4;
       c.needsUpdate = true;
       return c;
     };

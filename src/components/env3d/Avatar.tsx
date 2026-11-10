@@ -87,26 +87,21 @@ function advance(p: Pose, i: MoveInput, d: number) {
 }
 
 /**
- * Third-person camera that follows smoothly: it trails the figure's heading rather than
- * snapping to it, so turning sweeps the view instead of jolting it.
+ * Third-person camera. It sits at a fixed distance behind the figure, so the figure holds
+ * perfectly still on screen however uneven the frame rate is (easing the camera's position
+ * separately made the figure wobble against the view whenever a frame ran long). Only the
+ * direction eases: the view trails the figure's heading, so turning sweeps instead of jolting.
  */
 function useFollowCamera(distance: number, height: number, lookHeight: number) {
   const camera = useThree((s) => s.camera);
-  const state = useMemo(() => ({ heading: null as number | null, pos: new THREE.Vector3(), look: new THREE.Vector3(), lookNow: new THREE.Vector3() }), []);
+  const state = useMemo(() => ({ heading: null as number | null, look: new THREE.Vector3() }), []);
   return (p: Pose, d: number) => {
-    if (state.heading === null) {
-      state.heading = p.heading;
-      state.lookNow.set(p.x, lookHeight, p.z);
-    }
-    state.heading += wrapAngle(p.heading - state.heading) * (1 - Math.exp(-10 * d));
+    if (state.heading === null) state.heading = p.heading;
+    state.heading += wrapAngle(p.heading - state.heading) * (1 - Math.exp(-7 * d));
     const h = state.heading;
-    state.pos.set(p.x - Math.sin(h) * distance, height, p.z - Math.cos(h) * distance);
-    camera.position.x = damp(camera.position.x, state.pos.x, 14, d);
-    camera.position.y = damp(camera.position.y, state.pos.y, 14, d);
-    camera.position.z = damp(camera.position.z, state.pos.z, 14, d);
+    camera.position.set(p.x - Math.sin(h) * distance, height, p.z - Math.cos(h) * distance);
     state.look.set(p.x + Math.sin(h) * 2, lookHeight, p.z + Math.cos(h) * 2);
-    state.lookNow.lerp(state.look, 1 - Math.exp(-16 * d));
-    camera.lookAt(state.lookNow);
+    camera.lookAt(state.look);
   };
 }
 
