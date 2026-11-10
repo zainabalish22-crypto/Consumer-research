@@ -5,7 +5,7 @@ import { useFrame, useLoader, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader.js";
-import { STREET, type AvatarChoice } from "./village";
+import type { AvatarChoice } from "./village";
 
 /**
  * Walk-to target set by tapping: a spot on the street, or a shop door (`store`, `face`), where
@@ -17,14 +17,17 @@ export type MoveInput = { forward: number; turn: number; goto?: GoTo | null };
 /**
  * Where the participant is; read by the page to detect approaching stores.
  * `v` (metres per second) and `w` (radians per second) are the eased speed and turn rate.
+ * `bounds` is the walkable area [xMin, xMax, zMin, zMax] and `blockers` the circles [x, z, r]
+ * to walk around (benches, stalls, posts), both set by the scene.
  */
-export type Pose = { x: number; z: number; heading: number; v?: number; w?: number };
+export type Pose = { x: number; z: number; heading: number; v?: number; w?: number; bounds?: [number, number, number, number]; blockers?: [number, number, number][] };
+
+const BODY = 0.3; // the participant's own radius when walking past things
 
 const SPEED = 1.45; // metres per second at full stick: an ordinary walking pace
 const TURN = 1.9; // radians per second at full stick: an unhurried turn
 const ACCEL = 6; // how quickly speed and turning catch up with the input: about half a second, like a person
-const LIMIT_Z = STREET.width / 2 + STREET.setback - 0.9;
-const LIMIT_X = STREET.length / 2 - 1;
+const OPEN: [number, number, number, number] = [-1e3, 1e3, -1e3, 1e3];
 
 const wrapAngle = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 const damp = THREE.MathUtils.damp;
@@ -67,8 +70,20 @@ function advance(p: Pose, i: MoveInput, d: number) {
   p.v = damp(p.v ?? 0, wantV, ACCEL, d);
   p.w = damp(p.w ?? 0, wantW, ACCEL * 1.4, d);
   p.heading += p.w * d;
-  p.x = THREE.MathUtils.clamp(p.x + Math.sin(p.heading) * p.v * d, -LIMIT_X, LIMIT_X);
-  p.z = THREE.MathUtils.clamp(p.z + Math.cos(p.heading) * p.v * d, -LIMIT_Z, LIMIT_Z);
+  const [x0, x1, z0, z1] = p.bounds ?? OPEN;
+  p.x = THREE.MathUtils.clamp(p.x + Math.sin(p.heading) * p.v * d, x0, x1);
+  p.z = THREE.MathUtils.clamp(p.z + Math.cos(p.heading) * p.v * d, z0, z1);
+  // Slide around anything in the way rather than walking through it.
+  for (const [bx, bz, br] of p.blockers ?? []) {
+    const dx = p.x - bx;
+    const dz = p.z - bz;
+    const dist = Math.hypot(dx, dz);
+    const min = br + BODY;
+    if (dist < min && dist > 1e-4) {
+      p.x = bx + (dx / dist) * min;
+      p.z = bz + (dz / dist) * min;
+    }
+  }
 }
 
 /**

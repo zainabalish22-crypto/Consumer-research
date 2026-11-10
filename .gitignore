@@ -13,5 +13,5 @@ supabase/.temp/
 tsconfig.tsbuildinfo
 /.next-prod/
 
-# Prototype 3D assets (downloaded, see public/proto/CREDITS.md once added)
+# Prototype 3D assets: kept local for now (see docs/ASSET_CREDITS.md); not on the live site yet.
 /public/proto/

@@ -1,8 +1,6 @@
-import type { Metadata } from "next";
-import { VillagePrototype } from "@/components/env3d/VillagePrototype";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = { title: "Garden village prototype · Tessellum" };
-
+/** The garden village is now one scene in the library. */
 export default function Page() {
-  return <VillagePrototype />;
+  redirect("/prototype/scenes/garden-village");
 }

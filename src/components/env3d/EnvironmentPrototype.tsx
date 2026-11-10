@@ -2,21 +2,33 @@
 
 import { useProgress } from "@react-three/drei";
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MoveInput, Pose } from "./Avatar";
 import type { PickFn } from "./Scene";
-import { APPROACH_RADIUS, STORES, avatarFor, doorPoint, type AvatarChoice, type VillageStore } from "./village";
+import { doorPoint, faceStore, type SceneDef } from "./scenes";
+import { blockersFor, type Placed } from "./sets";
+import { STORES, avatarFor, type AvatarChoice, type VillageStore } from "./village";
 
-const VillageScene = dynamic(() => import("./Scene"), { ssr: false });
+const EnvironmentScene = dynamic(() => import("./Scene"), { ssr: false });
+
+/** What the "enter" action is called in each kind of place. */
+const ENTER_LABEL: Partial<Record<SceneDef["id"], string>> = { supermarket: "View shelf", souq: "Browse stall", "night-market": "Browse stall", "food-court": "Order here" };
 
 type LoggedEvent = { t: number; type: string; detail: string };
 
-/** Prototype of the 3D garden village: avatar assignment, walking, approaching and entering stores. */
-export function VillagePrototype() {
+/**
+ * Prototype of the 3D environment module in any scene: avatar assignment, walking, approaching
+ * and entering stores. The stores and products are the same in every scene.
+ */
+export function EnvironmentPrototype({ scene }: { scene: SceneDef }) {
+  const placed = useMemo<Placed[]>(() => STORES.map((store, i) => ({ store, slot: scene.slots[i] })), [scene]);
+  const approachRadius = Math.min(3.2, scene.unit * 0.45);
+  const enterLabel = ENTER_LABEL[scene.id] ?? "Enter";
   const [answer, setAnswer] = useState<"woman" | "man" | "none" | null>(null);
   const [avatar, setAvatar] = useState<AvatarChoice>(null);
   const input = useRef<MoveInput>({ forward: 0, turn: 0 });
-  const pose = useRef<Pose>({ x: -26, z: 0, heading: Math.PI / 2 });
+  const pose = useRef<Pose>({ ...scene.start, bounds: scene.bounds, blockers: blockersFor(scene, placed) });
   const [near, setNear] = useState<VillageStore | null>(null);
   const [inside, setInside] = useState<VillageStore | null>(null);
   const [bag, setBag] = useState<{ key: string; price: number }[]>([]);
@@ -37,6 +49,12 @@ export function VillagePrototype() {
 
   useEffect(() => {
     setHigh(window.matchMedia("(min-width: 900px)").matches);
+    // Researcher preview: ?as=woman|man|none skips the question.
+    const as = new URLSearchParams(window.location.search).get("as");
+    if (as === "woman" || as === "man" || as === "none") begin(as);
+    // Prototype diagnostics, readable from the console.
+    (window as unknown as { __tess?: unknown }).__tess = { pose, input };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function begin(a: "woman" | "man" | "none") {
@@ -45,7 +63,7 @@ export function VillagePrototype() {
     setAvatar(assigned);
     started.current = performance.now();
     // The representation is recorded, because the kind of figure can influence behaviour.
-    log("enter_environment", `representation=${assigned ?? "first-person"}`);
+    log("enter_environment", `scene=${scene.id} representation=${assigned ?? "first-person"}`);
   }
 
   // Keyboard: arrows or WASD.
@@ -83,13 +101,13 @@ export function VillagePrototype() {
     const id = window.setInterval(() => {
       const p = pose.current;
       let best: VillageStore | null = null;
-      let bestD = APPROACH_RADIUS;
-      for (const s of STORES) {
-        const [dx, dz] = doorPoint(s);
+      let bestD = approachRadius;
+      for (const { store, slot } of placed) {
+        const [dx, dz] = doorPoint(scene, slot);
         const d = Math.hypot(p.x - dx, p.z - dz);
         if (d < bestD) {
           bestD = d;
-          best = s;
+          best = store;
         }
       }
       const idNow = best?.id ?? null;
@@ -101,7 +119,7 @@ export function VillagePrototype() {
       }
     }, 200);
     return () => window.clearInterval(id);
-  }, [answer, log]);
+  }, [answer, log, placed, scene, approachRadius]);
 
   function enter(s: VillageStore) {
     input.current = { forward: 0, turn: 0 };
@@ -113,16 +131,19 @@ export function VillagePrototype() {
     const hit = pick.current?.(x, y);
     if (!hit) return;
     if ("ground" in hit) {
-      const [gx, gz] = hit.ground;
+      const [x0, x1, z0, z1] = scene.bounds;
+      const gx = Math.min(x1, Math.max(x0, hit.ground[0]));
+      const gz = Math.min(z1, Math.max(z0, hit.ground[1]));
       log("tap_walk", `${gx.toFixed(1)}, ${gz.toFixed(1)}`);
       input.current = { forward: 0, turn: 0, goto: { x: gx, z: gz } };
       return;
     }
-    const s = STORES.find((st) => st.id === hit.store);
-    if (!s) return;
-    const [dx, dz] = doorPoint(s);
+    const pl = placed.find((p) => p.store.id === hit.store);
+    if (!pl) return;
+    const s = pl.store;
+    const [dx, dz] = doorPoint(scene, pl.slot);
     log("tap_store", s.id);
-    input.current = { forward: 0, turn: 0, goto: { x: dx, z: dz, store: s.id, face: s.side === -1 ? Math.PI : 0, onArrive: () => enter(s) } };
+    input.current = { forward: 0, turn: 0, goto: { x: dx, z: dz, store: s.id, face: faceStore(pl.slot), onArrive: () => enter(s) } };
   }
   function leave() {
     if (inside) log("leave_store", inside.id);
@@ -135,7 +156,7 @@ export function VillagePrototype() {
         <div className="w-full max-w-sm rounded-[22px] bg-white p-6 shadow-sm">
           <p className="text-sm text-[#5C6066]">Prototype · step 3 of 11</p>
           <h1 className="mt-2 text-xl font-semibold leading-snug">Which best describes you?</h1>
-          <p className="mt-1 text-sm text-[#5C6066]">Your answer sets your figure in the shopping street automatically.</p>
+          <p className="mt-1 text-sm text-[#5C6066]">Your answer sets your figure in the {scene.name.toLowerCase()} automatically.</p>
           <div className="mt-5 flex flex-col gap-3">
             {(
               [
@@ -158,14 +179,14 @@ export function VillagePrototype() {
   return (
     <main className="relative h-dvh w-full overflow-hidden bg-black text-white">
       <div className="absolute inset-0">
-        <VillageScene avatar={avatar} input={input} pose={pose} high={high} onFps={setFps} onReady={onReady} pick={pick} />
+        <EnvironmentScene scene={scene} placed={placed} avatar={avatar} input={input} pose={pose} high={high} onFps={setFps} onReady={onReady} pick={pick} />
       </div>
 
       {!inside && <TouchControl input={input} onTap={tap} />}
 
       {!ready && (
         <div role="status" className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-4 bg-[#F7F6F2] p-6 text-[#16181B]">
-          <p className="text-lg font-semibold">Preparing the shopping street…</p>
+          <p className="text-lg font-semibold">{scene.loading}</p>
           <div className="h-2 w-64 max-w-full overflow-hidden rounded-full bg-[#ECEAE4]">
             <div className="h-2 rounded-full bg-[#1F5C4E] transition-[width]" style={{ width: `${Math.round(progress)}%` }} />
           </div>
@@ -175,12 +196,15 @@ export function VillagePrototype() {
 
       <header className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-3">
         <div className="pointer-events-auto rounded-2xl bg-white/90 px-4 py-2 text-sm text-[#16181B] shadow">
-          <strong className="font-semibold">Campus garden village</strong>
+          <strong className="font-semibold">{scene.name}</strong>
           <span className="ms-2 text-[#5C6066]">
             Bag · {bag.length} · BHD {bagTotal.toFixed(3)}
           </span>
         </div>
         <div className="pointer-events-auto flex gap-2 text-xs">
+          <Link href="/prototype/scenes" className="whitespace-nowrap rounded-xl bg-black/60 px-3 py-2">
+            Scenes
+          </Link>
           <button type="button" onClick={() => setHigh((h) => !h)} className="whitespace-nowrap rounded-xl bg-black/60 px-3 py-2">
             {high ? "High" : "Light"} · {fps} fps
           </button>
@@ -209,8 +233,8 @@ export function VillagePrototype() {
             <p className="font-semibold">{near.name}</p>
             {near.offer && <p className="text-sm text-[#5C6066]">{near.offer}</p>}
           </div>
-          <button type="button" onClick={() => enter(near)} className="h-11 rounded-xl bg-[#16181B] px-4 font-semibold text-white">
-            Enter
+          <button type="button" onClick={() => enter(near)} className="h-11 whitespace-nowrap rounded-xl bg-[#16181B] px-4 font-semibold text-white">
+            {enterLabel}
           </button>
         </div>
       )}
@@ -342,7 +366,7 @@ function TouchControl({ input, onTap }: { input: React.RefObject<MoveInput>; onT
           <div className="relative h-28 w-28 rounded-full border border-white/40 bg-black/25">
             <div className="absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/70" />
           </div>
-          <p className="max-w-40 text-center text-xs text-white/85 [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]">Tap the street to walk there, tap a shop to enter, or drag to steer</p>
+          <p className="max-w-40 text-center text-xs text-white/85 [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]">Tap the floor to walk there, tap a shop to go in, or drag to steer</p>
         </div>
       )}
     </div>

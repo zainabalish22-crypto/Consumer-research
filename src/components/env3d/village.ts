@@ -1,16 +1,13 @@
 /**
- * Prototype configuration for the garden village scene. In the real platform this comes from
- * the study's environment settings (stores, photos, products); here it is fixed for testing.
+ * Prototype study configuration: the stores, offers and products. They are the same in every
+ * scene (see scenes.ts); only the place changes. In the real platform this comes from the
+ * study's environment settings and the researcher's uploads.
  */
 export type WallTexture = "white_stucco" | "beige_wall_001" | "dark_brick_wall";
 
 export type VillageStore = {
   id: string;
   name: string;
-  /** Centre of the store front along the street (metres). */
-  x: number;
-  /** -1: north side of the street, 1: south side. */
-  side: -1 | 1;
   wall: WallTexture;
   awning: string;
   sign: { bg: string; fg: string };
@@ -22,19 +19,15 @@ export type VillageStore = {
 
 const P = "/proto/photos";
 
-export const STREET = { length: 64, width: 8, storeDepth: 7, storeWidth: 9, setback: 3 };
-
 export const STORES: VillageStore[] = [
   {
     id: "store_1",
     name: "Mocha Lane",
-    x: -18,
-    side: -1,
     wall: "white_stucco",
     awning: "#7A3B22",
     sign: { bg: "#1E1A17", fg: "#F3E7D3" },
     storefrontPhoto: `${P}/storefront_1.jpg`,
-    interiorPhoto: `${P}/interior_1.jpg`,
+    interiorPhoto: `${P}/interior_3.jpg`,
     offer: "Buy one, get one free",
     products: [
       { id: "p1", name: "Iced latte", price: 2, photo: `${P}/product_1.jpg` },
@@ -44,8 +37,6 @@ export const STORES: VillageStore[] = [
   {
     id: "store_2",
     name: "Bean & Co",
-    x: 0,
-    side: -1,
     wall: "dark_brick_wall",
     awning: "#2F4A3E",
     sign: { bg: "#F2EEE6", fg: "#1D2A24" },
@@ -60,8 +51,6 @@ export const STORES: VillageStore[] = [
   {
     id: "store_3",
     name: "Leaf Brew",
-    x: 18,
-    side: -1,
     wall: "beige_wall_001",
     awning: "#3C4F6B",
     sign: { bg: "#FFFFFF", fg: "#22313F" },
@@ -75,8 +64,6 @@ export const STORES: VillageStore[] = [
   {
     id: "store_4",
     name: "Pearl Roasters",
-    x: -9,
-    side: 1,
     wall: "beige_wall_001",
     awning: "#5B4636",
     sign: { bg: "#2B2B2B", fg: "#EDE6D8" },
@@ -91,8 +78,6 @@ export const STORES: VillageStore[] = [
   {
     id: "store_5",
     name: "Saffron House",
-    x: 9,
-    side: 1,
     wall: "white_stucco",
     awning: "#8A5A12",
     sign: { bg: "#F5EBDD", fg: "#5A3A0C" },
@@ -105,19 +90,6 @@ export const STORES: VillageStore[] = [
   },
 ];
 
-/** z of a store's front face for its side of the street. */
-export function frontZ(side: -1 | 1) {
-  return side * (STREET.width / 2 + STREET.setback);
-}
-
-/** Where a participant stands to be "at the door" of a store. */
-export function doorPoint(s: VillageStore): [number, number] {
-  return [s.x, frontZ(s.side) - s.side * 1.2];
-}
-
-export const APPROACH_RADIUS = 3.2;
-
-/** Answer-to-avatar rule: the automatic assignment the researcher configures. */
 /**
  * How the participant appears: a realistic person, an abstract circle on the ground ("presence"),
  * or null for a first-person view with nothing shown.

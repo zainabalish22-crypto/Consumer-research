@@ -1,0 +1,137 @@
+{
+  "meta": {
+    "title": "Tessellum · Measure behaviour, not just opinions",
+    "description": "A free, bilingual research instrument with three modules: a 3D shopping village, an e-commerce simulator and forms, on one calibrated engine."
+  },
+  "nav": {
+    "label": "Main",
+    "modules": "Modules",
+    "environments": "Shopping village",
+    "engine": "Engine",
+    "data": "Data",
+    "principles": "Principles",
+    "otherLanguage": "العربية",
+    "otherLanguageLabel": "Read this page in Arabic",
+    "scenes": "Scene library",
+    "sections": "Sections",
+    "home": "Tessellum, home"
+  },
+  "hero": {
+    "eyebrow": "Research instrument · Arabic / English · Free",
+    "titleA": "Measure behaviour,",
+    "titleB": "not just opinions.",
+    "body": "Three modules on one calibrated engine: a realistic 3D shopping village, an e-commerce simulator and forms. Use one, or combine them. Every condition, factor and event is recorded and exported, exactly.",
+    "primary": "Walk the shopping village",
+    "secondary": "See the modules",
+    "figureLabel": "A cube of light points that turns with the pointer. Three points glow brighter: the variables under study.",
+    "axisTop": "0.000",
+    "axisBottom": "1.000",
+    "point": "store_3.entered",
+    "factors": "condition × target_brand × offer"
+  },
+  "modules": {
+    "fig": "Fig. 01 · Modules",
+    "title": "Three modules. Use one, or combine them in any order.",
+    "recordsLabel": "Records",
+    "status": {
+      "prototype": "Prototype",
+      "design": "In design"
+    },
+    "village": {
+      "code": "M-01",
+      "name": "Shopping village",
+      "kind": "Walk through a 3D place",
+      "body": "A realistic 3D street, mall, souq or supermarket aisle. Participants walk between stores, look at windows and ads, go in and buy.",
+      "records": "Approaches, store entries, dwell time, ads seen, purchases."
+    },
+    "shop": {
+      "code": "M-02",
+      "name": "E-commerce simulator",
+      "kind": "Shop on a website",
+      "body": "A realistic online shop: search, filters, product pages, sponsored placements and a simulated checkout, with the same products and offers.",
+      "records": "Searches, clicks, product views, basket changes, checkout."
+    },
+    "forms": {
+      "code": "M-03",
+      "name": "Forms",
+      "kind": "Answer questions",
+      "body": "Questionnaires and consent with thirteen question types, image and video stimuli, and choice and judgement tasks.",
+      "records": "Answers, response times, attention checks."
+    }
+  },
+  "environments": {
+    "fig": "Fig. 02 · Shopping village",
+    "title": "Eleven places. One experiment.",
+    "body": "In the shopping village the researcher chooses where the study happens. The place changes; the stores, offers, products and recorded events stay exactly the same, so results compare across scenes.",
+    "avatar": "Each participant's figure is assigned automatically from their own answers. Anyone who prefers not to say walks as a circle of light, with no body or gender given.",
+    "open": "Open the scene library",
+    "walk": "Walk",
+    "outdoor": "Outdoor",
+    "indoor": "Indoor",
+    "day": "Day",
+    "evening": "Evening",
+    "scenes": {
+      "garden-village": "Garden village",
+      "futuristic-district": "Futuristic district",
+      "mall": "Shopping mall",
+      "strip-mall": "Strip mall",
+      "souq": "Souq",
+      "food-court": "Food court",
+      "supermarket": "Supermarket aisle",
+      "waterfront": "Waterfront",
+      "duty-free": "Airport duty-free",
+      "night-market": "Night market",
+      "luxury-boulevard": "Luxury boulevard"
+    }
+  },
+  "engine": {
+    "fig": "Fig. 03 · Experimental engine",
+    "title": "Between, within and mixed designs, assigned on the server.",
+    "body": "Balanced conditions with quotas. Factors mapped by random draw, full permutation or Latin square. Every assigned value is saved with the session and the locked study version.",
+    "caption": "target_brand · Latin square (3) · which brand shows its AI-generated ad",
+    "sequence": "Sequence",
+    "brand": "Brand {n}",
+    "ai": "AI",
+    "authentic": "authentic",
+    "note": "The square marker repeats the colour, so the pattern reads without colour too."
+  },
+  "data": {
+    "fig": "Fig. 04 · Data out",
+    "title": "Four files. Nothing to clean.",
+    "body": "A participant-level CSV, the event log, a bilingual codebook and SPSS syntax, with Arabic intact and the study configuration attached.",
+    "files": {
+      "participants": "one row per session",
+      "events": "one row per event",
+      "codebook": "labels in Arabic and English",
+      "labels": "SPSS variable labels"
+    }
+  },
+  "bilingual": {
+    "here": "Designed in two directions at once: left to right, and right to left.",
+    "other": "مصمّمة في الاتجاهين معًا: من اليمين إلى اليسار، ومن اليسار إلى اليمين.",
+    "otherLang": "ar"
+  },
+  "principles": {
+    "title": "Principles",
+    "free": {
+      "name": "Free, always",
+      "body": "No tiers, no paywalls, no institutional licence."
+    },
+    "self": {
+      "name": "Self-hostable",
+      "body": "Any university can run its own copy."
+    },
+    "sold": {
+      "name": "Data never sold",
+      "body": "Participant data is never used for advertising."
+    },
+    "ai": {
+      "name": "AI optional",
+      "body": "Off by default. The researcher decides."
+    }
+  },
+  "footer": {
+    "status": "Tessellum is in development. The shopping village is a working prototype; the e-commerce simulator and forms are being designed.",
+    "scenes": "Scene library"
+  }
+}

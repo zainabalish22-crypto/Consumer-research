@@ -1,26 +1,72 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * Tessellum design tokens (Direction B, "Instrument").
+ * Almost monochrome: white light on near-black. Signal orange only where something is live
+ * or needs action, so it always means something. Ice is for glow and data.
+ */
+@theme {
+  --color-void: #050506;
+  --color-carbon: #0e0f11;
+  --color-steel: #17191d;
+  --color-raised: #1f2227;
+  --color-line: #1e2025;
+  --color-line-2: #2a2d33;
+  --color-line-3: #3a3e45;
+  --color-photon: #f2f4f5;
+  --color-mist: #c5c9ce;
+  --color-dim: #a6abb2;
+  --color-faint: #8b9097;
+  --color-signal: #ff6a2b;
+  --color-signal-soft: #ff9466;
+  --color-ice: #cfe8f2;
+  --color-ok: #4fd18b;
+  --color-warn: #f2c94c;
+  --color-danger: #ff5c7a;
+
+  --font-display: var(--font-sora), var(--font-kufi), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-manrope), var(--font-plex-ar), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), var(--font-plex-ar), ui-monospace, monospace;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--color-void);
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-void);
+  color: var(--color-photon);
+  font-family: var(--font-sans);
+}
+
+/* Arabic is not set in uppercase or wide tracking; Kufi for display, Plex Arabic for reading. */
+:lang(ar) {
+  --font-display: var(--font-kufi), var(--font-sora), ui-sans-serif, sans-serif;
+  --font-sans: var(--font-plex-ar), var(--font-manrope), ui-sans-serif, sans-serif;
+  --font-mono: var(--font-plex-ar), var(--font-jetbrains), ui-monospace, monospace;
+}
+:lang(ar) .tracked {
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-signal);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
 }

@@ -2,6 +2,24 @@
 
 Choices made during the rebuild, newest first. `docs/PLATFORM_BRIEF.md` is the functional specification; where a decision here changes it, the decision says so.
 
+## 2026-11-10 · Homepage (Phase 4)
+
+- **Built from the approved B-Home mockup**, with the three modules named as the owner names them, in this order: **M-01 Shopping village** (3D, prototype), **M-02 E-commerce simulator** (in design), **M-03 Forms** (in design). Each card says what the participant does and what is recorded, so the modules read as distinct.
+- **English and Arabic at `/en` and `/ar`** (next-intl; `/` redirects by browser language). The Arabic page is right to left with its own type (Noto Kufi Arabic for display, IBM Plex Sans Arabic for reading), no uppercase or wide tracking. The Arabic text needs a native speaker's review before launch.
+- **No dead links:** "Sign in" and "New study" from the mockup are left out until those pages exist; the calls to action open the scene library.
+- **Hero cube is live 3D** (React Three Fiber), turns with the pointer, pauses off screen, and rests still under reduced motion.
+- **Not indexed by search engines** until launch (trademark check on the name is still to do).
+- Prototypes (`/prototype/...`) sit outside the language routing with their own layout.
+
+## 2026-11-10 · Three modules; the scene library
+
+- **The platform has three modules:** (1) this 3D environment module, (2) an e-commerce simulator (a shopping website), and (3) a standard form builder. The digital settings proposed earlier (delivery app, search results, video pre-roll) belong to the e-commerce simulator, not to the scene library.
+- **Eleven 3D scenes, one engine:** garden village, futuristic district, shopping mall, strip mall, souq, food court, supermarket aisle, waterfront, airport duty-free, night market, luxury boulevard (`src/components/env3d/scenes.ts`, built in `sets.tsx`). Every scene holds the same five stores, offers and products and records the same events (`enter_environment` now also records `scene=`); only the place changes. Researcher's library: `/prototype/scenes`.
+- **Layout model:** each scene is a walkway along x with store units facing it, five slots per scene. Non-study fronts fill the gaps so places look occupied but cannot be entered. The participant walks within scene bounds and around blockers (benches, stalls, posts).
+- **No real brands in backgrounds:** photo skies can contain real shop signs (the strip mall HDRI shows real retail brands), so a scene can rotate its sky (`hdriRotation`) to hide them behind buildings. Check every new HDRI for signage.
+- **Performance budget:** simplify every model to what it looks like at walking distance (an apple 300 triangles, a basket 1,500, seating 4,000). Scenes measure about 25k–210k triangles per frame and run at 60 fps in the preview.
+- **Researcher preview:** `?as=woman|man|none` skips the avatar question.
+
 ## 2026-11-10 · Village prototype: representation, movement and performance
 
 - **"Prefer not to say" gets an abstract presence:** a brand-orange circle on the ground, with no body. A faceless mannequin was tried and rejected as dehumanising; nobody is given a body or gender they did not state. Researchers will be able to use the presence for everyone. The representation is recorded per session (`enter_environment representation=…`).
