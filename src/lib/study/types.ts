@@ -23,7 +23,9 @@ export type QuestionType =
   | "short"
   | "long"
   | "date"
-  | "image";
+  | "image"
+  /** Display only: a title, text and optional image or video between questions. No answer. */
+  | "info";
 
 export type Option = { id: string; value: string; label: L10n; image?: MediaRef };
 
@@ -51,13 +53,19 @@ export type Question = {
   limits?: { min?: number; max?: number };
   /** Instructed-response attention check: the expected answer's value; failures are flagged. */
   attention?: string;
+  /** An image or video shown with the question. */
+  media?: MediaRef;
+  /** Skip logic: show this question only when an earlier answer matches. */
+  showIf?: { variable: string; op: "is" | "is_not"; value: string };
+  /** Screening: these answers end the study politely (single choice and dropdown). */
+  endIf?: string[];
 };
 
 type Base = { id: string };
 export type WelcomeBlock = Base & { type: "welcome"; title: L10n; body: L10n; duration?: L10n; contact?: string };
 export type ConsentBlock = Base & { type: "consent"; title: L10n; body: L10n; agree: L10n; decline: L10n; version: string };
 export type InstructionsBlock = Base & { type: "instructions"; title: L10n; body: L10n; image?: MediaRef };
-export type QuestionsBlock = Base & { type: "questions"; title: L10n; questions: Question[] };
+export type QuestionsBlock = Base & { type: "questions"; title: L10n; description?: L10n; questions: Question[] };
 export type MediaBlock = Base & { type: "media"; title: L10n; body: L10n; items: MediaRef[]; minSeconds?: number };
 export type ShopBlock = Base & { type: "shop"; title: L10n; body: L10n };
 export type EndBlock = Base & { type: "end"; title: L10n; body: L10n; code?: string; redirect?: string };
@@ -115,6 +123,8 @@ export type Study = {
   shop?: Shop;
   /** Participant accent colour (the participant view is light). */
   accent: string;
+  /** Banner image above the form's title. */
+  header?: MediaRef;
   createdAt: string;
   updatedAt: string;
 };
@@ -138,7 +148,7 @@ export type Session = {
   /** Preview and test sessions are flagged and kept apart from real data. */
   test: boolean;
   lang: Lang;
-  status: "active" | "completed" | "declined";
+  status: "active" | "completed" | "declined" | "screened";
   startedAt: string;
   finishedAt?: string;
   /** URL parameters passed in by a panel, e.g. a participant ID. */

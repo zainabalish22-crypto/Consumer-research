@@ -2,6 +2,25 @@
 
 Choices made during the rebuild, newest first. `docs/PLATFORM_BRIEF.md` is the functional specification; where a decision here changes it, the decision says so.
 
+## 2026-11-13 · Form builder rebuilt
+
+- **Works like Google Forms / SharePoint Forms, looks like Tessellum.** The owner asked not to copy the layout completely. Kept: one centred column of cards edited in place, the selected card showing its controls, a floating add-toolbar, and Questions / Responses / Settings tabs. Own design: dark carbon cards, corner brackets on the selected card (from the logo), mono labels, colour only where it means something. The participant view stays the light Tessellum style (soft rounded cards, large targets, the researcher's accent).
+- **One language per form**, one long page per form page; "Add page" inserts a page break. A new form starts with a title and one question, in the studio's current language.
+- **In questions:** images and video on any question, on options, or as standalone items; tap an image to enlarge, video plays in place. Limits: images 10 MB, video 100 MB (browser storage).
+- **Skip logic:** "show this question only if [earlier answer] is / is not [option]", and "end the study if the answer is…" for screening (recorded as screened).
+- **Responses tab:** summary (bars per option, distribution and mean for scales, mean/median/range for numbers, text lists), individual responses, table, and downloads: participants.csv, events.csv, codebook.csv, labels.sps (SPSS).
+- Replaced FlowEditor, QuestionEditor and DataPanel with FormEditor and ResponsesPanel.
+
+## 2026-11-11 · How everything should work (owner's answers)
+
+- **One study, one link.** The researcher designs a study by adding steps in any order (questions, the 3D village, the e-commerce simulator) and shares a single link.
+- **Forms** follow the Google Forms / SharePoint Forms layout: a centred column of question cards edited in place, with Questions / Responses / Settings tabs. Participants see **one long page**. Each form is in **one language** (Arabic or English), not both side by side. Extras: skip logic, images and video in questions and options (seamless and easy to view), theme colour and header image. **Responses tab:** summary charts, individual responses, a table view, and CSV and SPSS downloads.
+- **E-commerce simulator:** the researcher chooses a marketplace or single-brand layout. Checkout ends the task. Variable between groups: prices and offers, ads and sponsored items, ratings and reviews, product order, plus further consumer-behaviour variables (scarcity, social proof, delivery, badges, anchoring, defaults, bundles, labels).
+- **3D village:** the researcher adds their own stores and products and picks the scene. Entering a store opens the product screen now; walkable 3D interiors come later as an option the researcher can choose.
+- **Researcher sign-in:** email and password.
+- **Assignment:** the full engine from the brief (groups, within-person factors, random mapping, Latin squares, quotas, counterbalanced order).
+- **Performance fix (deployed 8324a13):** rigid follow camera, shadows that follow the participant, real-pixel resolution, one-way automatic step-down.
+
 ## 2026-11-10 · Form builder and e-commerce simulator (browser-first)
 
 - **One study engine for both modules** (`src/lib/study`): a study is an ordered flow of blocks (welcome, consent, instructions, questions, media, online shop, end). The form builder edits the flow and the 13 question types; the e-commerce simulator is the shop block plus its own editor (store, categories, products with offers, sponsored placements, researcher-created ratings and reviews, banners).

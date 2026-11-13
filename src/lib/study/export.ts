@@ -8,7 +8,7 @@ const cell = (v: unknown) => {
 const csv = (rows: unknown[][]) => "﻿" + rows.map((r) => r.map(cell).join(",")).join("\r\n") + "\r\n";
 
 export function questionsOf(study: Study): Question[] {
-  return study.blocks.flatMap((b) => (b.type === "questions" ? b.questions : []));
+  return study.blocks.flatMap((b) => (b.type === "questions" ? b.questions.filter((q) => q.type !== "info") : []));
 }
 
 /** Answer columns for one question: one column, or one per row (matrix), option (multiple) or rank. */
@@ -25,6 +25,12 @@ function columns(q: Question): { name: string; get: (s: Session) => unknown }[] 
 
 /** Participant-level file: one row per session. */
 export function participantsCsv(study: Study, sessions: Session[]) {
+  const { header, rows } = participantsTable(study, sessions);
+  return csv([header, ...rows]);
+}
+
+/** The participant-level table (header and rows), also shown in the studio's table view. */
+export function participantsTable(study: Study, sessions: Session[]): { header: string[]; rows: unknown[][] } {
   const qs = questionsOf(study);
   const cols = qs.flatMap(columns);
   const paramKeys = [...new Set(sessions.flatMap((s) => Object.keys(s.params)))].sort();
@@ -50,7 +56,7 @@ export function participantsCsv(study: Study, sessions: Session[]) {
       s.events.filter((e) => e.type === "search").length,
     ];
   });
-  return csv([header, ...rows]);
+  return { header, rows };
 }
 
 /** Event log: one row per event. */
@@ -72,8 +78,11 @@ export function codebookCsv(study: Study) {
   return csv([header, ...rows]);
 }
 
+/** Export column names for one question. */
+export const columnsOf = (q: Question) => columns(q).map((c) => c.name);
+
 export function download(name: string, text: string) {
-  const url = URL.createObjectURL(new Blob([text], { type: "text/csv;charset=utf-8" }));
+  const url = URL.createObjectURL(new Blob([text], { type: name.endsWith(".sps") ? "text/plain;charset=utf-8" : "text/csv;charset=utf-8" }));
   const a = document.createElement("a");
   a.href = url;
   a.download = name;

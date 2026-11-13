@@ -7,7 +7,7 @@ export function Card({ children }: { children: React.ReactNode }) {
 
 export function PrimaryButton({ children, onClick, disabled }: { children: React.ReactNode; onClick: () => void; disabled?: boolean }) {
   return (
-    <button type="button" onClick={onClick} disabled={disabled} className="h-[52px] w-full rounded-[14px] px-6 text-base font-semibold text-white disabled:opacity-40 sm:w-auto" style={{ background: "var(--accent)" }}>
+    <button type="button" onClick={onClick} disabled={disabled} className="h-[52px] w-full rounded-[14px] px-8 text-base font-semibold text-white disabled:opacity-40 sm:w-auto" style={{ background: "var(--accent)" }}>
       {children}
     </button>
   );

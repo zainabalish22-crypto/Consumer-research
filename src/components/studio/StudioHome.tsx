@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useRouter } from "@/i18n/navigation";
 import { newStudy } from "@/lib/study/defaults";
@@ -13,6 +13,7 @@ import { Button } from "./ui";
 export function StudioHome() {
   const t = useTranslations("studio");
   const format = useFormatter();
+  const locale = useLocale() as "en" | "ar";
   const router = useRouter();
   const [studies, setStudies] = useState<Study[] | null>(null);
   const [counts, setCounts] = useState<Record<string, number>>({});
@@ -37,11 +38,11 @@ export function StudioHome() {
 
   const create = useCallback(
     async (kind: "form" | "shop") => {
-      const s = newStudy(kind, kind === "form" ? t("untitledForm") : t("untitledShop"));
+      const s = newStudy(kind, kind === "form" ? t("untitledForm") : t("untitledShop"), locale);
       await repo.saveStudy(s);
       router.push(`/studio/${s.id}`);
     },
-    [router, t],
+    [router, t, locale],
   );
 
 

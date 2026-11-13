@@ -5,10 +5,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { repo } from "@/lib/study/repo";
 import type { Study } from "@/lib/study/types";
-import { DataPanel } from "./DataPanel";
-import { FlowEditor } from "./FlowEditor";
+import { ResponsesPanel } from "./ResponsesPanel";
+import { FormEditor } from "./FormEditor";
 import { ShopEditor } from "./ShopEditor";
-import { Button, Icon, Select, TextInput, inputCls } from "./ui";
+import { Button, Icon, MediaInput, Select, TextInput, inputCls } from "./ui";
 
 type Tab = "flow" | "shop" | "settings" | "data";
 
@@ -76,8 +76,8 @@ export function StudyEditor({ id }: { id: string }) {
     );
 
   const hasShop = study.blocks.some((b) => b.type === "shop");
-  const tabs: Tab[] = hasShop ? ["flow", "shop", "settings", "data"] : ["flow", "settings", "data"];
-  const link = typeof window !== "undefined" ? `${window.location.origin}/${locale}/s/${study.id}` : "";
+  const tabs: Tab[] = hasShop ? ["flow", "shop", "data", "settings"] : ["flow", "data", "settings"];
+  const link = typeof window !== "undefined" ? `${window.location.origin}/${study.languages[0] ?? locale}/s/${study.id}` : "";
 
   return (
     <main className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-6 sm:px-8">
@@ -95,7 +95,7 @@ export function StudyEditor({ id }: { id: string }) {
           <Button
             onClick={async () => {
               await flush();
-              window.open(`/${locale}/s/${study.id}?test=1`, "_blank", "noopener");
+              window.open(`/${study.languages[0] ?? locale}/s/${study.id}?test=1`, "_blank", "noopener");
             }}
           >
             {t("preview")}
@@ -130,7 +130,7 @@ export function StudyEditor({ id }: { id: string }) {
         </div>
       )}
 
-      <div role="tablist" aria-label={study.name} className="flex gap-1 overflow-x-auto border-b border-line-2">
+      <div role="tablist" aria-label={study.name} className="flex justify-center gap-1 overflow-x-auto border-b border-line-2">
         {tabs.map((k) => (
           <button
             key={k}
@@ -146,36 +146,51 @@ export function StudyEditor({ id }: { id: string }) {
       </div>
 
       <div role="tabpanel">
-        {tab === "flow" && <FlowEditor study={study} update={update} />}
+        {tab === "flow" && <FormEditor study={study} update={update} openShop={() => setTab("shop")} />}
         {tab === "shop" && hasShop && study.shop && <ShopEditor study={study} update={update} />}
         {tab === "settings" && <Settings study={study} update={update} />}
-        {tab === "data" && <DataPanel study={study} />}
+        {tab === "data" && <ResponsesPanel study={study} />}
       </div>
     </main>
   );
 }
 
+const SWATCHES = ["#1F5C4E", "#673AB7", "#3F51B5", "#1A73E8", "#00796B", "#D93025", "#E8710A", "#5F6368"];
+
 function Settings({ study, update }: { study: Study; update: (fn: (s: Study) => Study) => void }) {
   const t = useTranslations("studio.settings");
-  const langValue = study.languages.length === 2 ? "both" : study.languages[0] === "ar" ? "ar" : "en";
+  const lang = study.languages[0] ?? "en";
   return (
-    <div className="flex max-w-2xl flex-col gap-6">
+    <div className="mx-auto flex max-w-2xl flex-col gap-8">
       <TextInput label={t("name")} value={study.name} onChange={(v) => update((s) => ({ ...s, name: v }))} />
-      <Select
-        label={t("languages")}
-        value={langValue}
-        onChange={(v) => update((s) => ({ ...s, languages: v === "both" ? ["en", "ar"] : [v] }))}
-        options={[
-          ["both", t("both")],
-          ["en", t("enOnly")],
-          ["ar", t("arOnly")],
-        ]}
-      />
-      <label className="flex flex-col gap-1.5 text-[13px] font-medium text-mist">
-        {t("accent")}
-        <input type="color" value={study.accent} onChange={(e) => update((s) => ({ ...s, accent: e.target.value }))} className="h-11 w-24 cursor-pointer rounded-md border border-line-2 bg-void" />
-      </label>
+      <div className="flex flex-col gap-1.5">
+        <Select
+          label={t("language")}
+          value={lang}
+          onChange={(v) => update((s) => ({ ...s, languages: [v] }))}
+          options={[
+            ["en", t("en")],
+            ["ar", t("ar")],
+          ]}
+        />
+        <p className="text-xs text-faint">{t("languageHint")}</p>
+      </div>
+      <fieldset className="flex flex-col gap-3">
+        <legend className="mb-2 font-display text-lg">{t("theme")}</legend>
+        <span className="text-[13px] font-medium text-mist">{t("accent")}</span>
+        <div className="flex flex-wrap items-center gap-2">
+          {SWATCHES.map((c) => {
+            const on = study.accent.toLowerCase() === c.toLowerCase();
+            return <button key={c} type="button" aria-label={c} aria-pressed={on} onClick={() => update((s) => ({ ...s, accent: c }))} className={"h-11 w-11 rounded-full border-2 " + (on ? "border-photon" : "border-transparent")} style={{ background: c }} />;
+          })}
+          <label className="flex items-center gap-2 text-[13px] text-mist">
+            <input type="color" value={study.accent} onChange={(e) => update((s) => ({ ...s, accent: e.target.value }))} className="h-11 w-14 cursor-pointer rounded-md border border-line-2 bg-void" />
+            {t("custom")}
+          </label>
+        </div>
+        <MediaInput label={t("header")} value={study.header} onChange={(v) => update((s) => ({ ...s, header: v }))} />
+        <p className="-mt-1 text-xs text-faint">{t("headerHint")}</p>
+      </fieldset>
     </div>
   );
 }
-

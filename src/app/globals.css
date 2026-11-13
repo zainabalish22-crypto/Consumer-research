@@ -70,3 +70,18 @@ body {
 html {
   scroll-behavior: smooth;
 }
+
+/*
+ * Light surfaces (the participant view and the form editor's canvas): native controls render
+ * light, and focus uses the form's own accent colour rather than the studio's orange. Text
+ * fields show focus with their own border, so they take no outer ring.
+ */
+[data-light] {
+  color-scheme: light;
+}
+[data-light] :focus-visible {
+  outline-color: var(--accent, #1f5c4e);
+}
+[data-light] :is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"]), textarea, select):focus-visible {
+  outline: none;
+}

@@ -30,6 +30,8 @@ export function newQuestion(type: QuestionType, n: number): Question {
       };
     case "numeric":
       return { ...base, limits: { min: 0 } };
+    case "info":
+      return { ...base, required: false, text: t("Title", "عنوان"), help: t("", "") };
     default:
       return base;
   }
@@ -93,20 +95,22 @@ export function starterShop(): Shop {
   };
 }
 
-export function newStudy(kind: "form" | "shop", name: string): Study {
+/** A new study in one language. A form starts like a new Google Form: a title and one question. */
+export function newStudy(kind: "form" | "shop", name: string, lang: "en" | "ar" = "en"): Study {
   const now = new Date().toISOString();
-  const questions: Block = { ...(newBlock("questions") as Extract<Block, { type: "questions" }>), questions: [newQuestion("likert", 1), newQuestion("single", 2)] };
-  const blocks: Block[] =
-    kind === "form" ? [newBlock("welcome"), newBlock("consent"), questions, newBlock("end")] : [newBlock("welcome"), newBlock("consent"), newBlock("shop"), questions, newBlock("end")];
+  const one = (l: L10n): L10n => ({ [lang]: l[lang] ?? "" });
+  const strip = <T,>(v: T): T => JSON.parse(JSON.stringify(v, (_k, x) => (x && typeof x === "object" && !Array.isArray(x) && ("en" in x || "ar" in x) && Object.keys(x).every((k) => k === "en" || k === "ar") ? one(x) : x)));
+  const questions: Block = { ...(newBlock("questions") as Extract<Block, { type: "questions" }>), title: { [lang]: name }, description: {}, questions: [newQuestion("single", 1)] };
+  const blocks: Block[] = strip(kind === "form" ? [questions, newBlock("end")] : [questions, newBlock("shop"), newBlock("end")]);
   return {
     id: uid("s"),
     kind,
     name,
-    languages: ["en", "ar"],
+    languages: [lang],
     status: "draft",
     version: 1,
     blocks,
-    shop: kind === "shop" ? starterShop() : undefined,
+    shop: kind === "shop" ? strip(starterShop()) : undefined,
     accent: "#1F5C4E",
     createdAt: now,
     updatedAt: now,
@@ -114,5 +118,5 @@ export function newStudy(kind: "form" | "shop", name: string): Study {
 }
 
 /** Thirteen question types, in the order the builder lists them. */
-export const QUESTION_TYPES: QuestionType[] = ["single", "multiple", "dropdown", "likert", "semantic", "slider", "matrix", "ranking", "numeric", "short", "long", "date", "image"];
+export const QUESTION_TYPES: QuestionType[] = ["short", "long", "single", "multiple", "dropdown", "likert", "semantic", "slider", "matrix", "ranking", "numeric", "date", "image"];
 export const BLOCK_TYPES: BlockType[] = ["welcome", "consent", "instructions", "questions", "media", "shop", "end"];

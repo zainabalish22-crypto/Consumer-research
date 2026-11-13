@@ -91,6 +91,21 @@ export function Runner({ id }: { id: string }) {
     });
   }
 
+  // A form in one language starts straight away, with no language question.
+  const autoStarted = useRef(false);
+  useEffect(() => {
+    if (!study || session || autoStarted.current || study.languages.length !== 1) return;
+    if (study.status !== "published" && !test) return;
+    // Give a saved session a moment to resume first.
+    const id = window.setTimeout(() => {
+      if (sessionRef.current || autoStarted.current) return;
+      autoStarted.current = true;
+      start(study.languages[0]);
+    }, 150);
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [study, session]);
+
   const block: Block | undefined = study?.blocks[step];
   stepRef.current = step;
 
@@ -118,6 +133,16 @@ export function Runner({ id }: { id: string }) {
     setStep(n);
   }
 
+  /** An answer marked "end the study" was given: stop politely and record it. */
+  async function screenOut(answers: Record<string, Answer>) {
+    const s = sessionRef.current;
+    if (!s) return;
+    log("screened_out");
+    await save({ ...s, answers: { ...s.answers, ...answers }, status: "screened", finishedAt: new Date().toISOString() }, step);
+    sessionStorage.removeItem(key(s.studyId, s.test));
+    setStep(-2);
+  }
+
   async function decline() {
     const s = sessionRef.current;
     if (!s) return;
@@ -136,17 +161,7 @@ export function Runner({ id }: { id: string }) {
 
   // Language choice before anything else, when the study has both.
   if (!session) {
-    if (study.languages.length === 1) {
-      return (
-        <Frame accent={accent} test={test}>
-          <Card>
-            <button type="button" onClick={() => start(study.languages[0])} className="h-[52px] rounded-[14px] px-6 font-semibold text-white" style={{ background: accent }}>
-              {t("next")}
-            </button>
-          </Card>
-        </Frame>
-      );
-    }
+    if (study.languages.length === 1) return <Frame accent={accent} test={test}><p className="text-[#5C6066]">{t("loading")}</p></Frame>;
     return (
       <Frame accent={accent} test={test}>
         <Card>
@@ -175,11 +190,20 @@ export function Runner({ id }: { id: string }) {
       </Frame>
     );
 
+  if (step === -2 || session.status === "screened")
+    return (
+      <Frame accent={accent} test={test}>
+        <Card>
+          <p className="text-lg">{t("screened")}</p>
+        </Card>
+      </Frame>
+    );
+
   if (!block) return <Frame accent={accent} test={test}><Card><p>{t("finished")}</p></Card></Frame>;
 
   if (block.type === "shop" && study.shop)
     return (
-      <div style={{ ["--accent" as string]: study.shop.accent || accent }} className="min-h-dvh bg-white text-[#16181B]">
+      <div data-light style={{ ["--accent" as string]: study.shop.accent || accent }} className="min-h-dvh bg-white text-[#16181B]">
         {test && <TestBar />}
         <ShopView shop={study.shop} lang={lang} seed={session.id} log={log} onDone={(basket) => {
           const s = sessionRef.current!;
@@ -189,13 +213,22 @@ export function Runner({ id }: { id: string }) {
       </div>
     );
 
-  const total = study.blocks.length;
+  // Steps before the closing message; a single-page form shows no step counter.
+  const total = study.blocks.filter((x) => x.type !== "end").length;
+  const firstPage = study.blocks.findIndex((x) => x.type === "questions") === step;
+  const last = study.blocks[step + 1]?.type === "end" || step + 1 >= study.blocks.length;
   return (
     <Frame accent={accent} test={test}>
-      <p className="mb-3 text-xs text-[#5C6066]" aria-live="polite">
-        {t("progress", { n: step + 1, total })}
-      </p>
-      <BlockView key={block.id} block={block} lang={lang} onNext={next} onDecline={decline} log={log} seed={session.id} />
+      {total > 1 && block.type !== "end" && (
+        <p className="mb-3 text-xs text-[#5C6066]" aria-live="polite">
+          {t("progress", { n: step + 1, total })}
+        </p>
+      )}
+      {block.type === "questions" ? (
+        <QuestionsPage key={block.id} block={block} lang={lang} seed={session.id} prior={session.answers} header={firstPage ? study.header : undefined} last={last} onNext={next} onScreenOut={screenOut} />
+      ) : (
+        <BlockView key={block.id} block={block} lang={lang} onNext={next} onDecline={decline} log={log} seed={session.id} />
+      )}
     </Frame>
   );
 }
@@ -208,9 +241,9 @@ function TestBar() {
 /** The light participant frame; the researcher's accent colour drives buttons and focus. */
 function Frame({ children, accent = "#1F5C4E", test = false }: { children: React.ReactNode; accent?: string; test?: boolean }) {
   return (
-    <div style={{ ["--accent" as string]: accent }} className="min-h-dvh bg-[#F7F6F2] text-[#16181B] [&_:focus-visible]:outline-[var(--accent)]">
+    <div style={{ ["--accent" as string]: accent }} className="min-h-dvh bg-[#F7F6F2] text-[#16181B] [&_:focus-visible]:outline-[var(--accent)]" data-light>
       {test && <TestBar />}
-      <main className="mx-auto flex w-full max-w-xl flex-col px-4 py-8 sm:py-14">{children}</main>
+      <main className="mx-auto flex w-full max-w-2xl flex-col px-4 py-6 sm:py-12">{children}</main>
     </div>
   );
 }
@@ -283,8 +316,6 @@ function BlockView({ block, lang, onNext, onDecline, log, seed }: { block: Block
       );
     case "media":
       return <MediaBlockView block={block} lang={lang} onNext={() => onNext()} log={log} />;
-    case "questions":
-      return <QuestionsPage block={block} lang={lang} seed={seed} onNext={onNext} />;
     case "end":
       return <EndView block={block} lang={lang} />;
     default:

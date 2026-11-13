@@ -5,6 +5,7 @@ import { useId, useMemo, useState } from "react";
 import type { Answer, Block, Lang, Option, Question } from "@/lib/study/types";
 import { useMediaUrl } from "@/lib/study/useMedia";
 import { shuffle, tx } from "@/lib/study/util";
+import { MediaView } from "./Media";
 import { Card, PrimaryButton } from "./parts";
 
 type QBlock = Extract<Block, { type: "questions" }>;
@@ -17,41 +18,84 @@ const isEmpty = (q: Question, a: Answer | undefined) => {
   return false;
 };
 
-/** One page of questions. Answers are checked for required items, then passed up. */
-export function QuestionsPage({ block, lang, seed, onNext }: { block: QBlock; lang: Lang; seed: string; onNext: (a: Record<string, Answer>, flags: string[]) => void }) {
+/** Skip logic: is this question shown, given the answers so far? */
+function visible(q: Question, answers: Record<string, Answer>) {
+  if (!q.showIf) return true;
+  const a = answers[q.showIf.variable];
+  const hit = Array.isArray(a) ? a.includes(q.showIf.value) : a !== undefined && String(a) === q.showIf.value;
+  return q.showIf.op === "is" ? hit : !hit;
+}
+
+/**
+ * One page of the form, laid out like Google Forms: a title card with the accent bar, then a
+ * card per question on one long page, then Submit (or Next when more steps follow).
+ */
+export function QuestionsPage({ block, lang, seed, prior, header, last, onNext, onScreenOut }: { block: QBlock; lang: Lang; seed: string; prior: Record<string, Answer>; header?: string; last: boolean; onNext: (a: Record<string, Answer>, flags: string[]) => void; onScreenOut: (a: Record<string, Answer>) => void }) {
   const t = useTranslations("run");
   const [answers, setAnswers] = useState<Record<string, Answer>>({});
   const [tried, setTried] = useState(false);
-  const missing = block.questions.filter((q) => q.required && isEmpty(q, answers[q.variable]));
+  const known = { ...prior, ...answers };
+  const shown = block.questions.filter((q) => visible(q, known));
+  const asked = shown.filter((q) => q.type !== "info");
+  const missing = asked.filter((q) => q.required && isEmpty(q, answers[q.variable]));
+  const anyRequired = asked.some((q) => q.required);
 
   function submit() {
-    // Ranking counts as answered with its shown order when untouched.
-    const filled = { ...answers };
-    for (const q of block.questions)
-      if (q.type === "ranking" && filled[q.variable] === undefined) filled[q.variable] = shuffleFor(q, seed).map((o) => o.value);
-    const stillMissing = block.questions.filter((q) => q.required && isEmpty(q, filled[q.variable]));
+    // Only answers to questions that are showing count; ranking keeps its shown order when untouched.
+    const filled: Record<string, Answer> = {};
+    for (const q of asked) {
+      if (answers[q.variable] !== undefined) filled[q.variable] = answers[q.variable];
+      else if (q.type === "ranking") filled[q.variable] = shuffleFor(q, seed).map((o) => o.value);
+    }
+    const stillMissing = asked.filter((q) => q.required && isEmpty(q, filled[q.variable]));
     if (stillMissing.length) {
       setTried(true);
-      document.getElementById(`qw-${stillMissing[0].id}`)?.focus();
+      const el = document.getElementById(`qw-${stillMissing[0].id}`);
+      el?.scrollIntoView({ block: "center", behavior: "smooth" });
+      el?.focus({ preventScroll: true });
       return;
     }
-    const flags = block.questions.filter((q) => q.attention && String(filled[q.variable] ?? "") !== q.attention).map((q) => q.variable);
+    if (asked.some((q) => q.endIf?.includes(String(filled[q.variable] ?? "")))) return onScreenOut(filled);
+    const flags = asked.filter((q) => q.attention && String(filled[q.variable] ?? "") !== q.attention).map((q) => q.variable);
     onNext(filled, flags);
   }
 
   return (
     <div className="flex flex-col gap-4">
-      {tx(block.title, lang) && <h1 className="px-1 text-2xl font-semibold">{tx(block.title, lang)}</h1>}
-      {block.questions.map((q) => (
-        <QuestionCard key={q.id} q={q} lang={lang} seed={seed} value={answers[q.variable]} error={tried && missing.includes(q) && q.type !== "ranking"} onChange={(v) => setAnswers((a) => ({ ...a, [q.variable]: v }))} />
-      ))}
+      {header && <MediaView src={header} className="!rounded-[22px]" zoomLabel={t("zoom")} closeLabel={t("close")} />}
+      {(tx(block.title, lang) || tx(block.description, lang)) && (
+        <header className="flex flex-col gap-3 px-1 pb-2 pt-2">
+          <span aria-hidden="true" className="h-1.5 w-12 rounded-full" style={{ background: "var(--accent)" }} />
+          {tx(block.title, lang) && <h1 className="text-[30px] font-semibold leading-tight tracking-tight">{tx(block.title, lang)}</h1>}
+          {tx(block.description, lang) && <p className="whitespace-pre-line text-[16px] leading-[1.7] text-[#2D3035]">{tx(block.description, lang)}</p>}
+          {anyRequired && <p className="text-[13px] text-[#5C6066]">{t("requiredNote")}</p>}
+        </header>
+      )}
+      {shown.map((q) =>
+        q.type === "info" ? (
+          <Card key={q.id}>
+            <div className="flex flex-col gap-3">
+              {tx(q.text, lang) && <h2 className="text-[20px] font-semibold">{tx(q.text, lang)}</h2>}
+              {tx(q.help, lang) && <p className="whitespace-pre-line text-[16px] leading-[1.7] text-[#2D3035]">{tx(q.help, lang)}</p>}
+              {q.media && <MediaView src={q.media} alt={tx(q.text, lang)} zoomLabel={t("zoom")} closeLabel={t("close")} />}
+            </div>
+          </Card>
+        ) : (
+          <QuestionCard key={q.id} q={q} lang={lang} seed={seed} value={answers[q.variable]} error={tried && missing.includes(q) && q.type !== "ranking"} onChange={(v) => setAnswers((a) => ({ ...a, [q.variable]: v }))} />
+        ),
+      )}
       {tried && missing.filter((q) => q.type !== "ranking").length > 0 && (
         <p role="alert" className="px-1 text-sm font-medium text-[#B42318]">
           {t("requiredAll")}
         </p>
       )}
-      <div>
-        <PrimaryButton onClick={submit}>{t("next")}</PrimaryButton>
+      <div className="flex items-center justify-between gap-4 pb-10 pt-1">
+        <PrimaryButton onClick={submit}>{last ? t("submit") : t("next")}</PrimaryButton>
+        {Object.keys(answers).length > 0 && (
+          <button type="button" onClick={() => { setAnswers({}); setTried(false); }} className="min-h-11 px-2 text-[14px] font-medium" style={{ color: "var(--accent)" }}>
+            {t("clear")}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -77,12 +121,14 @@ function QuestionCard({ q, lang, seed, value, onChange, error }: { q: Question; 
     case "single":
     case "image": {
       const list = [...options, ...(extra ? [extra] : [])];
+      // Options with pictures are laid out as a grid of picture cards.
+      const pics = q.type === "image" || options.some((o) => o.image);
       body = (
-        <div role="radiogroup" aria-labelledby={titleId} className={q.type === "image" ? "grid grid-cols-2 gap-3" : "flex flex-col gap-2.5"}>
+        <div role="radiogroup" aria-labelledby={titleId} className={pics ? "grid grid-cols-2 gap-3" : "flex flex-col gap-2.5"}>
           {list.map((o) => (
-            <label key={o.id} className={choiceCls(value === o.value) + (q.type === "image" && o.id !== "extra" ? " flex-col !items-stretch p-2" : "")}>
+            <label key={o.id} className={choiceCls(value === o.value) + (pics && o.id !== "extra" ? " flex-col !items-stretch p-2" : "")}>
               <input type="radio" name={q.id} value={o.value} checked={value === o.value} onChange={() => onChange(o.value)} className="sr-only" />
-              {q.type === "image" && o.id !== "extra" && <OptionImage src={o.image} />}
+              {pics && o.id !== "extra" && <OptionImage src={o.image} />}
               <span className="flex items-center gap-3">
                 <span aria-hidden="true" className={`h-5 w-5 shrink-0 rounded-full border-2 ${value === o.value ? "border-[var(--accent)] bg-[var(--accent)] shadow-[inset_0_0_0_3px_white]" : "border-[#B9B5AC]"}`} />
                 {label(o)}
@@ -115,6 +161,7 @@ function QuestionCard({ q, lang, seed, value, onChange, error }: { q: Question; 
                 <span aria-hidden="true" className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 text-xs text-white ${on ? "border-[var(--accent)] bg-[var(--accent)]" : "border-[#B9B5AC]"}`}>
                   {on ? "✓" : ""}
                 </span>
+                {o.image && <span className="w-20 shrink-0"><OptionImage src={o.image} /></span>}
                 {label(o)}
               </label>
             );
@@ -260,6 +307,7 @@ function QuestionCard({ q, lang, seed, value, onChange, error }: { q: Question; 
           </h2>
           {tx(q.help, lang) && <p className="text-sm text-[#5C6066]">{tx(q.help, lang)}</p>}
         </div>
+        {q.media && <MediaView src={q.media} alt={tx(q.text, lang)} zoomLabel={t("zoom")} closeLabel={t("close")} />}
         {body}
         {error && (
           <p className="text-sm font-medium text-[#B42318]" role="alert">
