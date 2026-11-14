@@ -2,6 +2,42 @@
 
 Choices made during the rebuild, newest first. `docs/PLATFORM_BRIEF.md` is the functional specification; where a decision here changes it, the decision says so.
 
+## 2026-11-14 · Sentiment tool: agreement, disagreements and export
+
+- **Agreement between coders** uses Krippendorff's alpha for nominal labels, computed from the coincidence matrix and checked against hand-worked values (perfect agreement 1; systematic disagreement -0.75; half agreement 0.125; a single category gives no value). A plain reading follows the usual 0.667 threshold, worded as tentative between 0.667 and 0.8.
+- **Disagreements** are listed with a final-label choice per text. Final labels replace the first coder's label in the results and the export; undecided texts keep the first coder's label.
+- **Export** gives three files: final data (one row per uploaded row, with status, both coders' labels and the final-label source), a summary with the groups and the significance test, and a plain-language method note in the interface language. CSV headers stay in English so they match analysis software; each file has one byte-order mark so Excel shows Arabic.
+- **Checked:** the statistics against published values; the disagreement choice changes the counts (10/6/7 to 9/6/8); the files in English; the results in Arabic (right to left, no overflow).
+- **Not yet built:** the network tool, and automatic classification (phase 2, planned only).
+
+## 2026-11-14 · Analysis tools: eight changes after the desk research
+
+Approved by the owner after `docs/RESEARCH_ANALYSIS_TOOLS.md`.
+
+- **Network tool:** (1) import presets for 4CAT and Communalytic exports and Gephi's GEXF and GraphML, besides CSV and Excel; (2) build the network from a table of posts (author, text, date) by extracting mentions, replies and shared hashtags, for researchers who have no edge list; (3) the methods note and the standard cautions appear in the main results, not as an optional export.
+- **Sentiment tool:** (4) agreement between coders (Krippendorff's alpha) is a main feature when the file has two or more label columns; (5) a view for resolving the texts coders disagreed on, with a final label to export; (6) a dialect or country column for comparisons, so Gulf Arabic is not treated as one group.
+- **Order:** (7) the sentiment tool is built before the network tool: it is smaller, useful on its own, and proves the shared upload and validation parts first. (8) Phase 2 (automatic labelling) is designed around the test set: it switches on only after passing a comparison with the researcher's own human-coded sample, scored per language and dialect. Planning only; not built.
+- **New stage order:** 1 shared structure (done) · accounts (done locally) · 3a sentiment upload · 3b sentiment results · 3c agreement and disagreements · 3d sentiment export · 2a to 2d network tool (now including posts-to-network) · 4 review and publish.
+- **Uploaded data stays in the page's memory** and is gone on reload or close, which is what "not kept after the session" means in practice. Saving comes later, by choice.
+
+## 2026-11-14 · Researcher accounts
+
+- **Email and password**, built in the app with no paid service. Passwords are stored only as scrypt hashes with a random salt. A session is a random token in an httpOnly cookie (30 days); the database stores only its SHA-256. Eight failed sign-ins for one email in 15 minutes lock that email for the rest of the window. Error messages do not reveal whether an email has an account.
+- **Database:** Neon Postgres (free tier) on the hosted site through `DATABASE_URL`; an embedded Postgres (PGlite, in `.data/`, not committed) on a developer's computer when `DATABASE_URL` is not set. Tables are created on first use. The Neon path is not tested until the owner adds the connection string in Vercel.
+- **What is gated:** the upload, results and export steps of the analysis tools. Tool "about" pages, the homepage and the studio stay open (studio studies are still saved in the browser).
+- **Not built yet:** password reset and email verification (both need an email-sending service), and moving studies and responses into the database.
+- **Later stage, noted at the owner's request:** a social media reader as another data source for the analysis tools. The upload step treats a file as one source so a reader can be added. It needs the legal decision revisited first, and platform-by-platform access terms.
+
+## 2026-11-13 · Two analysis tools: social network analysis and sentiment analysis
+
+- **Five tools, each independent, combinable by the researcher.** Shopping village, e-commerce simulator, forms, network analysis, sentiment analysis. Every tool works on its own; a researcher may combine them (owner, 2026-11-13). This refines the earlier "one study, one link" answer: combining is optional, never required.
+- **Analysis only in this release:** no data is collected from social platforms (a final legal decision for this phase). Researchers upload their own files.
+- **Computation runs in the browser** (owner chose this over Python on the server): graphology for metrics and Louvain, sigma.js for display, in a web worker. The uploaded file never leaves the researcher's device. Python on the server stays a later option for networks above the browser limit. The brief asked for networkx and python-louvain; results will be tested against published values for known graphs.
+- **Sign-in comes before the tools open** (owner chose to wait for accounts rather than run without sign-in). Order: shared structure, then accounts (email and password, free database the owner creates), then the network tool, then the sentiment tool.
+- **Sentiment, phase 1:** aggregates and compares labels the researcher supplies; it does not classify text. Automatic classification (English model, Gulf-dialect Arabic model, human-labelled test set) is phase 2 and not built now.
+- **Approved additions:** column mapping, encoding and delimiter detection, in-browser anonymising with a downloadable key, sample files and templates, exportable methods note, fixed Louvain seed with modularity, stated accuracy limits for large networks, in/out degree and strong/weak components, GEXF/GraphML export, table alternative to the graph, template-written reports (no AI), label normalising, group sizes with small-group warnings, time trend, inter-rater agreement, colour-blind-safe colours.
+- **Stages, each shown before the next:** 1 shared structure; 2a network upload; 2b metrics; 2c interactive graph; 2d outputs; 3 sentiment; 4 review and publish.
+
 ## 2026-11-13 · Form builder rebuilt
 
 - **Works like Google Forms / SharePoint Forms, looks like Tessellum.** The owner asked not to copy the layout completely. Kept: one centred column of cards edited in place, the selected card showing its controls, a floating add-toolbar, and Questions / Responses / Settings tabs. Own design: dark carbon cards, corner brackets on the selected card (from the logo), mono labels, colour only where it means something. The participant view stays the light Tessellum style (soft rounded cards, large targets, the researcher's accent).

@@ -15,15 +15,16 @@
     "scenes": "Scene library",
     "sections": "Sections",
     "home": "Tessellum, home",
-    "studio": "Studio"
+    "studio": "Studio",
+    "tools": "Tools"
   },
   "hero": {
     "eyebrow": "Research instrument · Arabic / English · Free",
     "titleA": "Measure behaviour,",
     "titleB": "not just opinions.",
-    "body": "Three modules on one calibrated engine: a realistic 3D shopping village, an e-commerce simulator and forms. Use one, or combine them. Every condition, factor and event is recorded and exported, exactly.",
+    "body": "Five research tools on one platform: a 3D shopping village, an e-commerce simulator, forms, social network analysis and sentiment analysis. Each works on its own; combine them when a study needs it.",
     "primary": "Walk the shopping village",
-    "secondary": "See the modules",
+    "secondary": "See the tools",
     "figureLabel": "A cube of light points that turns with the pointer. Three points glow brighter: the variables under study.",
     "axisTop": "0.000",
     "axisBottom": "1.000",
@@ -31,12 +32,12 @@
     "factors": "condition × target_brand × offer"
   },
   "modules": {
-    "fig": "Fig. 01 · Modules",
-    "title": "Three modules. Use one, or combine them in any order.",
+    "fig": "Fig. 01 · Tools",
+    "title": "Five tools. Each works on its own; combine them when a study needs it.",
     "recordsLabel": "Records",
     "status": {
       "prototype": "Prototype",
-      "design": "In design"
+      "design": "Being built"
     },
     "village": {
       "code": "M-01",
@@ -59,7 +60,21 @@
       "body": "Questionnaires and consent with thirteen question types, image and video stimuli, and choice and judgement tasks.",
       "records": "Answers, response times, attention checks."
     },
-    "open": "Open"
+    "open": "Open",
+    "network": {
+      "code": "M-04",
+      "name": "Social network analysis",
+      "kind": "Analyse who is connected to whom",
+      "body": "Upload an edge list and explore the network: the most central accounts, the communities, and how tightly it holds together.",
+      "records": "Nothing is collected. You upload your own file, and it is analysed on your device."
+    },
+    "sentiment": {
+      "code": "M-05",
+      "name": "Sentiment analysis",
+      "kind": "Summarise and compare labelled texts",
+      "body": "Upload texts you have already labelled positive, negative or neutral, and compare the distribution across accounts, categories or languages.",
+      "records": "Nothing is collected. The labels are yours; the tool counts and compares them."
+    }
   },
   "environments": {
     "fig": "Fig. 02 · Shopping village",
@@ -133,7 +148,7 @@
     }
   },
   "footer": {
-    "status": "Tessellum is in development. All three modules are working prototypes; studies are saved in your browser until a database is connected.",
+    "status": "Tessellum is in development. The shopping village, e-commerce simulator and forms are working prototypes; the two analysis tools are being built.",
     "scenes": "Scene library"
   },
   "studio": {
@@ -501,5 +516,298 @@
     "screened": "Thank you for your interest. Based on your answers, you are not eligible for this study.",
     "zoom": "View larger",
     "close": "Close"
+  },
+  "tools": {
+    "title": "Tools",
+    "intro": "Each tool works on its own. Use one, or combine several in a study.",
+    "open": "Open",
+    "status": {
+      "ready": "Working prototype",
+      "building": "Being built"
+    },
+    "back": "All tools",
+    "analysis": "Analysis tools",
+    "study": "Study tools",
+    "steps": {
+      "home": "About",
+      "upload": "Upload",
+      "results": "Results",
+      "export": "Export"
+    },
+    "stepsLabel": "Steps",
+    "start": "Start: upload a file",
+    "need": "What you need",
+    "get": "What you get",
+    "limits": "Good to know",
+    "notYet": "This step is not built yet.",
+    "notYetBody": "The page template is in place. This step is built in the next stage, after you have reviewed the shared structure.",
+    "signInNote": "The upload, results and export steps open after you sign in.",
+    "onDevice": "Your file is analysed on your own device. It is not sent to a server, and it is not kept after you close the page unless you choose to save it.",
+    "privacyLink": "How to anonymise accounts before uploading",
+    "village": {
+      "name": "Shopping village",
+      "body": "A realistic 3D street, mall or souq to walk through."
+    },
+    "shop": {
+      "name": "E-commerce simulator",
+      "body": "A realistic online shop with a simulated checkout."
+    },
+    "forms": {
+      "name": "Forms",
+      "body": "Questionnaires with skip logic, images and video."
+    },
+    "network": {
+      "name": "Social network analysis",
+      "summary": "See how accounts are connected: who is central, which communities form, and how dense the network is.",
+      "need1": "A CSV or Excel file with one row per connection (an edge list): a source column and a target column. A weight column is optional. Exports from 4CAT and Communalytic, and Gephi's GEXF and GraphML files, are read directly.",
+      "need2": "Optional: a second file describing each account (type, followers, category), used to colour the network.",
+      "need3": "Whether connections have a direction (A mentions B) or not (A and B are linked).",
+      "get1": "For each account: degree, betweenness, closeness and PageRank.",
+      "get2": "For the whole network: density, clustering, number of connected components and diameter.",
+      "get3": "Communities found with the Louvain method, coloured automatically.",
+      "get4": "An interactive network you can drag, zoom and filter, with PNG, SVG and CSV exports.",
+      "get5": "A short report that explains the numbers in plain language, with the method, the settings and the usual cautions, ready for a methods chapter.",
+      "limit1": "Networks up to about 50,000 accounts are shown interactively. For very large networks some measures are estimated, and the results say so.",
+      "limit2": "If your file has a sentiment column, accounts can be coloured by sentiment.",
+      "need4": "No edge list? Upload a table of posts (author, text, date) and the tool builds the network from mentions, replies and shared hashtags."
+    },
+    "sentiment": {
+      "name": "Sentiment analysis",
+      "summary": "Summarise and compare sentiment labels you have already assigned to your texts.",
+      "need1": "A CSV file with a text column and a label column: positive, negative or neutral, or a number from -1 to 1.",
+      "need2": "Optional columns: account, category, language, dialect or country, and date, used for comparisons.",
+      "get1": "The distribution of positive, negative and neutral texts.",
+      "get2": "Average sentiment for each account or category, with the number of texts behind each average.",
+      "get3": "Comparisons between groups, and between languages if the file has a language column.",
+      "get4": "Charts and tables you can export.",
+      "limit1": "This version does not classify texts automatically. It counts and compares the labels in your file.",
+      "limit2": "Automatic classification for English and Gulf Arabic is planned for a later version, with stated accuracy for each language.",
+      "disclaimer": "The labels are the researcher's responsibility. This tool only aggregates and displays them.",
+      "need3": "Optional: a second coder's label column, to measure how far the coders agree.",
+      "get5": "Agreement between coders (Krippendorff's alpha), with a plain reading of the score.",
+      "get6": "A list of the texts the coders disagreed on, to settle one by one and export a final label."
+    },
+    "privacy": {
+      "title": "Protecting the people in your data",
+      "intro": "Before you upload a file, remove anything that identifies a real person unless your ethics approval allows it.",
+      "p1Title": "Replace account names with codes",
+      "p1": "Use codes such as A001 and A002 in place of usernames, and keep the list that links codes to names in a separate, protected file. A built-in anonymising button is coming with the upload step.",
+      "p2Title": "Remove what you do not need",
+      "p2": "Delete columns the analysis does not use, such as profile links, email addresses, phone numbers and locations.",
+      "p3Title": "Be careful with quoted text",
+      "p3": "A quoted post can be searched for and traced back to its author. Paraphrase quotations in publications where anonymity matters.",
+      "p4Title": "What happens to your file here",
+      "p4": "Your file is analysed on your own device. It is not sent to a server, and it is not kept after you close the page unless you choose to save it.",
+      "p5Title": "What this platform does not do",
+      "p5": "It does not collect data from social media platforms. You are responsible for how your data was obtained and for following the platform's terms and your institution's ethics rules."
+    },
+    "upload": {
+      "drop": "Drop a CSV file here, or choose one",
+      "choose": "Choose a file",
+      "formats": "CSV, up to 50 MB. The file stays on your device.",
+      "sample": "Try the sample file",
+      "template": "Download a blank template",
+      "reading": "Reading the file…",
+      "replace": "Use a different file",
+      "file": "File",
+      "encoding": "Encoding",
+      "separator": "Separator",
+      "separators": {
+        "comma": "comma",
+        "semicolon": "semicolon",
+        "tab": "tab"
+      },
+      "rowsRead": "{n, plural, one {# row read} other {# rows read}}",
+      "rowsSkipped": "{n, plural, one {# damaged row skipped} other {# damaged rows skipped}}",
+      "skippedLines": "Lines in the file: {lines}",
+      "skippedMore": "and {n} more",
+      "skippedWhy": "These rows have a different number of cells from the header, usually because of an unclosed quote or a stray separator. Fix them in the file to include them.",
+      "emptySkipped": "{n, plural, one {# empty row ignored} other {# empty rows ignored}}",
+      "errors": {
+        "type": "This file is not a CSV file. Save your sheet as CSV (comma separated) and try again.",
+        "size": "This file is larger than 50 MB.",
+        "empty": "The file has no rows below the header.",
+        "oneColumn": "Only one column was found. Check that the file is separated by commas, semicolons or tabs.",
+        "emptyHeader": "{n, plural, one {# column has no name} other {# columns have no name}} in the first row. Give every column a name.",
+        "duplicateHeader": "These column names are repeated: {names}. Give each column a different name.",
+        "read": "The file could not be read."
+      },
+      "columnsTitle": "Match the columns",
+      "columnsHint": "Tell the tool which column is which. The text and the label are needed; the rest are optional and used for comparisons.",
+      "none": "Not in this file",
+      "required": "needed",
+      "col": {
+        "text": "Text",
+        "label": "Sentiment label",
+        "label2": "Second coder's label",
+        "account": "Account",
+        "category": "Category",
+        "language": "Language",
+        "dialect": "Dialect or country",
+        "date": "Date"
+      },
+      "sameColumn": "The text and the label cannot be the same column.",
+      "labelsTitle": "Check the labels",
+      "labelsRead": "{n, plural, one {# label recognised} other {# labels recognised}}",
+      "labelsBlank": "{n, plural, one {# row has no label} other {# rows have no label}} and will be left out.",
+      "labelsNumeric": "Numeric labels from -1 to 1: values within 0.05 of zero count as neutral.",
+      "unreadTitle": "{n, plural, one {# value was not recognised} other {# values were not recognised}}",
+      "unreadHint": "Choose what each one means. Rows left as “Leave out” are not counted.",
+      "leaveOut": "Leave out",
+      "times": "{n, plural, one {# row} other {# rows}}",
+      "sentiment": {
+        "positive": "Positive",
+        "negative": "Negative",
+        "neutral": "Neutral"
+      },
+      "noLabels": "No labels could be recognised in this column. Choose a different column, or map the values below.",
+      "anonTitle": "Hide account names",
+      "anonHint": "Replace every account name with a code such as A001. The list linking codes to names is downloaded to your device only; keep it somewhere safe and separate.",
+      "anonButton": "Replace names with codes",
+      "anonDone": "{n, plural, one {# account replaced with a code} other {# accounts replaced with codes}}. The key file was downloaded.",
+      "anonNeedsColumn": "Choose the account column first.",
+      "previewTitle": "First rows",
+      "continue": "Continue to results",
+      "notReady": "Match the text and label columns to continue.",
+      "disclaimer": "The labels are the researcher's responsibility. This tool only aggregates and displays them."
+    },
+    "results": {
+      "noFile": "No file is loaded.",
+      "noFileBody": "Uploaded files are kept only while the page is open, so a reload clears them. Upload your file again to see the results.",
+      "goUpload": "Go to upload",
+      "analysed": "Texts analysed",
+      "leftOut": "Left out",
+      "leftOutDetail": "{blank} without a label, {unread} with a label that was not recognised",
+      "net": "Net sentiment",
+      "netHint": "From -1 (all negative) to 1 (all positive)",
+      "distribution": "Distribution",
+      "share": "Share",
+      "count": "Texts",
+      "compareTitle": "Compare groups",
+      "compareBy": "Compare by",
+      "group": "Group",
+      "noGroups": "The file has no account, category, language or dialect column matched, so there are no groups to compare. Match one on the upload step.",
+      "small": "few texts",
+      "smallNote": "Groups with fewer than {n} texts are shown but left out of the test: their figures can change a lot with one or two texts.",
+      "missing": "{n, plural, one {# text has} other {# texts have}} no value in this column and {n, plural, one {is} other {are}} not shown.",
+      "more": "Showing the {shown} largest of {total} groups. The export has all of them.",
+      "testTitle": "Is the difference more than chance?",
+      "testNone": "A test needs at least two groups with {n} or more texts each.",
+      "testYes": "The groups differ in their mix of positive, neutral and negative texts by more than chance would explain.",
+      "testNo": "The differences between the groups are within what chance alone could produce.",
+      "testDetail": "Chi-square = {chi2}, df = {df}, p {p}, Cramér's V = {v} ({strength}), across {groups} groups and {n} texts.",
+      "strength": {
+        "weak": "a weak association",
+        "moderate": "a moderate association",
+        "strong": "a strong association"
+      },
+      "testLow": "This comparison cannot be tested reliably: {pct}% of the expected counts are below 5. Merge small categories or collect more texts before drawing a conclusion.",
+      "testReminder": "A significant difference says the groups differ, not why. The labels are the researcher's own.",
+      "trendTitle": "Over time",
+      "trendUnit": {
+        "day": "By day",
+        "week": "By week (weeks start on Monday)",
+        "month": "By month"
+      },
+      "trendAxis": "Net sentiment",
+      "trendUnread": "{n, plural, one {# date was} other {# dates were}} not read. Use the year-first form, for example 2026-03-14, because 03/04/2026 means different days in different countries.",
+      "trendOne": "All dated texts fall in one period, so there is no trend to draw.",
+      "period": "Period",
+      "showTable": "Show as table",
+      "showChart": "Show as chart",
+      "methodTitle": "How these figures are calculated",
+      "method1": "Only rows with a recognised label are counted. The tool does not classify any text.",
+      "method2Cat": "Net sentiment is the share of positive texts minus the share of negative texts: each positive text counts 1, each neutral 0, each negative -1, and the result is the average.",
+      "method2Num": "Every label in this file is a number from -1 to 1, so net sentiment is the average of those numbers. A text counts as positive above 0.05, negative below -0.05, and neutral in between.",
+      "method3": "Groups are compared with a chi-square test of independence on the counts of positive, neutral and negative texts. Cramér's V shows how strong the association is: under 0.1 weak, 0.1 to 0.3 moderate, above 0.3 strong.",
+      "toExport": "Continue to export",
+      "trendSmall": "Most periods have fewer than {n} texts, so the line moves a lot from one text to the next. Read the overall direction, not single points."
+    },
+    "review": {
+      "agreementTitle": "Agreement between coders",
+      "agreementHint": "Two label columns were matched. Alpha corrects for agreement expected by chance: 1 is perfect agreement, 0 is chance, below 0 is worse than chance.",
+      "agreementPairs": "Texts coded by both",
+      "agreementPercent": "Simple agreement",
+      "agreementNone": "Alpha cannot be computed: the coders used only one category, or there are too few texts.",
+      "alphaReading": {
+        "none": "not computable",
+        "poor": "poor agreement",
+        "fair": "below the usual 0.667 threshold; resolve the disagreements before reporting",
+        "good": "acceptable; treat conclusions as tentative",
+        "strong": "good agreement"
+      },
+      "disagreeTitle": "Texts the coders disagreed on",
+      "disagreeHint": "Choose the final label for each text. Choices change the results and the export. Texts left undecided keep the first coder's label.",
+      "undecided": "Undecided (keep first coder)",
+      "disagreeCount": "{n, plural, one {# text disagreed} other {# texts disagreed}}",
+      "moreRows": "Showing the first {shown} of {total}. The export includes all of them.",
+      "exportTitle": "Export",
+      "exportHint": "Every file is UTF-8 with a byte order mark, so Excel shows Arabic correctly. Column names are in English so they match the analysis software.",
+      "btnData": "Final data (CSV)",
+      "btnSummary": "Summary and groups (CSV)",
+      "btnMethod": "Method note (Markdown)",
+      "exportNote": "The data file includes the text. Anonymise accounts on the upload step first if your ethics approval requires it.",
+      "noteTitle": "Method note: sentiment analysis",
+      "noteGenerated": "Generated",
+      "noteFile": "Data",
+      "noteMethod": [
+        "How the figures were produced",
+        "Only labels the researcher supplied are counted. The tool does not classify text.",
+        "Net sentiment is the share of positive texts minus negative texts, from -1 to +1; numeric labels are averaged as given.",
+        "Groups are compared with a chi-square test of independence on counts of positive, neutral and negative texts; Cramér's V gives the strength of association."
+      ],
+      "noteAgreement": "Agreement between coders",
+      "noteNone": "No second coder was used, so agreement was not measured.",
+      "noteAlpha": "Krippendorff's alpha",
+      "notePercent": "simple agreement",
+      "noteCounts": "Counts",
+      "noteNet": "Net sentiment",
+      "noteMean": "Mean score",
+      "noteCautions": [
+        "Cautions",
+        "The labels are the researcher's responsibility; the tool only counts and compares them.",
+        "Small groups give unstable figures; check the group sizes before reading differences.",
+        "A significant difference shows the groups differ, not why."
+      ],
+      "pickFinal": "Choose the final label for text {n}",
+      "showMore": "Show more",
+      "noteLabels": {
+        "counts": "Counts",
+        "net": "Net sentiment",
+        "mean": "Mean score",
+        "alpha": "Krippendorff's alpha",
+        "percent": "simple agreement",
+        "texts": "texts",
+        "rows": "rows",
+        "columns": "columns",
+        "disagreements": "disagreements"
+      },
+      "noData": "No data is loaded.",
+      "noDataAction": "Upload a file first. Uploaded files are kept only while the page is open.",
+      "goUpload": "Go to upload"
+    }
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signUp": "Create account",
+    "signOut": "Sign out",
+    "signInIntro": "Sign in to use the analysis tools.",
+    "signUpIntro": "A free account for researchers. No payment details are asked for.",
+    "name": "Name (optional)",
+    "email": "Email",
+    "password": "Password",
+    "passwordHint": "At least 10 characters.",
+    "wait": "Please wait…",
+    "noAccount": "No account yet?",
+    "haveAccount": "Already have an account?",
+    "noReset": "Password reset by email is not available yet, so keep your password somewhere safe.",
+    "errors": {
+      "email": "Enter a valid email address.",
+      "password": "Use a password of at least 10 characters.",
+      "exists": "An account with this email already exists. Sign in instead.",
+      "wrong": "The email or password is incorrect.",
+      "locked": "Too many attempts. Wait 15 minutes and try again.",
+      "failed": "Something went wrong on our side. Please try again."
+    }
   }
 }

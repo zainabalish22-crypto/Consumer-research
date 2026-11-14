@@ -25,6 +25,8 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
     { key: "village", status: "prototype", href: SCENES_LIVE ? "/prototype/scenes" : null },
     { key: "shop", status: "prototype", href: "/studio?module=shop" },
     { key: "forms", status: "prototype", href: "/studio?module=form" },
+    { key: "network", status: "design", href: "/tools/network" },
+    { key: "sentiment", status: "design", href: "/tools/sentiment" },
   ] as const;
 
   return (
@@ -44,7 +46,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             <Wordmark />
           </Link>
           <nav aria-label={t("nav.label")} className="tracked order-3 flex w-full flex-wrap gap-x-7 gap-y-1 text-sm uppercase tracking-[0.08em] text-mist md:order-none md:w-auto">
-            <a href="#modules" className="py-2 hover:text-signal">{t("nav.modules")}</a>
+            <Link href="/tools" className="py-2 hover:text-signal">{t("nav.tools")}</Link>
             <a href="#environments" className="py-2 hover:text-signal">{t("nav.environments")}</a>
             <a href="#engine" className="py-2 hover:text-signal">{t("nav.engine")}</a>
             <a href="#data" className="py-2 hover:text-signal">{t("nav.data")}</a>
@@ -102,7 +104,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
               <Label className="mb-4 block text-sm text-signal">{t("modules.fig")}</Label>
               {t("modules.title")}
             </h2>
-            <div className="grid gap-px border border-line bg-line md:grid-cols-3">
+            <div className="grid gap-px border border-line bg-line md:grid-cols-2 xl:grid-cols-3">
               {modules.map(({ key, status, href }) => (
                 <article key={key} className="group relative flex flex-col gap-3 bg-void p-7 hover:bg-carbon">
                   <div className="flex items-center justify-between gap-3 font-mono text-xs">
@@ -140,6 +142,14 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
                   )}
                 </article>
               ))}
+              {/* Fills the last cell of the grid so no bare gap shows */}
+              <Link href="/tools" className="group flex flex-col justify-end gap-2 bg-void p-7 hover:bg-carbon md:max-xl:col-span-1">
+                <span className="font-display text-2xl group-hover:text-signal">{t("tools.title")}</span>
+                <span className="text-[15px] leading-[1.65] text-dim">{t("tools.intro")}</span>
+                <span aria-hidden="true" className="tracked font-mono text-xs uppercase tracking-[0.12em] text-signal">
+                  {t("modules.open")} →
+                </span>
+              </Link>
             </div>
           </section>
 
