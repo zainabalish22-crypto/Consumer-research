@@ -1,5 +1,6 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound, redirect } from "next/navigation";
+import { NetworkUpload } from "@/components/network/NetworkUpload";
 import { SentimentExport } from "@/components/sentiment/SentimentExport";
 import { SentimentResults } from "@/components/sentiment/SentimentResults";
 import { SentimentUpload } from "@/components/sentiment/SentimentUpload";
@@ -41,6 +42,8 @@ export default async function Page({
       <ToolPage tool={tool} step={step}>
         {tool === "sentiment" && step === "upload" ? (
           <SentimentUpload />
+        ) : tool === "network" && step === "upload" ? (
+          <NetworkUpload />
         ) : tool === "sentiment" && step === "results" ? (
           <SentimentResults />
         ) : tool === "sentiment" && step === "export" ? (

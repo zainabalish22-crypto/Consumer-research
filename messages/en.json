@@ -785,6 +785,69 @@
       "noData": "No data is loaded.",
       "noDataAction": "Upload a file first. Uploaded files are kept only while the page is open.",
       "goUpload": "Go to upload"
+    },
+    "netUpload": {
+      "drop": "Drop a CSV, TSV, GEXF or GraphML file here, or choose one",
+      "choose": "Choose a file",
+      "formats": "Edge lists (CSV, TSV, TXT), GEXF or GraphML, up to 50 MB. The file stays on your device.",
+      "sample": "Try the sample edge list",
+      "reading": "Reading the file…",
+      "replace": "Use a different file",
+      "file": "File",
+      "encoding": "Encoding",
+      "separator": "Separator",
+      "separators": {
+        "comma": "comma",
+        "semicolon": "semicolon",
+        "tab": "tab"
+      },
+      "rowsRead": "{n} rows read",
+      "rowsSkipped": "{n} rows skipped",
+      "skippedLines": "Lines skipped: {lines}",
+      "skippedWhy": "These rows do not have the same number of cells as the header. They are left out and listed here, not repaired.",
+      "presetTitle": "What kind of file is this?",
+      "presetHint": "This only chooses which columns are matched first. You can change every match below.",
+      "presetLabel": "Import preset",
+      "presets": {
+        "edgeList": "Edge list (source, target, optional weight)",
+        "gephi": "Gephi edge table",
+        "exportTool": "Export from 4CAT or Communalytic"
+      },
+      "exportToolNote": "The column names of 4CAT and Communalytic exports are not yet checked against real files. Check the matches below against your file before you rely on them.",
+      "columnsTitle": "Columns",
+      "columnsHint": "Source and target are the two ends of each tie. Weight is how strong the tie is; without it every tie counts as 1.",
+      "col": {
+        "source": "Source",
+        "target": "Target",
+        "weight": "Weight"
+      },
+      "required": "required",
+      "none": "None",
+      "sameColumn": "Source and target must be different columns.",
+      "directionTitle": "Ties",
+      "undirected": "Undirected: A and B are connected to each other",
+      "directed": "Directed: A links to B, which is not the same as B linking to A",
+      "checksTitle": "What the tool found",
+      "nodes": "Nodes (accounts or items)",
+      "ties": "Ties",
+      "checkBlank": "{n} rows left out: source or target was blank.",
+      "checkSelf": "{n} ties start and end at the same node. They are kept and counted.",
+      "checkMerged": "{n} repeated ties were merged and their weights added together.",
+      "checkBadWeights": "{n} weights were blank or not numbers. Those ties count as 1.",
+      "checkNoWeight": "This file has no weights, so every tie counts as 1.",
+      "previewTitle": "First ties",
+      "continue": "Continue",
+      "notReady": "Choose a source and a target column with at least one tie to continue.",
+      "errors": {
+        "type": "This tool reads CSV, TSV, TXT, GEXF or GraphML files.",
+        "size": "The file is larger than 50 MB.",
+        "empty": "The file has no ties to read.",
+        "oneColumn": "The file needs at least two columns: a source and a target.",
+        "emptyHeader": "{n} column headings are empty. Name them in the file and try again.",
+        "duplicateHeader": "These column headings are repeated: {names}. Rename them and try again.",
+        "read": "The file could not be read.",
+        "xml": "This GEXF or GraphML file is not valid XML."
+      }
     }
   },
   "auth": {

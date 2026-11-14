@@ -2,6 +2,14 @@
 
 Choices made during the rebuild, newest first. `docs/PLATFORM_BRIEF.md` is the functional specification; where a decision here changes it, the decision says so.
 
+## 2026-11-14 · Network tool, stage 2a: upload and checks
+
+- **Input formats:** edge lists (CSV, TSV, TXT), GEXF and GraphML. Excel is not in this stage; it needs a free spreadsheet reader added on approval.
+- **Presets only choose which columns are matched first.** The researcher sees and can change every match. The 4CAT and Communalytic column names were not found in public documentation, so that preset says the matches are unchecked until a real sample export is tested. A sample export from each tool is needed.
+- **Every problem is counted, not repaired:** blank ends (rows left out), self-loops (kept), repeated ties (merged, weights added), blank or non-numeric weights (tie counts as 1), and rows with the wrong number of cells (listed by line).
+- **Checked:** the graph model against hand-worked cases (merging, direction, bad weights, missing columns; run in Node); the sample file in the browser (12 rows read, 1 skipped, 8 nodes, 10 ties). GEXF and GraphML parsing is not yet tested in the browser.
+- **Not yet built:** metrics (stage 2b), the interactive graph (2c), outputs (2d), and posts-to-network.
+
 ## 2026-11-14 · Sentiment tool: agreement, disagreements and export
 
 - **Agreement between coders** uses Krippendorff's alpha for nominal labels, computed from the coincidence matrix and checked against hand-worked values (perfect agreement 1; systematic disagreement -0.75; half agreement 0.125; a single category gives no value). A plain reading follows the usual 0.667 threshold, worded as tentative between 0.667 and 0.8.
