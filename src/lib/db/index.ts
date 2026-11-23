@@ -25,7 +25,7 @@ async function connect(): Promise<Runner> {
     const { mkdirSync } = await import("node:fs");
     const { homedir } = await import("node:os");
     const { join } = await import("node:path");
-    const dir = join(process.env.LOCALAPPDATA || homedir(), "tessellum-dev");
+    const dir = join(process.env.LOCALAPPDATA || homedir(), "asdaa-lab-dev");
     mkdirSync(dir, { recursive: true });
     const db = new PGlite(join(dir, "pglite"));
     await db.waitReady;

@@ -7,22 +7,58 @@
  */
 import type { Session, Study } from "./types";
 
-const DB = "tessellum";
+const DB = "asdaa-lab";
+/** The database's name before the platform was renamed. Its contents are copied once into the
+ *  new database, the first time it is created, and the old one is left untouched. */
+const OLD_DB = "tessellum";
 const VERSION = 1;
-type StoreName = "studies" | "sessions" | "media";
+const STORES = ["studies", "sessions", "media"] as const;
+type StoreName = (typeof STORES)[number];
+
+const done = (r: IDBRequest) => new Promise<void>((res, rej) => ((r.onsuccess = () => res()), (r.onerror = () => rej(r.error))));
+
+async function copyOldData(target: IDBDatabase) {
+  const existing = (await indexedDB.databases?.()) ?? [];
+  if (!existing.some((x) => x.name === OLD_DB)) return;
+  const openOld = indexedDB.open(OLD_DB);
+  await done(openOld);
+  const old = openOld.result;
+  try {
+    for (const name of STORES) {
+      if (!old.objectStoreNames.contains(name)) continue;
+      const read = old.transaction(name).objectStore(name).getAll();
+      await done(read);
+      await new Promise<void>((res, rej) => {
+        const tx = target.transaction(name, "readwrite");
+        for (const row of read.result) tx.objectStore(name).put(row);
+        tx.oncomplete = () => res();
+        tx.onerror = () => rej(tx.error);
+      });
+    }
+  } finally {
+    old.close();
+  }
+}
 
 let opening: Promise<IDBDatabase> | null = null;
 function db(): Promise<IDBDatabase> {
   if (!opening)
     opening = new Promise((resolve, reject) => {
       const req = indexedDB.open(DB, VERSION);
-      req.onupgradeneeded = () => {
+      let created = false;
+      req.onupgradeneeded = (e) => {
+        created = e.oldVersion === 0;
         const d = req.result;
         if (!d.objectStoreNames.contains("studies")) d.createObjectStore("studies", { keyPath: "id" });
         if (!d.objectStoreNames.contains("sessions")) d.createObjectStore("sessions", { keyPath: "id" }).createIndex("studyId", "studyId");
         if (!d.objectStoreNames.contains("media")) d.createObjectStore("media", { keyPath: "id" });
       };
-      req.onsuccess = () => resolve(req.result);
+      req.onsuccess = () => {
+        const d = req.result;
+        // A copy that fails leaves the new database empty but working; the old data stays safe.
+        if (created) copyOldData(d).catch(() => {}).finally(() => resolve(d));
+        else resolve(d);
+      };
       req.onerror = () => reject(req.error);
     });
   return opening;
@@ -41,7 +77,7 @@ function run<T>(store: StoreName, mode: IDBTransactionMode, fn: (s: IDBObjectSto
 }
 
 /** Notifies open screens (in this tab and others) that saved data changed. */
-const channel = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("tessellum-data") : null;
+const channel = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("asdaa-lab-data") : null;
 const listeners = new Set<() => void>();
 channel?.addEventListener("message", () => listeners.forEach((l) => l()));
 function changed() {
