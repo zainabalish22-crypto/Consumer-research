@@ -3,15 +3,20 @@ import { notFound } from "next/navigation";
 import { PrivacyNote, ToolPage, ToolShell } from "@/components/tools/ToolShell";
 import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
-import { ANALYSIS_TOOLS, TOOL_COPY, isAnalysisTool } from "@/lib/tools/registry";
+import { StudyToolPage } from "@/components/tools/StudyToolPage";
+import { ANALYSIS_TOOLS, STUDY_TOOL_IDS, TOOL_COPY, isAnalysisTool, isStudyTool } from "@/lib/tools/registry";
 import { brandName } from "@/config/brand";
 
 export function generateStaticParams() {
-  return routing.locales.flatMap((locale) => ANALYSIS_TOOLS.map((tool) => ({ locale, tool })));
+  return routing.locales.flatMap((locale) => [...ANALYSIS_TOOLS, ...STUDY_TOOL_IDS].map((tool) => ({ locale, tool })));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string; tool: string }> }) {
   const { locale, tool } = await params;
+  if (isStudyTool(tool)) {
+    const m = await getTranslations({ locale, namespace: "modules" });
+    return { title: `${m(`${tool}.name`)} · ${brandName(locale)}`, description: m(`${tool}.body`) };
+  }
   if (!isAnalysisTool(tool)) return {};
   const t = await getTranslations({ locale, namespace: "tools" });
   return { title: `${t(`${tool}.name`)} · ${brandName(locale)}`, description: t(`${tool}.summary`) };
@@ -36,6 +41,14 @@ function List({ title, items }: { title: string; items: string[] }) {
 /** A tool's own page: what it does, what you need, what you get, and where to start. */
 export default async function Page({ params }: { params: Promise<{ locale: string; tool: string }> }) {
   const { locale, tool } = await params;
+  if (isStudyTool(tool)) {
+    setRequestLocale(locale);
+    return (
+      <ToolShell>
+        <StudyToolPage tool={tool} />
+      </ToolShell>
+    );
+  }
   if (!isAnalysisTool(tool)) notFound();
   setRequestLocale(locale);
   const t = await getTranslations("tools");

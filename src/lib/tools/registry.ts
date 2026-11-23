@@ -15,12 +15,10 @@ export const TOOL_COPY: Record<AnalysisTool, { need: string[]; get: string[]; li
   sentiment: { need: ["need1", "need2", "need3"], get: ["get1", "get2", "get3", "get5", "get6", "get4"], limits: ["limit1", "limit2"], disclaimer: "disclaimer" },
 };
 
-/** Study tools already on the platform, with where each one opens. */
-export const STUDY_TOOLS = [
-  { id: "village", href: "/prototype/scenes", localized: false },
-  { id: "shop", href: "/studio?module=shop", localized: true },
-  { id: "forms", href: "/studio?module=form", localized: true },
-] as const;
+/** Study tools already on the platform. Each has its own page at /tools/<id>. */
+export const STUDY_TOOL_IDS = ["village", "shop", "forms"] as const;
+export type StudyToolId = (typeof STUDY_TOOL_IDS)[number];
+export const isStudyTool = (v: string): v is StudyToolId => (STUDY_TOOL_IDS as readonly string[]).includes(v);
 
 export const isAnalysisTool = (v: string): v is AnalysisTool => (ANALYSIS_TOOLS as readonly string[]).includes(v);
 export const isStep = (v: string): v is Step => (STEPS as readonly string[]).includes(v);

@@ -3,7 +3,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ToolShell } from "@/components/tools/ToolShell";
 import { SCENES_LIVE } from "@/config/site";
 import { Link } from "@/i18n/navigation";
-import { ANALYSIS_TOOLS, STUDY_TOOLS } from "@/lib/tools/registry";
+import { ANALYSIS_TOOLS, STUDY_TOOL_IDS } from "@/lib/tools/registry";
 import { brandName } from "@/config/brand";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
@@ -19,7 +19,7 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
   const { locale } = await params;
   setRequestLocale(locale);
   const t = await getTranslations("tools");
-  const studyTools = STUDY_TOOLS.filter((x) => x.id !== "village" || SCENES_LIVE);
+  const studyTools = STUDY_TOOL_IDS;
   return (
     <ToolShell>
       <main className="mx-auto flex max-w-6xl flex-col gap-10 px-4 py-10 sm:px-8">
@@ -59,24 +59,18 @@ export default async function Page({ params }: { params: Promise<{ locale: strin
           </h2>
           <ul className="grid gap-px overflow-hidden rounded-lg border border-line-2 bg-line-2 md:grid-cols-3">
             {studyTools.map((tool) => (
-              <li key={tool.id}>
+              <li key={tool}>
                 <article className={card}>
                   <span className="font-mono text-xs text-signal">
                     <span aria-hidden="true">● </span>
                     {t("status.ready")}
                   </span>
                   <h3 className="font-display text-2xl">
-                    {tool.localized ? (
-                      <Link href={tool.href} className="after:absolute after:inset-0 group-hover:text-signal">
-                        {t(`${tool.id}.name`)}
-                      </Link>
-                    ) : (
-                      <NextLink href={tool.href} className="after:absolute after:inset-0 group-hover:text-signal">
-                        {t(`${tool.id}.name`)}
-                      </NextLink>
-                    )}
+                    <Link href={`/tools/${tool}`} className="after:absolute after:inset-0 group-hover:text-signal">
+                      {t(`${tool}.name`)}
+                    </Link>
                   </h3>
-                  <p className="text-[15px] leading-relaxed text-dim">{t(`${tool.id}.body`)}</p>
+                  <p className="text-[15px] leading-relaxed text-dim">{t(`${tool}.body`)}</p>
                 </article>
               </li>
             ))}

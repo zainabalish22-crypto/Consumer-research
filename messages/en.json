@@ -848,6 +848,10 @@
         "read": "The file could not be read.",
         "xml": "This GEXF or GraphML file is not valid XML."
       }
+    },
+    "studyOpen": {
+      "shop": "Build a shop study",
+      "forms": "Build a form"
     }
   },
   "auth": {
