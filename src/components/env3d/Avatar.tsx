@@ -255,7 +255,7 @@ function Eyes({ input, pose }: { input: React.RefObject<MoveInput>; pose: React.
   return null;
 }
 
-/** Tessellum's brand orange (Signal), used for the presence. */
+/** Asdaa Lab's brand orange (Signal), used for the presence. */
 const PRESENCE_COLOR = "#FF6A2B";
 
 /**

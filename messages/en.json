@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Tessellum · Measure behaviour, not just opinions",
+    "title": "Asdaa Lab · Measure behaviour, not just opinions",
     "description": "A free, bilingual research instrument with three modules: a 3D shopping village, an e-commerce simulator and forms, on one calibrated engine."
   },
   "nav": {
@@ -14,7 +14,7 @@
     "otherLanguageLabel": "Read this page in Arabic",
     "scenes": "Scene library",
     "sections": "Sections",
-    "home": "Tessellum, home",
+    "home": "Asdaa Lab, home",
     "studio": "Studio",
     "tools": "Tools"
   },
@@ -148,7 +148,7 @@
     }
   },
   "footer": {
-    "status": "Tessellum is in development. The shopping village, e-commerce simulator and forms are working prototypes; the two analysis tools are being built.",
+    "status": "Asdaa Lab is in development. The shopping village, e-commerce simulator and forms are working prototypes; the two analysis tools are being built.",
     "scenes": "Scene library"
   },
   "studio": {

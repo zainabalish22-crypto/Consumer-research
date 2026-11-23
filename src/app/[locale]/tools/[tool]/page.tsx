@@ -4,6 +4,7 @@ import { PrivacyNote, ToolPage, ToolShell } from "@/components/tools/ToolShell";
 import { Link } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { ANALYSIS_TOOLS, TOOL_COPY, isAnalysisTool } from "@/lib/tools/registry";
+import { brandName } from "@/config/brand";
 
 export function generateStaticParams() {
   return routing.locales.flatMap((locale) => ANALYSIS_TOOLS.map((tool) => ({ locale, tool })));
@@ -13,7 +14,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const { locale, tool } = await params;
   if (!isAnalysisTool(tool)) return {};
   const t = await getTranslations({ locale, namespace: "tools" });
-  return { title: `${t(`${tool}.name`)} · Tessellum`, description: t(`${tool}.summary`) };
+  return { title: `${t(`${tool}.name`)} · ${brandName(locale)}`, description: t(`${tool}.summary`) };
 }
 
 function List({ title, items }: { title: string; items: string[] }) {

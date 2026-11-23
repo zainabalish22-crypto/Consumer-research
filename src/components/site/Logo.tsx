@@ -1,4 +1,7 @@
-/** The Tessellum mark: square brackets around a 3 × 3 mosaic of tiles, the centre tile lit. */
+import { useLocale } from "next-intl";
+import { BRAND } from "@/config/brand";
+
+/** The Asdaa Lab mark: square brackets around a 3 × 3 mosaic of tiles, the centre tile lit. */
 export function Mark({ size = 34, className }: { size?: number; className?: string }) {
   const tiles: [number, number][] = [];
   for (const y of [16.5, 28.5, 40.5]) for (const x of [16.5, 28.5, 40.5]) if (!(x === 28.5 && y === 28.5)) tiles.push([x, y]);
@@ -15,14 +18,21 @@ export function Mark({ size = 34, className }: { size?: number; className?: stri
   );
 }
 
-/** Mark and wordmark. The wordmark stays in Latin letters in both languages. */
+/** Mark and wordmark: ASDAA LAB in Latin capitals on English pages, أصداء لاب on Arabic pages. */
 export function Wordmark() {
+  const ar = useLocale() === "ar";
   return (
     <span className="flex items-center gap-3 text-photon">
       <Mark />
-      <span lang="en" dir="ltr" className="font-[family-name:var(--font-sora)] text-[22px] font-semibold tracking-[0.08em]">
-        TESSELLUM
-      </span>
+      {ar ? (
+        <span lang="ar" dir="rtl" className="font-[family-name:var(--font-kufi)] text-[21px] font-semibold">
+          {BRAND.ar}
+        </span>
+      ) : (
+        <span lang="en" dir="ltr" className="font-[family-name:var(--font-sora)] text-[22px] font-semibold tracking-[0.08em]">
+          {BRAND.en.toUpperCase()}
+        </span>
+      )}
     </span>
   );
 }

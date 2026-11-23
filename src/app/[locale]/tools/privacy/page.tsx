@@ -1,10 +1,12 @@
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ToolShell } from "@/components/tools/ToolShell";
 import { Link } from "@/i18n/navigation";
+import { brandName } from "@/config/brand";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
-  const t = await getTranslations({ locale: (await params).locale, namespace: "tools.privacy" });
-  return { title: `${t("title")} · Tessellum` };
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "tools.privacy" });
+  return { title: `${t("title")} · ${brandName(locale)}` };
 }
 
 /** Short guidance on anonymising accounts before uploading a file. */

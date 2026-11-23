@@ -7,6 +7,7 @@ import { SentimentUpload } from "@/components/sentiment/SentimentUpload";
 import { PrivacyNote, ToolPage, ToolShell } from "@/components/tools/ToolShell";
 import { currentUser } from "@/lib/auth";
 import { isAnalysisTool, isStep } from "@/lib/tools/registry";
+import { brandName } from "@/config/brand";
 
 export async function generateMetadata({
   params,
@@ -16,7 +17,7 @@ export async function generateMetadata({
   const { locale, tool, step } = await params;
   if (!isAnalysisTool(tool) || !isStep(step)) return {};
   const t = await getTranslations({ locale, namespace: "tools" });
-  return { title: `${t(`steps.${step}`)} · ${t(`${tool}.name`)} · Tessellum` };
+  return { title: `${t(`steps.${step}`)} · ${t(`${tool}.name`)} · ${brandName(locale)}` };
 }
 
 /**

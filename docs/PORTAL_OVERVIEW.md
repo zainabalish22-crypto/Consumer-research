@@ -1,6 +1,6 @@
-# Tessellum: portal overview
+# Asdaa Lab: portal overview
 
-Tessellum is a free, bilingual (Arabic and English) research platform for media, communication and social science researchers, many of them postgraduate students. A researcher can build a study from several tools and share one link with participants.
+Asdaa Lab (أصداء لاب) is a free, bilingual (Arabic and English) research platform for media, communication and social science researchers, many of them postgraduate students. A researcher can build a study from several tools and share one link with participants.
 
 **Status (November 2026):** the items marked *Working* run in the prototype. Items marked *In development* are not finished and should not be presented as available.
 
@@ -38,7 +38,7 @@ A realistic online shop for studying shopping behaviour.
 
 ## Tool 3: Forms · *Working*
 
-A form builder in the style of Google Forms and SharePoint Forms, with Tessellum's own design.
+A form builder in the style of Google Forms and SharePoint Forms, with Asdaa Lab's own design.
 
 - **Questions:** short and long text, single choice, multiple choice, dropdown, scales (Likert and semantic differential), sliders, matrices, ranking, numbers, dates and picture choice.
 - **Layout:** one long page for participants. Each form is in one language.

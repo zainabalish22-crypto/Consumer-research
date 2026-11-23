@@ -3,7 +3,7 @@
 /**
  * The form editor. It works the way people know from Google Forms and SharePoint Forms (one
  * centred column of cards edited in place, a floating toolbar for adding things, the selected
- * card showing its controls) but it is drawn in Tessellum's own instrument style: dark carbon
+ * card showing its controls) but it is drawn in Asdaa Lab's own instrument style: dark carbon
  * cards with hairline borders, corner brackets on the selected card, mono labels, and colour
  * only where something needs attention.
  */
@@ -107,7 +107,7 @@ function useUpload(onError: (msg: string) => void, tooBig: string) {
   return { pick, el };
 }
 
-/** Corner brackets on the selected card, echoing the brackets of the Tessellum mark. */
+/** Corner brackets on the selected card, echoing the brackets of the Asdaa Lab mark. */
 function Brackets() {
   return (
     <>

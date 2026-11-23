@@ -4,10 +4,12 @@ import { ToolShell } from "@/components/tools/ToolShell";
 import { SCENES_LIVE } from "@/config/site";
 import { Link } from "@/i18n/navigation";
 import { ANALYSIS_TOOLS, STUDY_TOOLS } from "@/lib/tools/registry";
+import { brandName } from "@/config/brand";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
-  const t = await getTranslations({ locale: (await params).locale, namespace: "tools" });
-  return { title: `${t("title")} · Tessellum` };
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "tools" });
+  return { title: `${t("title")} · ${brandName(locale)}` };
 }
 
 const card = "group relative flex h-full flex-col gap-3 bg-carbon p-6 hover:bg-steel";

@@ -2,6 +2,12 @@
 
 Choices made during the rebuild, newest first. `docs/PLATFORM_BRIEF.md` is the functional specification; where a decision here changes it, the decision says so.
 
+## 2026-11-23 · Name: Asdaa Lab, on asdaalab.com
+
+- **The platform is renamed Asdaa Lab** (owner, 2026-11-23). On Arabic pages it is written أصداء لاب (owner's choice over a full translation or keeping Latin letters). The wordmark shows ASDAA LAB on English pages and أصداء لاب in Noto Kufi Arabic on Arabic pages. The name lives in `src/config/brand.ts`; page titles read it from there.
+- **Kept on purpose:** the browser database and channel names (`tessellum`, `tessellum-data`) and the local development database folder. Renaming them would hide studies researchers have already saved. The mark (brackets around a mosaic) and the Direction B look stay; only the name changes. Older entries below keep the old name as history.
+- **Domain:** asdaalab.com (registered at GoDaddy) is added to the Vercel project; the bare domain redirects to www.asdaalab.com. GoDaddy DNS: A `@` → 216.198.79.1, CNAME `www` → the Vercel target shown in the project's Domains page.
+
 ## 2026-11-14 · Network tool, stage 2a: upload and checks
 
 - **Input formats:** edge lists (CSV, TSV, TXT), GEXF and GraphML. Excel is not in this stage; it needs a free spreadsheet reader added on approval.

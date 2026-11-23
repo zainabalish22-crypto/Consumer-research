@@ -3,13 +3,15 @@ import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { ToolShell } from "@/components/tools/ToolShell";
 import { currentUser, safeNext } from "@/lib/auth";
+import { brandName } from "@/config/brand";
 
 // Depends on who is signed in and where to return to, so it is never prebuilt.
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
-  const t = await getTranslations({ locale: (await params).locale, namespace: "auth" });
-  return { title: `${t("signIn")} · Tessellum` };
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "auth" });
+  return { title: `${t("signIn")} · ${brandName(locale)}` };
 }
 
 export default async function Page({ params, searchParams }: { params: Promise<{ locale: string }>; searchParams: Promise<{ next?: string }> }) {

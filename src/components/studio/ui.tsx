@@ -1,6 +1,6 @@
 "use client";
 
-/** Studio controls in the Tessellum dark style: labelled, keyboard-friendly, 44 px targets. */
+/** Studio controls in the Asdaa Lab dark style: labelled, keyboard-friendly, 44 px targets. */
 import { useTranslations } from "next-intl";
 import { useId, useRef, useState } from "react";
 import { repo } from "@/lib/study/repo";

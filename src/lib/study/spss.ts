@@ -7,7 +7,7 @@ export function spssSyntax(study: Study, lang: Lang) {
   const lab = (l: L10n | undefined) => esc(l?.[lang] || l?.en || l?.ar || "");
   const qs = questionsOf(study);
   const lines = [
-    `* Tessellum: labels for participants.csv (study version ${study.version}).`,
+    `* Asdaa Lab: labels for participants.csv (study version ${study.version}).`,
     "* Open the CSV in SPSS first (File > Import Data > CSV, UTF-8), then run this file.",
     "",
     "VARIABLE LABELS",

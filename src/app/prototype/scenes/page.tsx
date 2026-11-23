@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SCENES } from "@/components/env3d/scenes";
 
-export const metadata: Metadata = { title: "Scene library · Tessellum" };
+export const metadata: Metadata = { title: "Scene library · Asdaa Lab" };
 
 /** The researcher's scene library for the 3D environment module (prototype). */
 export default function Page() {
   return (
     <main className="min-h-dvh bg-[#050506] px-4 py-10 text-[#F2F4F5] sm:px-8">
       <div className="mx-auto max-w-6xl">
-        <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#8B9097]">Tessellum · 3D environment module · prototype</p>
+        <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#8B9097]">Asdaa Lab · 3D environment module · prototype</p>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Scene library</h1>
         <p className="mt-3 max-w-2xl text-[#A6ABB2]">
           The background a study runs in. Every scene holds the same stores, offers and products, and records the same events; only the place changes. Open one to walk it as a participant.
