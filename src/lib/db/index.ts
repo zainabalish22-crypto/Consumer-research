@@ -57,6 +57,15 @@ async function migrate(run: Runner) {
       at timestamptz not null default now()
     )`,
     `create index if not exists login_attempts_email on login_attempts(email, at)`,
+    // Assistant requests paid by the host's key, counted per researcher per day for the limit.
+    `create table if not exists assistant_usage (
+      user_id text not null references users(id) on delete cascade,
+      day date not null,
+      requests int not null default 0,
+      input_tokens bigint not null default 0,
+      output_tokens bigint not null default 0,
+      primary key (user_id, day)
+    )`,
   ];
   for (const s of statements) await run(s, []);
 }

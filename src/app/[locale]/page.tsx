@@ -1,5 +1,6 @@
 import NextLink from "next/link";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { AccountLink } from "@/components/auth/AccountLink";
 import { HeroFigure } from "@/components/site/HeroFigure";
 import { Mark, Wordmark } from "@/components/site/Logo";
 import { SCENES_LIVE } from "@/config/site";
@@ -37,11 +38,21 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
           <Wordmark />
         </Link>
         <nav aria-label={t("nav.label")} className="tracked text-sm uppercase tracking-[0.08em] text-mist">
-          <Link href="/tools" className="py-2 hover:text-signal">
-            {t("nav.tools")}
-          </Link>
+          <ul className="flex gap-x-7">
+            <li>
+              <Link href="/tools" className="py-2 hover:text-signal">
+                {t("nav.tools")}
+              </Link>
+            </li>
+            <li>
+              <Link href="/about" className="py-2 hover:text-signal">
+                {t("nav.about")}
+              </Link>
+            </li>
+          </ul>
         </nav>
-        <div className="ms-auto flex items-center gap-2 text-sm">
+        <div className="ms-auto flex flex-wrap items-center gap-2 text-sm">
+          <AccountLink withSignUp />
           <Link href="/" locale={other} lang={other} aria-label={t("nav.otherLanguageLabel")} className="px-3 py-3 hover:text-signal">
             {t("nav.otherLanguage")}
           </Link>
@@ -77,7 +88,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
               <span aria-hidden="true" dir="ltr" className="absolute start-0 top-[18%] font-mono text-[11px] text-faint">{t("hero.axisTop")}</span>
               <span aria-hidden="true" dir="ltr" className="absolute bottom-[14%] start-0 font-mono text-[11px] text-faint">{t("hero.axisBottom")}</span>
               <span aria-hidden="true" dir="ltr" className="absolute end-0 top-[52%] font-mono text-[11px] text-signal-soft">{t("hero.point")}</span>
-              <span aria-hidden="true" dir="ltr" className="absolute inset-x-0 bottom-0 text-center font-mono text-[11px] text-faint">{t("hero.factors")}</span>
+              <span aria-hidden="true" dir="auto" className="absolute inset-x-0 bottom-0 text-center font-mono text-[11px] text-faint">{t("hero.factors")}</span>
             </div>
           </figure>
         </section>
@@ -139,6 +150,9 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
       <footer className="flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-line px-4 py-8 text-[13px] text-faint sm:px-12">
         <Mark size={22} className="text-photon" />
         <p className="max-w-3xl flex-1">{t("footer.status")}</p>
+        <Link href="/about" className="text-photon hover:text-signal">
+          {t("nav.about")}
+        </Link>
       </footer>
     </div>
   );

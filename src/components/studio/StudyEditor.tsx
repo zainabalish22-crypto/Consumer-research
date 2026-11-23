@@ -3,6 +3,8 @@
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "@/i18n/navigation";
+import { useOfferToAssistant } from "@/lib/assistant/context";
+import { studyOutline } from "@/lib/assistant/outline";
 import { repo } from "@/lib/study/repo";
 import type { Study } from "@/lib/study/types";
 import { ResponsesPanel } from "./ResponsesPanel";
@@ -61,6 +63,8 @@ export function StudyEditor({ id }: { id: string }) {
   const t = useTranslations("studio");
   const locale = useLocale();
   const { study, update, saving, flush } = useStudy(id);
+  // The assistant can read the study's wording and structure (never its responses).
+  useOfferToAssistant(study ? { title: study.name, detail: studyOutline(study) } : null);
   const [tab, setTab] = useState<Tab>("flow");
   const [copied, setCopied] = useState(false);
 

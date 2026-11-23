@@ -16,7 +16,8 @@
     "sections": "Sections",
     "home": "Asdaa Lab, home",
     "studio": "Studio",
-    "tools": "Tools"
+    "tools": "Tools",
+    "about": "About"
   },
   "hero": {
     "eyebrow": "Research instrument · Arabic / English · Free",
@@ -26,10 +27,10 @@
     "primary": "Walk the shopping village",
     "secondary": "See the tools",
     "figureLabel": "A cube of light points that turns with the pointer. Three points glow brighter: the variables under study.",
-    "axisTop": "0.000",
-    "axisBottom": "1.000",
+    "axisTop": "q4_trust = 5",
+    "axisBottom": "acc_204.pagerank = 0.031",
     "point": "store_3.entered",
-    "factors": "condition × target_brand × offer"
+    "factors": "village · shop · forms · network · sentiment"
   },
   "modules": {
     "fig": "Fig. 01 · Tools",
@@ -148,7 +149,7 @@
     }
   },
   "footer": {
-    "status": "Asdaa Lab is in development. The shopping village, e-commerce simulator and forms are working prototypes; the two analysis tools are being built.",
+    "status": "Asdaa Lab is in development. The shopping village, e-commerce simulator, forms and sentiment analysis work; social network analysis is being built.",
     "scenes": "Scene library"
   },
   "studio": {
@@ -875,6 +876,67 @@
       "wrong": "The email or password is incorrect.",
       "locked": "Too many attempts. Wait 15 minutes and try again.",
       "failed": "Something went wrong on our side. Please try again."
+    }
+  },
+  "assistant": {
+    "open": "Ask the assistant",
+    "title": "Research assistant",
+    "close": "Close the assistant",
+    "clear": "New chat",
+    "reading": "Reading: {title}",
+    "readingNothing": "Not reading any study on this page",
+    "intro": "I can read the study you have open, help you design it, check question wording, translate between Arabic and English, and show you around Asdaa Lab.",
+    "general": {
+      "s1": "What can I do with Asdaa Lab?",
+      "s2": "Help me turn a research idea into a study",
+      "s3": "Which tool fits my research question?"
+    },
+    "study": {
+      "s1": "Check the wording of my questions",
+      "s2": "Suggest attention and manipulation checks",
+      "s3": "Translate my questions into Arabic"
+    },
+    "placeholder": "Ask about your study or the platform",
+    "send": "Send",
+    "thinking": "Writing…",
+    "disclaimer": "The assistant can be wrong. Check its suggestions before you use them. It reads your study text, never participants' answers.",
+    "keyButton": "Your key",
+    "keyLabel": "Your Anthropic API key",
+    "keyHint": "Optional: add your own Anthropic API key to go beyond the daily limit.",
+    "keyUsing": "Your own key is in use. Paste a new one to replace it.",
+    "keySave": "Save",
+    "keyRemove": "Remove my key",
+    "keyPrivacy": "The key is kept only in this browser and sent with each question. It is never stored on our server.",
+    "errors": {
+      "signIn": "Sign in to use the assistant.",
+      "notSetUp": "The assistant is not set up yet. Add your own Anthropic key under “Your key”, or ask the site's host to add one.",
+      "badKey": "That API key was not accepted. Check it under “Your key”.",
+      "limit": "You've reached today's limit. Try again tomorrow, or add your own key under “Your key”.",
+      "busy": "The assistant is busy. Try again in a minute.",
+      "declined": "The assistant could not answer this request.",
+      "unavailable": "The assistant is unavailable right now. Try again later.",
+      "bad": "That message could not be sent.",
+      "failed": "Something went wrong. Try again."
+    }
+  },
+  "about": {
+    "title": "About Asdaa Lab",
+    "lead": "Asdaa Lab is a free research platform in Arabic and English for media, communication and social science researchers. It helps you build realistic studies and analyse what you collect, in one place.",
+    "name": "Asdaa (أصداء) is Arabic for “echoes”.",
+    "who": {
+      "title": "Who it is for",
+      "body": "Researchers and postgraduate students who need studies that work in Arabic, English or both, without paying for software or licences."
+    },
+    "what": "What you can do",
+    "how": {
+      "title": "How it works",
+      "items": [
+        "Everything is bilingual: studies, questions and exported files can be in Arabic, English or both, with right-to-left layout where it is needed.",
+        "You build a study in the studio and share it with participants through a link.",
+        "The analysis tools read your files on your own device. The files are not uploaded to a server.",
+        "For now, studies are saved in your own browser. Shared storage comes with the database.",
+        "An optional research assistant helps you design studies. It reads your study's wording, never participants' answers."
+      ]
     }
   }
 }

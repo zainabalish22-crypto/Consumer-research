@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import { AssistantPanel } from "@/components/assistant/AssistantPanel";
 import { Wordmark } from "@/components/site/Logo";
 import { Link, usePathname } from "@/i18n/navigation";
 
@@ -29,6 +30,7 @@ export function StudioShell({ children }: { children: React.ReactNode }) {
         {t("local")}
       </p>
       {children}
+      <AssistantPanel />
     </div>
   );
 }

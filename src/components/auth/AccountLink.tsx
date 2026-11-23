@@ -5,8 +5,11 @@ import { useEffect, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { signOut } from "@/lib/auth/actions";
 
-/** Header account area: "Sign in" for visitors, or the researcher's email and "Sign out". */
-export function AccountLink() {
+/**
+ * Header account area: "Sign in" (and, where asked, "Create account") for visitors, or the
+ * researcher's email and "Sign out".
+ */
+export function AccountLink({ withSignUp = false }: { withSignUp?: boolean }) {
   const t = useTranslations("auth");
   const locale = useLocale();
   const [user, setUser] = useState<{ email: string } | null | undefined>(undefined);
@@ -20,9 +23,16 @@ export function AccountLink() {
   if (user === undefined) return <span className="h-11 w-20" aria-hidden="true" />;
   if (!user)
     return (
-      <Link href="/sign-in" className="inline-flex min-h-11 items-center px-3 text-sm hover:text-signal">
-        {t("signIn")}
-      </Link>
+      <span className="flex items-center gap-1 text-sm">
+        <Link href="/sign-in" className="inline-flex min-h-11 items-center px-3 hover:text-signal">
+          {t("signIn")}
+        </Link>
+        {withSignUp && (
+          <Link href="/sign-up" className="inline-flex min-h-11 items-center px-3 text-signal hover:text-signal-soft">
+            {t("signUp")}
+          </Link>
+        )}
+      </span>
     );
   return (
     <form action={signOut} className="flex items-center gap-2 text-sm">

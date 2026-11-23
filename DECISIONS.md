@@ -2,6 +2,15 @@
 
 Choices made during the rebuild, newest first. `docs/PLATFORM_BRIEF.md` is the functional specification; where a decision here changes it, the decision says so.
 
+## 2026-11-23 · Research assistant (small), shorter homepage, About page
+
+- **Assistant, kept small on purpose** (owner: "like Anara but on a very small scale … help read and design the studies"). A panel in the studio and tools pages. It reads only what a page offers: the open study's wording and structure (`src/lib/assistant/outline.ts`), never responses or uploaded analysis files. It helps with study outlines, question wording, checks, translation, and finding things on the platform. No paper library yet.
+- **Who pays:** both (owner's choice). The host's `ANTHROPIC_API_KEY` in Vercel covers signed-in researchers up to `ASSISTANT_DAILY_LIMIT` questions a day (default 30), counted in `assistant_usage`. A researcher can add their own key in the panel; it stays in their browser, goes with each request, and is never stored on the server.
+- **Model:** Claude Opus 5.5 at low effort for short answers, streamed; instructions cached; server-side refusal fallback on. Safeguards from the brief are in the instructions (no invented references, no validated-scale claims, suggestions apart from facts, nothing applied automatically).
+- **Checked locally:** signed-out and no-key replies, and an invalid key reaching Anthropic and being refused. A real answer needs a key and was not tested here.
+- **Homepage:** hero, five one-line tool cards, principles, footer; sign in / create account in the header; About link. Details moved to each tool's own page (`/tools/village`, `/tools/shop`, `/tools/forms` are new). Hero figure labels now come from three tools and the caption names all five.
+- **About page** at `/about` in both languages.
+
 ## 2026-11-23 · Name: Asdaa Lab, on asdaalab.com
 
 - **The platform is renamed Asdaa Lab** (owner, 2026-11-23). On Arabic pages it is written أصداء لاب (owner's choice over a full translation or keeping Latin letters). The wordmark shows ASDAA LAB on English pages and أصداء لاب in Noto Kufi Arabic on Arabic pages. The name lives in `src/config/brand.ts`; page titles read it from there.

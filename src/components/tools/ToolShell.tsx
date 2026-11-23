@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
+import { AssistantPanel } from "@/components/assistant/AssistantPanel";
 import { AccountLink } from "@/components/auth/AccountLink";
 import { Wordmark } from "@/components/site/Logo";
 import { Link, usePathname } from "@/i18n/navigation";
@@ -32,6 +33,7 @@ export function ToolShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       <div className="flex-1">{children}</div>
+      <AssistantPanel />
     </div>
   );
 }
