@@ -1,3 +1,4 @@
+import { conditionColumns, exportQuestions } from "./engine";
 import type { Question, Session, Study } from "./types";
 
 /** CSV cell: quoted when needed; UTF-8 safe for Arabic. */
@@ -7,8 +8,9 @@ const cell = (v: unknown) => {
 };
 const csv = (rows: unknown[][]) => "﻿" + rows.map((r) => r.map(cell).join(",")).join("\r\n") + "\r\n";
 
+/** The questions as they appear in the data (a within-subjects section once per level). */
 export function questionsOf(study: Study): Question[] {
-  return study.blocks.flatMap((b) => (b.type === "questions" ? b.questions.filter((q) => q.type !== "info") : []));
+  return exportQuestions(study);
 }
 
 /** Answer columns for one question: one column, or one per row (matrix), option (multiple) or rank. */
@@ -34,7 +36,8 @@ export function participantsTable(study: Study, sessions: Session[]): { header: 
   const qs = questionsOf(study);
   const cols = qs.flatMap(columns);
   const paramKeys = [...new Set(sessions.flatMap((s) => Object.keys(s.params)))].sort();
-  const header = ["session_id", "study_version", "test", "status", "lang", "started_at", "finished_at", "duration_s", ...paramKeys.map((k) => `param_${k}`), ...cols.map((c) => c.name), "attention_failed", "basket_items", "basket_value", "products_viewed", "searches"];
+  const conds = conditionColumns(study.design);
+  const header = ["session_id", "study_version", "test", "status", "lang", ...conds.map((c) => c.name), "started_at", "finished_at", "duration_s", ...paramKeys.map((k) => `param_${k}`), ...cols.map((c) => c.name), "attention_failed", "basket_items", "basket_value", "products_viewed", "searches"];
   const rows = sessions.map((s) => {
     const dur = s.finishedAt ? Math.round((Date.parse(s.finishedAt) - Date.parse(s.startedAt)) / 1000) : "";
     const basket = s.basket ?? [];
@@ -44,6 +47,7 @@ export function participantsTable(study: Study, sessions: Session[]): { header: 
       s.test ? 1 : 0,
       s.status,
       s.lang,
+      ...conds.map((c) => c.get(s.assignment)),
       s.startedAt,
       s.finishedAt ?? "",
       dur,
@@ -70,12 +74,14 @@ export function eventsCsv(sessions: Session[]) {
 /** Codebook: variable, label in both languages, type, values. */
 export function codebookCsv(study: Study) {
   const header = ["variable", "label_en", "label_ar", "type", "values"];
+  // Condition columns first: their values are the level values, labelled in both languages.
+  const condRows = (study.design?.factors ?? []).filter((f) => f.levels.length).map((f) => [f.kind === "between" ? `cond_${f.name}` : `order_${f.name}`, f.name, f.name, f.kind === "between" ? "condition" : "order (levels in the order shown)", f.levels.map((l) => `${l.value}=${l.label.en ?? l.label.ar ?? ""}`).join("; ")]);
   const rows = questionsOf(study).flatMap((q) => {
     const values = (q.options ?? []).map((o) => `${o.value}=${o.label.en ?? o.label.ar ?? ""}`).join("; ");
     const scale = q.scale ? `1=${q.scale.left.en ?? ""} … ${q.scale.points}=${q.scale.right.en ?? ""}` : q.range ? `${q.range.min}–${q.range.max}` : "";
     return columns(q).map((c) => [c.name, q.text.en ?? "", q.text.ar ?? "", q.type, values || scale]);
   });
-  return csv([header, ...rows]);
+  return csv([header, ...condRows, ...rows]);
 }
 
 /** Export column names for one question. */

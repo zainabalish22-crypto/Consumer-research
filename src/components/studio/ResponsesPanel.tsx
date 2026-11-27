@@ -108,7 +108,7 @@ function Summary({ study, sessions, L }: { study: Study; sessions: Session[]; L:
   return (
     <div className="flex flex-col gap-4">
       {questionsOf(study).map((q) => (
-        <QuestionSummary key={q.id} q={q} answers={sessions.map((s) => s.answers[q.variable]).filter(answered) as Answer[]} L={L} />
+        <QuestionSummary key={q.variable} q={q} answers={sessions.map((s) => s.answers[q.variable]).filter(answered) as Answer[]} L={L} />
       ))}
     </div>
   );
@@ -318,7 +318,7 @@ function Individual({ study, sessions, L }: { study: Study; sessions: Session[];
       {questionsOf(study).map((q) => {
         const text = show(q, s.answers[q.variable]);
         return (
-          <section key={q.id} className="flex flex-col gap-1.5 rounded-lg border border-line-2 bg-carbon p-4">
+          <section key={q.variable} className="flex flex-col gap-1.5 rounded-lg border border-line-2 bg-carbon p-4">
             <h3 className="text-sm text-dim" dir="auto">
               {tx(q.text, L) || q.variable}
             </h3>

@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
-import type { Banner, Lang, Product, Shop, Study } from "@/lib/study/types";
+import type { Banner, Design, Lang, Product, ProductVariant, Shop, Study } from "@/lib/study/types";
 import { useMediaUrl } from "@/lib/study/useMedia";
 import { money, tx, uid } from "@/lib/study/util";
 import { Button, Icon, IconButton, L10nInput, MediaInput, NumberInput, Panel, Select, TextInput, Toggle } from "./ui";
@@ -157,6 +157,7 @@ export function ShopEditor({ study, update }: { study: Study; update: Update }) 
                     ))}
                   </div>
                   <Toggle label={t("sponsored")} checked={!!p.sponsored} onChange={(v) => setProduct(p.id, { sponsored: v })} />
+                  <ProductVariants p={p} design={study.design} lang={langs[0] ?? "en"} onChange={(variants) => setProduct(p.id, { variants })} />
                   <NumberInput label={t("rating")} value={p.rating} onChange={(v) => setProduct(p.id, { rating: v === undefined ? undefined : Math.min(5, Math.max(0, v)) })} />
                   <fieldset className="flex flex-col gap-2">
                     <legend className="mb-1 text-[13px] font-medium text-mist">{t("reviews")}</legend>
@@ -192,4 +193,50 @@ export function ShopEditor({ study, update }: { study: Study; update: Update }) 
 function Thumb({ src }: { src?: string }) {
   const { url } = useMediaUrl(src);
   return <div className="h-11 w-11 shrink-0 overflow-hidden rounded bg-carbon">{url && <img src={url} alt="" className="h-full w-full object-cover" />}</div>;
+}
+
+/**
+ * A product's price, previous price, offer and sponsored placement per condition. Empty fields
+ * keep the product's normal values.
+ */
+function ProductVariants({ p, design, lang, onChange }: { p: Product; design: Design | undefined; lang: Lang; onChange: (v: ProductVariant[] | undefined) => void }) {
+  const t = useTranslations("studio.design");
+  const factors = (design?.factors ?? []).filter((f) => f.kind === "between" && f.levels.length);
+  if (!factors.length) return null;
+  const find = (factor: string, level: string) => p.variants?.find((v) => v.when.factor === factor && v.when.level === level);
+  function patch(factor: string, level: string, part: Partial<ProductVariant>) {
+    const others = (p.variants ?? []).filter((v) => !(v.when.factor === factor && v.when.level === level));
+    const next: ProductVariant = { ...(find(factor, level) ?? { when: { factor, level } }), ...part };
+    const empty = next.price === undefined && next.was === undefined && !next.offer?.[lang] && next.sponsored === undefined;
+    const all = empty ? others : [...others, next];
+    onChange(all.length ? all : undefined);
+  }
+  const num = (v: string) => (v.trim() === "" || Number.isNaN(Number(v)) ? undefined : Number(v));
+  const field = "min-h-10 w-full rounded-md border border-line-2 bg-void px-2 text-sm text-photon focus:border-ice focus:outline-none";
+  return (
+    <fieldset className="flex flex-col gap-2 rounded-md border border-dashed border-line-3 p-3">
+      <legend className="px-1 text-[13px] font-medium text-mist">{t("productVariants")}</legend>
+      <p className="text-xs text-faint">{t("productVariantsHint")}</p>
+      {factors.map((f) =>
+        f.levels.map((l) => {
+          const v = find(f.id, l.id);
+          return (
+            <div key={`${f.id}-${l.id}`} className="grid gap-2 sm:grid-cols-[8rem_5rem_5rem_1fr_auto] sm:items-center">
+              <span className="text-[13px] text-mist">
+                {f.name}: {l.label[lang] || l.value}
+              </span>
+              <input inputMode="decimal" aria-label={t("vPrice")} placeholder={t("vPrice")} value={v?.price ?? ""} onChange={(e) => patch(f.id, l.id, { price: num(e.target.value) })} className={field} />
+              <input inputMode="decimal" aria-label={t("vWas")} placeholder={t("vWas")} value={v?.was ?? ""} onChange={(e) => patch(f.id, l.id, { was: num(e.target.value) })} className={field} />
+              <input aria-label={t("vOffer")} placeholder={t("vOffer")} value={v?.offer?.[lang] ?? ""} onChange={(e) => patch(f.id, l.id, { offer: e.target.value ? { [lang]: e.target.value } : undefined })} className={field} />
+              <select aria-label={t("vSponsored")} value={v?.sponsored === undefined ? "" : v.sponsored ? "yes" : "no"} onChange={(e) => patch(f.id, l.id, { sponsored: e.target.value === "" ? undefined : e.target.value === "yes" })} className={field}>
+                <option value="">{t("vSponsoredSame")}</option>
+                <option value="yes">{t("vSponsoredYes")}</option>
+                <option value="no">{t("vSponsoredNo")}</option>
+              </select>
+            </div>
+          );
+        }),
+      )}
+    </fieldset>
+  );
 }

@@ -7,12 +7,13 @@
  * cards with hairline borders, corner brackets on the selected card, mono labels, and colour
  * only where something needs attention.
  */
+import { QuestionVariants, StepConditions } from "./ConditionControls";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { MediaView } from "@/components/run/Media";
 import { QUESTION_TYPES, newBlock, newQuestion, starterShop } from "@/lib/study/defaults";
 import { MEDIA_LIMITS, repo } from "@/lib/study/repo";
-import type { Block, L10n, Lang, MediaRef, Option, Question, QuestionType, Study } from "@/lib/study/types";
+import type { Block, Design, L10n, Lang, MediaRef, Option, Question, QuestionType, Study } from "@/lib/study/types";
 import { uid, variableName } from "@/lib/study/util";
 
 type Update = (fn: (s: Study) => Study) => void;
@@ -216,6 +217,8 @@ export function FormEditor({ study, update, openShop }: { study: Study; update: 
                       <Grow value={g(blk.title)} onChange={(v) => patchBlock(blk.id, { title: s(blk.title, v) })} placeholder={first ? t("formTitle") : t("sectionTitle")} className={`${line} font-display font-light ${first ? "text-[32px] leading-tight" : "text-[22px]"}`} />
                       <Grow value={g(blk.description)} onChange={(v) => patchBlock(blk.id, { description: s(blk.description, v) })} placeholder={first ? t("formDescription") : t("sectionDescription")} className={`${line} text-[14px]`} />
                       {!first && <p className="text-xs text-faint">{t("pageBreak")}</p>}
+                      {active === blk.id && study.design?.factors.length ? <StepConditions block={blk} design={study.design} L={L} onChange={(p) => patchBlock(blk.id, p)} /> : null}
+                      {blk.showFor || blk.repeatFor ? <ConditionBadge block={blk} study={study} L={L} /> : null}
                     </div>
                   </section>
 
@@ -248,6 +251,7 @@ export function FormEditor({ study, update, openShop }: { study: Study; update: 
                       earlier={allQs.slice(0, allQs.indexOf(q)).filter((x) => LOGIC_SOURCES.has(x.type))}
                       duplicateVar={q.type !== "info" && allQs.filter((x) => x.variable === q.variable).length > 1}
                       pick={upload.pick}
+                      design={study.design}
                     />
                   ))}
                 </div>
@@ -278,6 +282,8 @@ export function FormEditor({ study, update, openShop }: { study: Study; update: 
                       <input aria-label="✗" value={g(blk.decline)} onChange={(e) => patchBlock(blk.id, { decline: s(blk.decline, e.target.value) })} className={boxed} />
                     </div>
                   )}
+                  {active === blk.id && blk.type !== "end" && study.design?.factors.length ? <StepConditions block={blk} design={study.design} L={L} onChange={(p) => patchBlock(blk.id, p)} /> : null}
+                  {blk.showFor ? <ConditionBadge block={blk} study={study} L={L} /> : null}
                   {blk.type === "shop" && (
                     <button type="button" onClick={openShop} className="min-h-11 self-start rounded-md border border-line-3 px-4 text-sm font-semibold hover:border-photon">
                       {t("editShop")}
@@ -320,7 +326,7 @@ export function FormEditor({ study, update, openShop }: { study: Study; update: 
 
 /* ------------------------------------------------------------------ question card */
 
-function QuestionCard({ q, L, active, activate, change, remove, duplicate, move, canUp, canDown, earlier, duplicateVar, pick }: { q: Question; L: Lang; active: boolean; activate: () => void; change: (q: Question) => void; remove: () => void; duplicate: () => void; move: (d: number) => void; canUp: boolean; canDown: boolean; earlier: Question[]; duplicateVar: boolean; pick: (accept: string, then: (ref: MediaRef) => void) => void }) {
+function QuestionCard({ q, L, active, activate, change, remove, duplicate, move, canUp, canDown, earlier, duplicateVar, pick, design }: { q: Question; L: Lang; active: boolean; activate: () => void; change: (q: Question) => void; remove: () => void; duplicate: () => void; move: (d: number) => void; canUp: boolean; canDown: boolean; earlier: Question[]; duplicateVar: boolean; pick: (accept: string, then: (ref: MediaRef) => void) => void; design?: Design }) {
   const t = useTranslations("studio.form");
   const qt = useTranslations("studio.qtypes");
   const ex = useTranslations("studio.extras");
@@ -545,6 +551,9 @@ function QuestionCard({ q, L, active, activate, change, remove, duplicate, move,
         )}
       </div>
 
+      {active && design?.factors.length ? <QuestionVariants q={q} design={design} L={L} pick={pick} onChange={(variants) => change({ ...q, variants })} /> : null}
+      {!active && q.variants?.length ? <p className="mx-6 mb-2 text-xs text-ice">◆ {q.variants.length}</p> : null}
+
       {/* Card footer, as in Google Forms */}
       <div className="mx-6 flex flex-wrap items-center justify-end gap-1 border-t border-line-2 py-1.5">
         <IconBtn label={t("moveUp")} d={I.up} onClick={() => move(-1)} disabled={!canUp} />
@@ -673,4 +682,22 @@ function Preview({ q, L }: { q: Question; L: Lang }) {
       </span>
     );
   return <span className={`border-b border-dotted border-line-2 pb-2 text-[14px] text-faint ${q.type === "long" ? "w-4/5" : "w-1/2"}`}>{t(q.type === "short" ? "shortAnswer" : q.type === "long" ? "longAnswer" : q.type === "date" ? "dateAnswer" : "numberAnswer")}</span>;
+}
+
+/** "Only for: disclosure = Label" / "Repeats for each brand", shown on a step that is not selected. */
+function ConditionBadge({ block, study, L }: { block: Block; study: Study; L: Lang }) {
+  const t = useTranslations("studio.design");
+  const name = (id: string) => study.design?.factors.find((f) => f.id === id);
+  const parts = (block.showFor ?? []).map((c) => {
+    const f = name(c.factor);
+    return `${f?.name ?? "?"} = ${c.levels.map((id) => f?.levels.find((l) => l.id === id)).map((l) => l?.label[L] || l?.value).join(" / ")}`;
+  });
+  const repeat = block.type === "questions" && block.repeatFor ? name(block.repeatFor)?.name : undefined;
+  return (
+    <p className="font-mono text-[11px] text-ice">
+      {parts.length > 0 && <span>{t("onlyFor", { list: parts.join(" · ") })}</span>}
+      {parts.length > 0 && repeat && " · "}
+      {repeat && <span>{t("repeatsFor", { name: repeat })}</span>}
+    </p>
+  );
 }

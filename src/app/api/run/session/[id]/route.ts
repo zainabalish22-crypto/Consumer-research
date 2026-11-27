@@ -19,5 +19,5 @@ export async function PUT(req: Request, { params }: Ctx) {
   const result = await saveSession((await params).id, tokenOf(req), next);
   if (result === "notFound") return fail("notFound", 404);
   if (result === "finished") return fail("finished", 409);
-  return ok({ saved: true });
+  return ok({ saved: true, quotaFull: result === "quotaFull" });
 }

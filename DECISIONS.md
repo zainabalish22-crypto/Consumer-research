@@ -2,6 +2,17 @@
 
 Choices made during the rebuild, newest first. `docs/PLATFORM_BRIEF.md` is the functional specification; where a decision here changes it, the decision says so.
 
+## 2026-11-27 · Phase 2: experimental engine
+
+Owner's choices: factors and levels; steps shown per condition plus wording/media variants per item; within-subjects designs with Latin-square order; balancing on completed responses plus attempts started in the last 30 minutes; quotas on screening answers, with "study is full" and the screened-out return link. Built:
+
+- **Model** (`types.ts`): `Design` (factors with levels, between or within; quotas), `showFor` on any step, `repeatFor` / `shuffleQuestions` / `shuffleWith` on sections, `variants` on questions and products, and the participant's `assignment`.
+- **Engine** (`src/lib/study/engine.ts`, shared): least-used cell for between factors (ties at random), least-used cyclic Latin-square row for within factors, the participant's plan (steps filtered, sections shuffled, repeated per level with `_<value>` variable suffixes and `{factor}` placeholders filled), product variants, export columns.
+- **Server:** assignment at start from counted sessions; quota check on every save while active (counts completed and recent attempts with the same answer); previews can choose a condition and never count.
+- **Studio:** Design tab (factors, levels, quotas, how-to); per-step "Experiment" box (show to, repeat, shuffles) and badges; "Wording per condition" on questions; "Per condition" prices/offers/sponsored on products; "Preview as" a condition.
+- **Data:** `cond_<factor>` and `order_<factor>` columns, per-level answer columns, codebook and SPSS labels.
+- **Checked:** engine tests (600 simulated participants split 300/300; each brand first 200 times); 12 simulated participants on a 2×3 study (completed 4/4 by condition, quota of 2 women enforced, 4 screened out); preview as the label group shows the label page, "About Bunn" and the AI-label wording; table shows the new columns; production build passes. Fixed on the way: runner hydration mismatch on test sessions; duplicate keys in the responses views for repeated sections.
+
 ## 2026-11-27 · Phase 1: studies run end to end from accounts
 
 Agreed flows are in `docs/LAB_FLOWS.md`. Built:

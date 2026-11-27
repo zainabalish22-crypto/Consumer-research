@@ -68,16 +68,17 @@ export const attempts = {
 export const runApi = {
   load: (id: string, test: boolean) => call<{ study: Study; state: RunState }>(`/api/run/${encodeURIComponent(id)}${test ? "?test=1" : ""}`),
 
-  start: (id: string, lang: Lang, params: Record<string, string>, test: boolean) =>
+  /** Starts an attempt. A preview may ask for a particular condition (factor id → level id). */
+  start: (id: string, lang: Lang, params: Record<string, string>, test: boolean, preview?: Record<string, string>) =>
     call<{ session: Session; token: string }>(`/api/run/${encodeURIComponent(id)}/start`, {
       method: "POST",
-      body: JSON.stringify({ lang, params, test, deviceKey: deviceKey(id) }),
+      body: JSON.stringify({ lang, params, test, deviceKey: deviceKey(id), preview: test ? preview : undefined }),
     }),
 
   resume: (sid: string, token: string) => call<{ session: Session }>(`/api/run/session/${encodeURIComponent(sid)}`, { headers: { "x-session-token": token } }),
 
   save: (session: Session, token: string, keepalive = false) =>
-    call<{ saved: true }>(`/api/run/session/${encodeURIComponent(session.id)}`, {
+    call<{ saved: true; quotaFull?: boolean }>(`/api/run/session/${encodeURIComponent(session.id)}`, {
       method: "PUT",
       body: JSON.stringify(session),
       headers: { "x-session-token": token },

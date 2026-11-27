@@ -2,7 +2,8 @@ import "server-only";
 
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { sql } from "@/lib/db";
-import { DEFAULT_SETTINGS, type Session, type Study } from "@/lib/study/types";
+import { assign, betweenFactors, usageOf } from "@/lib/study/engine";
+import { DEFAULT_SETTINGS, type Assignment, type Design, type Session, type Study } from "@/lib/study/types";
 
 /**
  * Studies, published versions and participant sessions, stored in the database. Researcher
@@ -146,16 +147,67 @@ export async function sessionByToken(id: string, token: string): Promise<Session
   return rows[0]?.data ?? null;
 }
 
+// Balancing and quotas count completed sessions and ones started in the last 30 minutes.
+
+/**
+ * The condition for a new participant: the least-used combination of levels, counting
+ * completed and recently started sessions. A preview may ask for a particular combination.
+ */
+export async function assignmentFor(study: Study, preview?: Record<string, string>): Promise<Assignment> {
+  const design = study.design;
+  if (preview) {
+    const a = assign(design, usageOf(design, []));
+    for (const f of betweenFactors(design)) if (preview[f.id] && f.levels.some((l) => l.id === preview[f.id])) a.between[f.id] = preview[f.id];
+    return a;
+  }
+  if (!design?.factors.length) return { between: {}, orders: {} };
+  const rows = await sql<{ a: Assignment | null }>`select data->'assignment' as a from sessions_run where study_id = ${study.id} and not test and (status = 'completed' or (status = 'active' and started_at > now() - interval '30 minutes'))`;
+  return assign(design, usageOf(design, rows.map((r) => r.a).filter((x): x is Assignment => !!x)));
+}
+
+/** The design of the version a session answers (the draft's for a preview). */
+async function designOf(session: Session): Promise<Design | undefined> {
+  const rows = session.test
+    ? await sql<{ d: Design | null }>`select data->'design' as d from studies where id = ${session.studyId}`
+    : await sql<{ d: Design | null }>`select data->'design' as d from study_versions where study_id = ${session.studyId} and version = ${session.version}`;
+  return rows[0]?.d ?? undefined;
+}
+
+/** Whether this participant's screening answer falls in a quota that is already full. */
+async function quotaFull(session: Session): Promise<boolean> {
+  const quotas = (await designOf(session))?.quotas ?? [];
+  for (const q of quotas) {
+    const answer = session.answers[q.variable];
+    const hit = Array.isArray(answer) ? answer.includes(q.value) : answer !== undefined && String(answer) === q.value;
+    if (!hit) continue;
+    const rows = await sql<{ n: number }>`select count(*)::int as n from sessions_run
+      where study_id = ${session.studyId} and not test and id <> ${session.id} and (status = 'completed' or (status = 'active' and started_at > now() - interval '30 minutes'))
+      and (data->'answers'->>${q.variable} = ${q.value} or (jsonb_typeof(data->'answers'->${q.variable}) = 'array' and data->'answers'->${q.variable} ? ${q.value}))`;
+    if ((rows[0]?.n ?? 0) >= q.target) return true;
+  }
+  return false;
+}
+
 const FINAL = new Set(["completed", "screened", "declined"]);
 
-/** Saves progress. A finished session can no longer be changed. */
-export async function saveSession(id: string, token: string, next: Session): Promise<"ok" | "notFound" | "finished"> {
+/**
+ * Saves progress. A finished session can no longer be changed. A participant whose screening
+ * answer falls in a full quota is screened out ("quotaFull").
+ */
+export async function saveSession(id: string, token: string, next: Session): Promise<"ok" | "notFound" | "finished" | "quotaFull"> {
   const current = await sessionByToken(id, token);
   if (!current) return "notFound";
   if (FINAL.has(current.status)) return "finished";
   // Identity fields stay as they were created; only progress changes.
-  const merged: Session = { ...next, id: current.id, studyId: current.studyId, version: current.version, test: current.test, startedAt: current.startedAt, params: current.params };
-  const status = ["active", ...FINAL].includes(merged.status) ? merged.status : "active";
+  const merged: Session = { ...next, id: current.id, studyId: current.studyId, version: current.version, test: current.test, startedAt: current.startedAt, params: current.params, assignment: current.assignment };
+  let status = ["active", ...FINAL].includes(merged.status) ? merged.status : "active";
+  let full = false;
+  if (status !== "declined" && Object.keys(merged.answers).length && (await quotaFull(merged))) {
+    full = true;
+    status = "screened";
+    merged.flags = [...new Set([...merged.flags, "quota_full"])];
+    merged.finishedAt ??= new Date().toISOString();
+  }
   await sql`update sessions_run set data = ${json({ ...merged, status })}::jsonb, status = ${status}, updated_at = now() where id = ${id}`;
-  return "ok";
+  return full ? "quotaFull" : "ok";
 }

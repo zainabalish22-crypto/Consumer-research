@@ -46,6 +46,20 @@ Your key covers **30 questions per researcher per day**; researchers can add the
 
 Send from **hello@asdaalab.com through Microsoft 365** (owner's choice). Needs the mailbox created and SMTP sending allowed; if Microsoft blocks it, ask the owner before switching to a free sending service. Unlocks: password reset, email confirmation, study invitations.
 
+## Asdaa Research Agent (award entry, agreed 2026-11-27)
+
+For the Dubai Chamber of Digital Economy's **Create AI Agents Championship**: Community category, owner applying alone. Registration and all materials in **English**; submission (prototype, pitch deck, demo video) in January 2027; finalists show a fully working agent live (final early May 2027). Existing projects may enter with a new agentic feature; it must be original and protect personal data.
+
+**What it does:** from a research question to a finished study.
+
+1. **Start** from the studio: "Start with the agent", a full-page workspace showing the plan, every step the agent takes, and approve/change buttons. The researcher can write in Arabic or English.
+2. **Plan** (approval 1): research question, hypotheses, variables, design, measures, attention and manipulation checks, sample size note, ethics points.
+3. **Build** (approval 2): the agent creates the study in the studio with tools (welcome, consent, screening, questions, shop step where relevant, end page, run settings). Nothing is published without the researcher.
+4. **Pilot** (approval 3): simulated participants (AI personas, e.g. 20) take the study to catch broken skip logic, confusing wording, length and attention-check problems; the agent proposes fixes. Simulated answers are test data, never mixed with real responses or reported as findings.
+5. **After real data:** checks data quality (speeders, straight-lining, failed attention checks; exclusions confirmed by the researcher), runs the planned analysis, and drafts methods and results in English and Arabic using only computed numbers and no invented references.
+
+**Build stages:** A1 workspace + plan + build (tools on the studio); A2 simulated pilot; A3 data quality, analysis and drafts; A4 application kit (English pitch deck, demo video script, written answers). The owner registers on the challenge platform themselves. **Order (owner, 2026-11-27): complete the portal (phases 2–6) first, then the award stages A1–A4.**
+
 ## Build order
 
 1. **Run a real study end to end:** account storage (studies, versions, sessions, media in Vercel Blob), signed-in studio, browser import, publish/versions, participant runner from the server with resume, repeat rule, closing date and manual close, three return links, language by link, unfinished responses, deletion, account deletion. Correct the shop/forms page text that describes the engine as built.

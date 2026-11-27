@@ -1,11 +1,11 @@
 import { currentUser } from "@/lib/auth";
-import { alreadyTookPart, createSession, draftForOwner, publishedStudy } from "@/lib/server/studies";
+import { alreadyTookPart, assignmentFor, createSession, draftForOwner, publishedStudy } from "@/lib/server/studies";
 import { fail, ok, readJson } from "@/lib/server/http";
 import { DEFAULT_SETTINGS, type Lang, type Study } from "@/lib/study/types";
 
 export const dynamic = "force-dynamic";
 
-type Body = { lang?: Lang; params?: Record<string, string>; deviceKey?: string; test?: boolean };
+type Body = { lang?: Lang; params?: Record<string, string>; deviceKey?: string; test?: boolean; preview?: Record<string, string> };
 
 /**
  * Starts a participant's attempt. Checks that the study is open and applies its repeat rule.
@@ -38,9 +38,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if (!test && (await alreadyTookPart(study, deviceKey, panelId))) return fail("repeat", 409);
 
   const lang: Lang = body.lang && study.languages.includes(body.lang) ? body.lang : study.languages[0];
+  // The condition: balanced on the server; a preview may choose one.
+  const preview = test && body.preview && typeof body.preview === "object" ? body.preview : test ? {} : undefined;
+  const assignment = await assignmentFor(study, preview);
   const startedAt = new Date().toISOString();
   const { session, token } = await createSession(
-    { studyId: study.id, version: study.version, test, lang, status: "active", startedAt, params: linkParams, answers: {}, flags: [], events: [{ t: 0, type: "session_start", data: { lang } }] },
+    { studyId: study.id, version: study.version, test, lang, status: "active", startedAt, params: linkParams, answers: {}, flags: [], events: [{ t: 0, type: "session_start", data: { lang } }], assignment },
     test ? null : deviceKey,
     test ? null : panelId,
   );

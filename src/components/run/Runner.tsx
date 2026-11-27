@@ -1,7 +1,9 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { planSteps, resolveShop } from "@/lib/study/engine";
 import { attempts, returnUrl, runApi, type RunState } from "@/lib/study/runApi";
 import type { Answer, Block, Lang, Session, Study, StudyEvent } from "@/lib/study/types";
 import { tx } from "@/lib/study/util";
@@ -35,7 +37,8 @@ export function Runner({ id }: { id: string }) {
   const blockStart = useRef(0);
   const stepRef = useRef(0);
 
-  const params = useMemo(() => (typeof window === "undefined" ? new URLSearchParams() : new URLSearchParams(window.location.search)), []);
+  // Read the same way on the server and in the browser, so the first render matches.
+  const params = useSearchParams();
   const test = params.get("test") === "1";
 
   // Load the study, then continue a saved attempt or start a new one.
@@ -67,7 +70,13 @@ export function Runner({ id }: { id: string }) {
       params.forEach((v, k) => {
         if (k !== "test") p[k] = v;
       });
-      const started = await runApi.start(id, lang, p, test);
+      const preview: Record<string, string> = {};
+      for (const pair of (params.get("cond") ?? "").split(",")) {
+        const [f, l] = pair.split(":");
+        if (f && l) preview[f] = l;
+      }
+      delete p.cond;
+      const started = await runApi.start(id, lang, p, test, preview);
       if (!live) return;
       if (!started.ok) {
         const known: Stop[] = ["repeat", "closed", "notPublished", "offline"];
@@ -90,14 +99,21 @@ export function Runner({ id }: { id: string }) {
     dirty.current = false;
     if (s.status === "active") attempts.write(s.studyId, s.test, { sid: s.id, token: tokenRef.current, step: at });
     else attempts.clear(s.studyId, s.test);
-    await runApi.save(s, tokenRef.current);
+    const res = await runApi.save(s, tokenRef.current);
+    // The server screened the participant out because their quota group is full.
+    if (res.ok && res.body.quotaFull) {
+      const full: Session = { ...s, status: "screened", flags: [...new Set([...s.flags, "quota_full"])], finishedAt: s.finishedAt ?? new Date().toISOString() };
+      sessionRef.current = full;
+      setSession(full);
+      attempts.clear(s.studyId, s.test);
+    }
   }, []);
 
   const log: Log = useCallback(
     (type, data) => {
       const s = sessionRef.current;
       if (!s) return;
-      const block = study?.blocks[stepRef.current]?.id;
+      const block = stepsRef.current[stepRef.current]?.key;
       s.events.push({ t: Date.now() - Date.parse(s.startedAt), type, block, data });
       dirty.current = true;
     },
@@ -123,7 +139,11 @@ export function Runner({ id }: { id: string }) {
     };
   }, []);
 
-  const block: Block | undefined = study?.blocks[step];
+  // This participant's own sequence: their condition, repeated sections and shuffles.
+  const steps = useMemo(() => (study && session ? planSteps(study, session.assignment, session.id) : []), [study, session?.id, session?.assignment]); // eslint-disable-line react-hooks/exhaustive-deps
+  const stepsRef = useRef(steps);
+  stepsRef.current = steps;
+  const block: Block | undefined = steps[step]?.block;
   stepRef.current = step;
 
   // Record entering each block.
@@ -141,7 +161,7 @@ export function Runner({ id }: { id: string }) {
     log("block_leave", { kind: block.type, ms: Date.now() - blockStart.current });
     const updated: Session = { ...s, answers: { ...s.answers, ...answers }, flags: [...new Set([...s.flags, ...flags])] };
     const n = step + 1;
-    if (study.blocks[n]?.type === "end" || n >= study.blocks.length) {
+    if (steps[n]?.block.type === "end" || n >= steps.length) {
       updated.status = "completed";
       updated.finishedAt = new Date().toISOString();
       updated.events.push({ t: Date.now() - Date.parse(s.startedAt), type: "completed" });
@@ -200,7 +220,7 @@ export function Runner({ id }: { id: string }) {
     return (
       <Frame accent={accent} test={test}>
         <Card>
-          <p className="text-lg">{t("screened")}</p>
+          <p className="text-lg">{session.flags.includes("quota_full") ? t("stop.full") : t("screened")}</p>
           <ReturnLink href={back("screened")} />
         </Card>
       </Frame>
@@ -221,7 +241,7 @@ export function Runner({ id }: { id: string }) {
       <div data-light style={{ ["--accent" as string]: study.shop.accent || accent }} className="min-h-dvh bg-white text-[#16181B]">
         {test && <TestBar />}
         <ShopView
-          shop={study.shop}
+          shop={resolveShop(study.shop, session.assignment)}
           lang={lang}
           seed={session.id}
           log={log}
@@ -235,9 +255,10 @@ export function Runner({ id }: { id: string }) {
     );
 
   // Steps before the closing message; a single-page form shows no step counter.
-  const total = study.blocks.filter((x) => x.type !== "end").length;
-  const firstPage = study.blocks.findIndex((x) => x.type === "questions") === step;
-  const last = study.blocks[step + 1]?.type === "end" || step + 1 >= study.blocks.length;
+  const total = steps.filter((x) => x.block.type !== "end").length;
+  const firstPage = steps.findIndex((x) => x.block.type === "questions") === step;
+  const last = steps[step + 1]?.block.type === "end" || step + 1 >= steps.length;
+  const stepKey = steps[step]?.key ?? block.id;
   return (
     <Frame accent={accent} test={test}>
       {total > 1 && block.type !== "end" && (
@@ -246,11 +267,11 @@ export function Runner({ id }: { id: string }) {
         </p>
       )}
       {block.type === "questions" ? (
-        <QuestionsPage key={block.id} block={block} lang={lang} seed={session.id} prior={session.answers} header={firstPage ? study.header : undefined} last={last} onNext={next} onScreenOut={screenOut} />
+        <QuestionsPage key={stepKey} block={block} lang={lang} seed={session.id} prior={session.answers} header={firstPage ? study.header : undefined} last={last} onNext={next} onScreenOut={screenOut} />
       ) : block.type === "end" ? (
         <EndView block={block} lang={lang} returnTo={back("completed")} />
       ) : (
-        <BlockView key={block.id} block={block} lang={lang} onNext={next} onDecline={decline} log={log} seed={session.id} />
+        <BlockView key={stepKey} block={block} lang={lang} onNext={next} onDecline={decline} log={log} seed={session.id} />
       )}
     </Frame>
   );

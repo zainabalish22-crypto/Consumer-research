@@ -6,12 +6,14 @@ export function spssSyntax(study: Study, lang: Lang) {
   const esc = (s: string) => s.replace(/'/g, "''").replace(/\s+/g, " ").trim();
   const lab = (l: L10n | undefined) => esc(l?.[lang] || l?.en || l?.ar || "");
   const qs = questionsOf(study);
+  // Condition columns hold text level values (e.g. "label"); they get a variable label only.
+  const conds = (study.design?.factors ?? []).filter((f) => f.levels.length).map((f) => `  ${f.kind === "between" ? "cond" : "order"}_${f.name} '${esc(f.kind === "between" ? `Condition: ${f.name}` : `Order of ${f.name} levels`)}'`);
   const lines = [
     `* Asdaa Lab: labels for participants.csv (study version ${study.version}).`,
     "* Open the CSV in SPSS first (File > Import Data > CSV, UTF-8), then run this file.",
     "",
     "VARIABLE LABELS",
-    qs.flatMap((q) => columnsOf(q).map((c) => `  ${c} '${lab(q.text)}'`)).join("\n") + ".",
+    [...conds, ...qs.flatMap((q) => columnsOf(q).map((c) => `  ${c} '${lab(q.text)}'`))].join("\n") + ".",
     "",
   ];
   for (const q of qs) {

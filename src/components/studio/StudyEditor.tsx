@@ -7,12 +7,14 @@ import { useOfferToAssistant } from "@/lib/assistant/context";
 import { studyOutline } from "@/lib/assistant/outline";
 import { repo, type StudyMeta } from "@/lib/study/repo";
 import { DEFAULT_SETTINGS, type Study, type StudySettings } from "@/lib/study/types";
+import { cells } from "@/lib/study/engine";
+import { DesignPanel } from "./DesignPanel";
 import { ResponsesPanel } from "./ResponsesPanel";
 import { FormEditor } from "./FormEditor";
 import { ShopEditor } from "./ShopEditor";
 import { Button, Icon, MediaInput, Select, TextInput, inputCls } from "./ui";
 
-type Tab = "flow" | "shop" | "settings" | "data";
+type Tab = "flow" | "design" | "shop" | "settings" | "data";
 
 /** Loads one study from the account and saves every change shortly after it is made. */
 function useStudy(id: string) {
@@ -85,6 +87,7 @@ export function StudyEditor({ id }: { id: string }) {
   const locale = useLocale();
   const { study, meta, update, saving, saveFailed, flush, publish } = useStudy(id);
   const [publishing, setPublishing] = useState(false);
+  const [previewAs, setPreviewAs] = useState("");
   // The assistant can read the study's wording and structure (never its responses).
   useOfferToAssistant(study ? { title: study.name, detail: studyOutline(study) } : null);
   const [tab, setTab] = useState<Tab>("flow");
@@ -102,7 +105,17 @@ export function StudyEditor({ id }: { id: string }) {
     );
 
   const hasShop = study.blocks.some((b) => b.type === "shop");
-  const tabs: Tab[] = hasShop ? ["flow", "shop", "data", "settings"] : ["flow", "data", "settings"];
+  const tabs: Tab[] = hasShop ? ["flow", "design", "shop", "data", "settings"] : ["flow", "design", "data", "settings"];
+  // Preview as a particular condition (one entry per combination of between-subjects levels).
+  const combos = cells(study.design).filter((c) => Object.keys(c).length > 0);
+  const comboLabel = (c: Record<string, string>) =>
+    Object.entries(c)
+      .map(([fid, lid]) => {
+        const f = study.design?.factors.find((x) => x.id === fid);
+        const l = f?.levels.find((x) => x.id === lid);
+        return `${f?.name}: ${l?.label[study.languages[0] ?? "en"] || l?.value}`;
+      })
+      .join(" · ");
   const settings: StudySettings = { ...DEFAULT_SETTINGS, ...study.settings };
   const link = typeof window !== "undefined" ? `${window.location.origin}/${study.languages[0] ?? locale}/s/${study.id}` : "";
   const published = meta?.publishedVersion ?? null;
@@ -134,10 +147,21 @@ export function StudyEditor({ id }: { id: string }) {
           </span>
         </div>
         <div className="flex flex-wrap gap-2">
+          {combos.length > 0 && (
+            <select aria-label={t("previewAs")} value={previewAs} onChange={(e) => setPreviewAs(e.target.value)} className="min-h-11 max-w-[16rem] rounded-md border border-line-3 bg-void px-3 text-sm text-photon">
+              <option value="">{t("previewRandom")}</option>
+              {combos.map((c) => (
+                <option key={JSON.stringify(c)} value={Object.entries(c).map(([fid, lid]) => `${fid}:${lid}`).join(",")}>
+                  {comboLabel(c)}
+                </option>
+              ))}
+            </select>
+          )}
           <Button
             onClick={async () => {
               await flush();
-              window.open(`/${study.languages[0] ?? locale}/s/${study.id}?test=1`, "_blank", "noopener");
+              const cond = previewAs ? `&cond=${encodeURIComponent(previewAs)}` : "";
+              window.open(`/${study.languages[0] ?? locale}/s/${study.id}?test=1${cond}`, "_blank", "noopener");
             }}
           >
             {t("preview")}
@@ -196,6 +220,7 @@ export function StudyEditor({ id }: { id: string }) {
 
       <div role="tabpanel">
         {tab === "flow" && <FormEditor study={study} update={update} openShop={() => setTab("shop")} />}
+        {tab === "design" && <DesignPanel study={study} update={update} />}
         {tab === "shop" && hasShop && study.shop && <ShopEditor study={study} update={update} />}
         {tab === "settings" && <Settings study={study} update={update} />}
         {tab === "data" && <ResponsesPanel study={study} />}

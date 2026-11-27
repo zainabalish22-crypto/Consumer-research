@@ -59,13 +59,30 @@ export type Question = {
   showIf?: { variable: string; op: "is" | "is_not"; value: string };
   /** Screening: these answers end the study politely (single choice and dropdown). */
   endIf?: string[];
+  /** Different wording or media for some conditions (between-subjects levels). */
+  variants?: Variant[];
 };
 
-type Base = { id: string };
+type Base = {
+  id: string;
+  /** Show this step only to participants in these levels (every listed factor must match). */
+  showFor?: { factor: string; levels: string[] }[];
+};
 export type WelcomeBlock = Base & { type: "welcome"; title: L10n; body: L10n; duration?: L10n; contact?: string };
 export type ConsentBlock = Base & { type: "consent"; title: L10n; body: L10n; agree: L10n; decline: L10n; version: string };
 export type InstructionsBlock = Base & { type: "instructions"; title: L10n; body: L10n; image?: MediaRef };
-export type QuestionsBlock = Base & { type: "questions"; title: L10n; description?: L10n; questions: Question[] };
+export type QuestionsBlock = Base & {
+  type: "questions";
+  title: L10n;
+  description?: L10n;
+  questions: Question[];
+  /** Within-subjects: show this section once per level of this factor, in Latin-square order. */
+  repeatFor?: string;
+  /** Show the questions of this section in a random order. */
+  shuffleQuestions?: boolean;
+  /** Shuffle this section's position with the other sections marked the same way. */
+  shuffleWith?: boolean;
+};
 export type MediaBlock = Base & { type: "media"; title: L10n; body: L10n; items: MediaRef[]; minSeconds?: number };
 export type ShopBlock = Base & { type: "shop"; title: L10n; body: L10n };
 export type EndBlock = Base & { type: "end"; title: L10n; body: L10n; code?: string; redirect?: string };
@@ -94,6 +111,8 @@ export type Product = {
   rating?: number;
   reviews?: Review[];
   attributes?: { key: L10n; value: L10n }[];
+  /** Different price, offer or placement for some conditions. */
+  variants?: ProductVariant[];
 };
 export type Banner = { id: string; image: MediaRef; headline: L10n; placement: "hero" | "listing"; product?: string };
 export type Shop = {
@@ -127,6 +146,8 @@ export type Study = {
   header?: MediaRef;
   /** How the study runs once published: repeats, closing and panel return links. */
   settings?: StudySettings;
+  /** The experiment: factors, levels and quotas. Absent for a study without conditions. */
+  design?: Design;
   createdAt: string;
   updatedAt: string;
 };
@@ -176,7 +197,38 @@ export type Session = {
   answers: Record<string, Answer>;
   /** Attention checks failed (variable names). */
   flags: string[];
+  /** The condition this participant was given, decided on the server at the start. */
+  assignment?: Assignment;
   /** Simulated basket at checkout. */
   basket?: { product: string; qty: number; price: number }[];
   events: StudyEvent[];
 };
+
+/* ------------------------------------------------------------ experimental engine */
+
+/** One level of a factor, e.g. "label" of the factor "disclosure". "value" is what the export shows. */
+export type Level = { id: string; value: string; label: L10n };
+
+/**
+ * A factor. Between-subjects: each participant gets one level. Within-subjects: each participant
+ * sees every level, in an order taken from a Latin square.
+ */
+export type Factor = { id: string; name: string; kind: "between" | "within"; levels: Level[] };
+
+/** A target number of completed participants with a given answer to a screening question. */
+export type Quota = { id: string; variable: string; value: string; target: number };
+
+export type Design = { factors: Factor[]; quotas: Quota[] };
+
+/** A condition: one level of one factor (by id). */
+export type When = { factor: string; level: string };
+
+export type Variant = { when: When; text?: L10n; help?: L10n; media?: MediaRef };
+
+export type ProductVariant = { when: When; price?: number; was?: number; offer?: L10n; sponsored?: boolean };
+
+/**
+ * What a participant was given: one level per between-subjects factor (factor id → level id),
+ * and an order of levels per within-subjects factor (factor id → level ids).
+ */
+export type Assignment = { between: Record<string, string>; orders: Record<string, string[]> };
