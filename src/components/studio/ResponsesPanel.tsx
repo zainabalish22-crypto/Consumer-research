@@ -18,20 +18,36 @@ export function ResponsesPanel({ study }: { study: Study }) {
   const t = useTranslations("studio.data");
   const [all, setAll] = useState<Session[]>([]);
   const [includeTest, setIncludeTest] = useState(false);
+  const [includeUnfinished, setIncludeUnfinished] = useState(false);
   const [view, setView] = useState<View>("summary");
   const load = useCallback(() => repo.listSessions(study.id).then(setAll), [study.id]);
   useEffect(() => {
     load();
     return onDataChange(load);
   }, [load]);
-  const sessions = useMemo(() => all.filter((s) => includeTest || !s.test), [all, includeTest]);
+  // Unfinished attempts are kept, marked, and left out unless the researcher includes them.
+  const sessions = useMemo(() => all.filter((s) => (includeTest || !s.test) && (includeUnfinished || s.status !== "active")), [all, includeTest, includeUnfinished]);
+  const real = all.filter((s) => !s.test);
+  const tally = (st: Session["status"]) => real.filter((s) => s.status === st).length;
+  async function deleteAll() {
+    const n = all.filter((s) => includeTest || !s.test).length;
+    if (!n || !window.confirm(t("confirmDeleteAll", { n }))) return;
+    await repo.deleteAllSessions(study.id, includeTest);
+  }
   const L: Lang = study.languages[0] ?? "en";
   const slug = study.name.replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "").toLowerCase() || "study";
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-        <h2 className="font-display text-3xl font-light">{t("count", { n: sessions.length })}</h2>
+        <div className="flex flex-col gap-1">
+          <h2 className="font-display text-3xl font-light">{t("count", { n: sessions.length })}</h2>
+          <p className="font-mono text-xs text-faint">{t("breakdown", { completed: tally("completed"), unfinished: tally("active"), screened: tally("screened"), declined: tally("declined") })}</p>
+        </div>
+        <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-mist">
+          <input type="checkbox" checked={includeUnfinished} onChange={(e) => setIncludeUnfinished(e.target.checked)} className="h-5 w-5 accent-[#FF6A2B]" />
+          {t("includeUnfinished")}
+        </label>
         <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm text-mist">
           <input type="checkbox" checked={includeTest} onChange={(e) => setIncludeTest(e.target.checked)} className="h-5 w-5 accent-[#FF6A2B]" />
           {t("includeTest")}
@@ -45,6 +61,9 @@ export function ResponsesPanel({ study }: { study: Study }) {
           </Button>
           <Button onClick={() => download(`${slug}-codebook.csv`, codebookCsv(study))}>{t("codebook")}</Button>
           <Button onClick={() => download(`${slug}-labels.sps`, spssSyntax(study, L))}>{t("spss")}</Button>
+          <Button kind="danger" disabled={!all.length} onClick={deleteAll}>
+            {t("deleteAll")}
+          </Button>
         </div>
       </div>
 
@@ -279,7 +298,7 @@ function Individual({ study, sessions, L }: { study: Study; sessions: Session[];
           <span className="rtl:rotate-180">›</span>
         </IconButton>
         <span className="ms-auto">
-          <IconButton label={t("deleteSession")} onClick={() => window.confirm(t("deleteSession")) && repo.deleteSession(s.id)}>
+          <IconButton label={t("deleteSession")} onClick={() => window.confirm(t("confirmDeleteOne")) && repo.deleteSession(s.id)}>
             {Icon.x}
           </IconButton>
         </span>

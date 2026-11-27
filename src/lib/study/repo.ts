@@ -1,82 +1,31 @@
 "use client";
 
-/**
- * Where studies, sessions and uploaded media are kept. For now: this browser (IndexedDB), so
- * everything works without an account or a server. The API is async and small on purpose, so a
- * database (e.g. Neon Postgres) can replace it later without changing the screens.
- */
+import { upload } from "@vercel/blob/client";
 import type { Session, Study } from "./types";
 
-const DB = "asdaa-lab";
-/** The database's name before the platform was renamed. Its contents are copied once into the
- *  new database, the first time it is created, and the old one is left untouched. */
-const OLD_DB = "tessellum";
-const VERSION = 1;
-const STORES = ["studies", "sessions", "media"] as const;
-type StoreName = (typeof STORES)[number];
+/**
+ * The researcher's studies, saved to their account on the server. The screens call these few
+ * functions only, so storage stays in one place.
+ */
+export type StudyMeta = { publishedVersion: number | null; publishedAt?: string; changedSincePublish: boolean };
+export type StudyRow = { study: Study; meta: StudyMeta };
+export type StudyListRow = StudyRow & { completed: number; unfinished: number };
 
-const done = (r: IDBRequest) => new Promise<void>((res, rej) => ((r.onsuccess = () => res()), (r.onerror = () => rej(r.error))));
-
-async function copyOldData(target: IDBDatabase) {
-  const existing = (await indexedDB.databases?.()) ?? [];
-  if (!existing.some((x) => x.name === OLD_DB)) return;
-  const openOld = indexedDB.open(OLD_DB);
-  await done(openOld);
-  const old = openOld.result;
-  try {
-    for (const name of STORES) {
-      if (!old.objectStoreNames.contains(name)) continue;
-      const read = old.transaction(name).objectStore(name).getAll();
-      await done(read);
-      await new Promise<void>((res, rej) => {
-        const tx = target.transaction(name, "readwrite");
-        for (const row of read.result) tx.objectStore(name).put(row);
-        tx.oncomplete = () => res();
-        tx.onerror = () => rej(tx.error);
-      });
-    }
-  } finally {
-    old.close();
+/** A failed request, with the server's error code (e.g. "signIn", "notFound"). */
+export class RepoError extends Error {
+  constructor(public code: string) {
+    super(code);
   }
 }
 
-let opening: Promise<IDBDatabase> | null = null;
-function db(): Promise<IDBDatabase> {
-  if (!opening)
-    opening = new Promise((resolve, reject) => {
-      const req = indexedDB.open(DB, VERSION);
-      let created = false;
-      req.onupgradeneeded = (e) => {
-        created = e.oldVersion === 0;
-        const d = req.result;
-        if (!d.objectStoreNames.contains("studies")) d.createObjectStore("studies", { keyPath: "id" });
-        if (!d.objectStoreNames.contains("sessions")) d.createObjectStore("sessions", { keyPath: "id" }).createIndex("studyId", "studyId");
-        if (!d.objectStoreNames.contains("media")) d.createObjectStore("media", { keyPath: "id" });
-      };
-      req.onsuccess = () => {
-        const d = req.result;
-        // A copy that fails leaves the new database empty but working; the old data stays safe.
-        if (created) copyOldData(d).catch(() => {}).finally(() => resolve(d));
-        else resolve(d);
-      };
-      req.onerror = () => reject(req.error);
-    });
-  return opening;
+async function call<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, { cache: "no-store", ...init, headers: { "Content-Type": "application/json", ...init?.headers } });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new RepoError(body.error ?? "failed");
+  return body as T;
 }
 
-function run<T>(store: StoreName, mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest<T>): Promise<T> {
-  return db().then(
-    (d) =>
-      new Promise<T>((resolve, reject) => {
-        const tx = d.transaction(store, mode);
-        const req = fn(tx.objectStore(store));
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-      }),
-  );
-}
-
-/** Notifies open screens (in this tab and others) that saved data changed. */
+/* Tell open screens (this tab and others) that saved data changed. */
 const channel = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("asdaa-lab-data") : null;
 const listeners = new Set<() => void>();
 channel?.addEventListener("message", () => listeners.forEach((l) => l()));
@@ -91,36 +40,74 @@ export function onDataChange(fn: () => void) {
   };
 }
 
+/** Image and video limits shown to the researcher before uploading. */
+export const MEDIA_LIMITS = { image: 5 * 1024 * 1024, video: 50 * 1024 * 1024 };
+
+let uploadMode: Promise<"blob" | "local"> | null = null;
+
 export const repo = {
-  listStudies: async () => (await run<Study[]>("studies", "readonly", (s) => s.getAll())).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
-  getStudy: (id: string) => run<Study | undefined>("studies", "readonly", (s) => s.get(id)),
+  listStudies: async () => (await call<{ studies: StudyListRow[] }>("/api/studies")).studies,
+
+  getStudy: async (id: string): Promise<StudyRow | null> => {
+    try {
+      return await call<StudyRow>(`/api/studies/${encodeURIComponent(id)}`);
+    } catch (e) {
+      if (e instanceof RepoError && e.code === "notFound") return null;
+      throw e;
+    }
+  },
+
+  /** Saves (or creates) a draft. Returns the publish state after saving. */
   saveStudy: async (study: Study) => {
-    await run("studies", "readwrite", (s) => s.put({ ...study, updatedAt: new Date().toISOString() }));
+    const r = await call<{ meta: StudyMeta }>(`/api/studies/${encodeURIComponent(study.id)}`, { method: "PUT", body: JSON.stringify(study) });
     changed();
+    return r.meta;
   },
+
   deleteStudy: async (id: string) => {
-    await run("studies", "readwrite", (s) => s.delete(id));
-    for (const sess of await repo.listSessions(id)) await run("sessions", "readwrite", (s) => s.delete(sess.id));
+    await call(`/api/studies/${encodeURIComponent(id)}`, { method: "DELETE" });
     changed();
   },
 
-  listSessions: async (studyId: string) =>
-    (await run<Session[]>("sessions", "readonly", (s) => s.index("studyId").getAll(studyId))).sort((a, b) => a.startedAt.localeCompare(b.startedAt)),
-  getSession: (id: string) => run<Session | undefined>("sessions", "readonly", (s) => s.get(id)),
-  saveSession: async (session: Session) => {
-    await run("sessions", "readwrite", (s) => s.put(session));
+  /** Locks the current draft as the next published version. */
+  publish: async (id: string) => {
+    const r = await call<StudyRow>(`/api/studies/${encodeURIComponent(id)}/publish`, { method: "POST" });
     changed();
+    return r;
   },
+
+  listSessions: async (studyId: string) => (await call<{ sessions: Session[] }>(`/api/studies/${encodeURIComponent(studyId)}/sessions`)).sessions,
+
   deleteSession: async (id: string) => {
-    await run("sessions", "readwrite", (s) => s.delete(id));
+    await call(`/api/sessions/${encodeURIComponent(id)}`, { method: "DELETE" });
     changed();
   },
 
-  /** Stores an uploaded file; returns its reference ("media:<id>"). */
-  putMedia: async (file: Blob, name: string) => {
-    const id = crypto.randomUUID();
-    await run("media", "readwrite", (s) => s.put({ id, name, type: file.type, blob: file }));
-    return `media:${id}`;
+  deleteAllSessions: async (studyId: string, includeTest: boolean) => {
+    await call(`/api/studies/${encodeURIComponent(studyId)}/sessions${includeTest ? "?test=1" : ""}`, { method: "DELETE" });
+    changed();
   },
-  getMedia: (ref: string) => run<{ id: string; name: string; type: string; blob: Blob } | undefined>("media", "readonly", (s) => s.get(ref.replace(/^media:/, ""))),
+
+  /**
+   * Uploads an image or video and returns its address. Throws RepoError("tooLarge" or
+   * "badType") before uploading when the file is not accepted.
+   */
+  putMedia: async (file: Blob, name: string): Promise<string> => {
+    const isVideo = file.type.startsWith("video/");
+    if (!isVideo && !file.type.startsWith("image/")) throw new RepoError("badType");
+    if (file.size > (isVideo ? MEDIA_LIMITS.video : MEDIA_LIMITS.image)) throw new RepoError("tooLarge");
+    uploadMode ??= call<{ mode: "blob" | "local" }>("/api/media/upload").then((r) => r.mode);
+    if ((await uploadMode) === "local") {
+      const form = new FormData();
+      form.append("file", file, name);
+      const res = await fetch("/api/media/local", { method: "POST", body: form });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new RepoError(body.error ?? "failed");
+      return body.url as string;
+    }
+    const safe = name.replace(/[^\w.-]+/g, "-").slice(-80) || "file";
+    const blob = await upload(`media/${safe}`, file, { access: "public", handleUploadUrl: "/api/media/upload", contentType: file.type, multipart: file.size > 8 * 1024 * 1024 });
+    await call("/api/media", { method: "POST", body: JSON.stringify({ url: blob.url, pathname: blob.pathname, size: file.size, contentType: file.type }) });
+    return blob.url;
+  },
 };

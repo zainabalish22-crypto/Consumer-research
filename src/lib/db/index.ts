@@ -57,6 +57,54 @@ async function migrate(run: Runner) {
       at timestamptz not null default now()
     )`,
     `create index if not exists login_attempts_email on login_attempts(email, at)`,
+    // Studies belong to a researcher. "data" is the editable draft; each publish freezes a copy
+    // in study_versions, which is what participants receive.
+    `create table if not exists studies (
+      id text primary key,
+      owner_id text not null references users(id) on delete cascade,
+      data jsonb not null,
+      published_version int,
+      published_at timestamptz,
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    )`,
+    `create index if not exists studies_owner on studies(owner_id, updated_at desc)`,
+    // When the study's content (not its run settings) last changed, to show unpublished changes.
+    `alter table studies add column if not exists content_updated_at timestamptz not null default now()`,
+    `create table if not exists study_versions (
+      study_id text not null references studies(id) on delete cascade,
+      version int not null,
+      data jsonb not null,
+      published_at timestamptz not null default now(),
+      primary key (study_id, version)
+    )`,
+    // One row per participant attempt. The token lets only that participant's browser save to it.
+    `create table if not exists sessions_run (
+      id text primary key,
+      study_id text not null references studies(id) on delete cascade,
+      version int not null,
+      test boolean not null default false,
+      status text not null,
+      device_key text,
+      panel_id text,
+      token_hash text not null,
+      data jsonb not null,
+      started_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    )`,
+    `create index if not exists sessions_run_study on sessions_run(study_id, started_at)`,
+    `create index if not exists sessions_run_device on sessions_run(study_id, device_key)`,
+    `create index if not exists sessions_run_panel on sessions_run(study_id, panel_id)`,
+    // Uploaded images and videos, so they can be removed when an account is deleted.
+    `create table if not exists media (
+      id text primary key,
+      owner_id text not null references users(id) on delete cascade,
+      url text not null,
+      pathname text not null,
+      size bigint not null default 0,
+      content_type text not null default '',
+      created_at timestamptz not null default now()
+    )`,
     // Assistant requests paid by the host's key, counted per researcher per day for the limit.
     `create table if not exists assistant_usage (
       user_id text not null references users(id) on delete cascade,

@@ -56,6 +56,7 @@ async function Engine() {
   return (
     <section className={`${panel} lg:grid lg:grid-cols-2 lg:items-center lg:gap-10`} aria-labelledby="engine-h">
       <div className="flex flex-col gap-4">
+        <span className="tracked self-start font-mono text-xs uppercase tracking-[0.14em] text-faint">○ {t("building")}</span>
         <h2 id="engine-h" className={H2}>
           {t("title")}
         </h2>

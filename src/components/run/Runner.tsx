@@ -2,10 +2,9 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { usePathname, useRouter } from "@/i18n/navigation";
-import { repo } from "@/lib/study/repo";
+import { attempts, returnUrl, runApi, type RunState } from "@/lib/study/runApi";
 import type { Answer, Block, Lang, Session, Study, StudyEvent } from "@/lib/study/types";
-import { tx, uid } from "@/lib/study/util";
+import { tx } from "@/lib/study/util";
 import { useMediaUrl } from "@/lib/study/useMedia";
 import { Card, PrimaryButton } from "./parts";
 import { QuestionsPage } from "./Questions";
@@ -14,97 +13,115 @@ import { ShopView } from "./ShopView";
 /** Logs one event into the session (kept in memory; saved with the session). */
 export type Log = (type: string, data?: StudyEvent["data"]) => void;
 
-const key = (studyId: string, test: boolean) => `tess-session-${studyId}${test ? "-test" : ""}`;
+/** Screens shown instead of the study. */
+type Stop = "loading" | "notFound" | "notPublished" | "closed" | "repeat" | "offline" | null;
 
 /**
- * The participant experience: one block at a time, light and calm. Sessions resume after an
- * accidental refresh; preview sessions (?test=1) are flagged and never mixed with real data.
+ * The participant experience, one block at a time, light and calm. The study comes from the
+ * server (the newest published version; the owner's draft with ?test=1). Progress is saved as
+ * the participant goes, so closing the page and opening the link again in the same browser
+ * continues where they stopped. The link's language (/en or /ar) decides the study language.
  */
 export function Runner({ id }: { id: string }) {
   const t = useTranslations("run");
   const locale = useLocale() as Lang;
-  const router = useRouter();
-  const pathname = usePathname();
-  const [study, setStudy] = useState<Study | null | undefined>(undefined);
+  const [study, setStudy] = useState<Study | null>(null);
+  const [stop, setStop] = useState<Stop>("loading");
   const [session, setSession] = useState<Session | null>(null);
   const [step, setStep] = useState(0);
   const sessionRef = useRef<Session | null>(null);
+  const tokenRef = useRef("");
+  const dirty = useRef(false);
   const blockStart = useRef(0);
   const stepRef = useRef(0);
 
   const params = useMemo(() => (typeof window === "undefined" ? new URLSearchParams() : new URLSearchParams(window.location.search)), []);
   const test = params.get("test") === "1";
 
+  // Load the study, then continue a saved attempt or start a new one.
   useEffect(() => {
-    repo.getStudy(id).then(async (s) => {
-      setStudy(s ?? null);
-      if (!s) return;
-      // Resume a session started in this tab (also survives switching language).
-      const saved = sessionStorage.getItem(key(id, test));
+    let live = true;
+    (async () => {
+      const loaded = await runApi.load(id, test);
+      if (!live) return;
+      if (!loaded.ok) return setStop(loaded.error === "offline" ? "offline" : "notFound");
+      const s = loaded.body.study;
+      setStudy(s);
+      const saved = attempts.read(id, test);
       if (saved) {
-        const [sid, st] = saved.split(":");
-        const sess = await repo.getSession(sid);
-        if (sess && sess.status === "active") {
-          sessionRef.current = sess;
-          setSession(sess);
-          setStep(Number(st) || 0);
+        const r = await runApi.resume(saved.sid, saved.token);
+        if (!live) return;
+        if (r.ok && r.body.session.status === "active") {
+          tokenRef.current = saved.token;
+          sessionRef.current = r.body.session;
+          setSession(r.body.session);
+          setStep(saved.step);
+          return setStop(null);
         }
+        attempts.clear(id, test);
       }
-    });
-  }, [id, test]);
+      const state: RunState = loaded.body.state;
+      if (state !== "open") return setStop(state);
+      const lang: Lang = s.languages.includes(locale) ? locale : s.languages[0];
+      const p: Record<string, string> = {};
+      params.forEach((v, k) => {
+        if (k !== "test") p[k] = v;
+      });
+      const started = await runApi.start(id, lang, p, test);
+      if (!live) return;
+      if (!started.ok) {
+        const known: Stop[] = ["repeat", "closed", "notPublished", "offline"];
+        return setStop(known.includes(started.error as Stop) ? (started.error as Stop) : "notFound");
+      }
+      tokenRef.current = started.body.token;
+      sessionRef.current = started.body.session;
+      attempts.write(id, test, { sid: started.body.session.id, token: started.body.token, step: 0 });
+      setSession(started.body.session);
+      setStop(null);
+    })();
+    return () => {
+      live = false;
+    };
+  }, [id, test, locale, params]);
 
   const save = useCallback(async (s: Session, at: number) => {
     sessionRef.current = s;
     setSession(s);
-    sessionStorage.setItem(key(s.studyId, s.test), `${s.id}:${at}`);
-    await repo.saveSession(s);
+    dirty.current = false;
+    if (s.status === "active") attempts.write(s.studyId, s.test, { sid: s.id, token: tokenRef.current, step: at });
+    else attempts.clear(s.studyId, s.test);
+    await runApi.save(s, tokenRef.current);
   }, []);
 
-  const log: Log = useCallback((type, data) => {
-    const s = sessionRef.current;
-    if (!s) return;
-    const block = study?.blocks[stepRef.current]?.id;
-    s.events.push({ t: Date.now() - Date.parse(s.startedAt), type, block, data });
-  }, [study]);
+  const log: Log = useCallback(
+    (type, data) => {
+      const s = sessionRef.current;
+      if (!s) return;
+      const block = study?.blocks[stepRef.current]?.id;
+      s.events.push({ t: Date.now() - Date.parse(s.startedAt), type, block, data });
+      dirty.current = true;
+    },
+    [study],
+  );
 
-  // Persist events every few seconds, and when the page is hidden.
+  // Save new events every few seconds, and when the page is hidden.
   useEffect(() => {
-    const flush = () => sessionRef.current && repo.saveSession(sessionRef.current);
-    const iv = window.setInterval(flush, 4000);
-    document.addEventListener("visibilitychange", flush);
+    const flush = (keepalive = false) => {
+      const s = sessionRef.current;
+      if (!s || !dirty.current || s.status !== "active") return;
+      dirty.current = false;
+      runApi.save(s, tokenRef.current, keepalive);
+    };
+    const iv = window.setInterval(() => flush(), 8000);
+    const onHide = () => {
+      if (document.visibilityState === "hidden") flush(true);
+    };
+    document.addEventListener("visibilitychange", onHide);
     return () => {
       window.clearInterval(iv);
-      document.removeEventListener("visibilitychange", flush);
+      document.removeEventListener("visibilitychange", onHide);
     };
   }, []);
-
-  function start(lang: Lang) {
-    if (!study) return;
-    const p: Record<string, string> = {};
-    params.forEach((v, k) => {
-      if (k !== "test") p[k] = v.slice(0, 200);
-    });
-    const s: Session = { id: uid(), studyId: study.id, version: study.version, test, lang, status: "active", startedAt: new Date().toISOString(), params: p, answers: {}, flags: [], events: [] };
-    s.events.push({ t: 0, type: "session_start", data: { lang } });
-    save(s, 0).then(() => {
-      if (lang !== locale) router.replace(`${pathname}${window.location.search}`, { locale: lang });
-    });
-  }
-
-  // A form in one language starts straight away, with no language question.
-  const autoStarted = useRef(false);
-  useEffect(() => {
-    if (!study || session || autoStarted.current || study.languages.length !== 1) return;
-    if (study.status !== "published" && !test) return;
-    // Give a saved session a moment to resume first.
-    const id = window.setTimeout(() => {
-      if (sessionRef.current || autoStarted.current) return;
-      autoStarted.current = true;
-      start(study.languages[0]);
-    }, 150);
-    return () => window.clearTimeout(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [study, session]);
 
   const block: Block | undefined = study?.blocks[step];
   stepRef.current = step;
@@ -139,8 +156,6 @@ export function Runner({ id }: { id: string }) {
     if (!s) return;
     log("screened_out");
     await save({ ...s, answers: { ...s.answers, ...answers }, status: "screened", finishedAt: new Date().toISOString() }, step);
-    sessionStorage.removeItem(key(s.studyId, s.test));
-    setStep(-2);
   }
 
   async function decline() {
@@ -148,68 +163,74 @@ export function Runner({ id }: { id: string }) {
     if (!s) return;
     log("consent_declined");
     await save({ ...s, status: "declined", finishedAt: new Date().toISOString() }, step);
-    sessionStorage.removeItem(key(s.studyId, s.test));
-    setStep(-1);
   }
 
-  if (study === undefined) return <Frame><p className="text-[#5C6066]">{t("loading")}</p></Frame>;
-  if (study === null) return <Frame><p>{t("notFound")}</p></Frame>;
-  if (study.status !== "published" && !test) return <Frame><p>{t("notPublished")}</p></Frame>;
+  const accent = study?.accent || "#1F5C4E";
+  const panelId = session?.params[study?.settings?.panelParam || "pid"];
+  const back = (kind: "completed" | "screened" | "declined") => returnUrl(study?.settings?.returns?.[kind], panelId);
 
-  const accent = study.accent || "#1F5C4E";
-  const lang = (session?.lang ?? (study.languages.includes(locale) ? locale : study.languages[0])) as Lang;
-
-  // Language choice before anything else, when the study has both.
-  if (!session) {
-    if (study.languages.length === 1) return <Frame accent={accent} test={test}><p className="text-[#5C6066]">{t("loading")}</p></Frame>;
+  if (stop === "loading")
+    return (
+      <Frame accent={accent} test={test}>
+        <p className="text-[#5C6066]">{t("loading")}</p>
+      </Frame>
+    );
+  if (stop || !study || !session)
     return (
       <Frame accent={accent} test={test}>
         <Card>
-          <h1 className="text-xl font-semibold">
-            <span lang="en">Choose your language</span> · <span lang="ar">اختر لغتك</span>
-          </h1>
-          <div className="mt-5 flex flex-col gap-3">
-            <button type="button" lang="ar" onClick={() => start("ar")} className="h-[52px] rounded-[14px] border-[1.5px] border-[#E3E0D8] px-4 text-start text-base font-medium hover:border-[var(--accent)]" dir="rtl">
-              العربية
-            </button>
-            <button type="button" lang="en" onClick={() => start("en")} className="h-[52px] rounded-[14px] border-[1.5px] border-[#E3E0D8] px-4 text-start text-base font-medium hover:border-[var(--accent)]">
-              English
-            </button>
-          </div>
+          <p className="text-lg">{t(`stop.${stop ?? "notFound"}`)}</p>
         </Card>
       </Frame>
     );
-  }
 
-  if (step === -1 || session.status === "declined")
+  const lang = session.lang;
+
+  if (session.status === "declined")
     return (
       <Frame accent={accent} test={test}>
         <Card>
           <p className="text-lg">{t("declined")}</p>
+          <ReturnLink href={back("declined")} />
         </Card>
       </Frame>
     );
 
-  if (step === -2 || session.status === "screened")
+  if (session.status === "screened")
     return (
       <Frame accent={accent} test={test}>
         <Card>
           <p className="text-lg">{t("screened")}</p>
+          <ReturnLink href={back("screened")} />
         </Card>
       </Frame>
     );
 
-  if (!block) return <Frame accent={accent} test={test}><Card><p>{t("finished")}</p></Card></Frame>;
+  if (!block)
+    return (
+      <Frame accent={accent} test={test}>
+        <Card>
+          <p>{t("finished")}</p>
+          <ReturnLink href={back("completed")} />
+        </Card>
+      </Frame>
+    );
 
   if (block.type === "shop" && study.shop)
     return (
       <div data-light style={{ ["--accent" as string]: study.shop.accent || accent }} className="min-h-dvh bg-white text-[#16181B]">
         {test && <TestBar />}
-        <ShopView shop={study.shop} lang={lang} seed={session.id} log={log} onDone={(basket) => {
-          const s = sessionRef.current!;
-          sessionRef.current = { ...s, basket };
-          next();
-        }} />
+        <ShopView
+          shop={study.shop}
+          lang={lang}
+          seed={session.id}
+          log={log}
+          onDone={(basket) => {
+            const s = sessionRef.current!;
+            sessionRef.current = { ...s, basket };
+            next();
+          }}
+        />
       </div>
     );
 
@@ -226,10 +247,28 @@ export function Runner({ id }: { id: string }) {
       )}
       {block.type === "questions" ? (
         <QuestionsPage key={block.id} block={block} lang={lang} seed={session.id} prior={session.answers} header={firstPage ? study.header : undefined} last={last} onNext={next} onScreenOut={screenOut} />
+      ) : block.type === "end" ? (
+        <EndView block={block} lang={lang} returnTo={back("completed")} />
       ) : (
         <BlockView key={block.id} block={block} lang={lang} onNext={next} onDecline={decline} log={log} seed={session.id} />
       )}
     </Frame>
+  );
+}
+
+/** Sends a panel participant back, with a short pause so they can read the page first. */
+function ReturnLink({ href }: { href: string | undefined }) {
+  const t = useTranslations("run");
+  useEffect(() => {
+    if (!href) return;
+    const id = window.setTimeout(() => (window.location.href = href), 5000);
+    return () => window.clearTimeout(id);
+  }, [href]);
+  if (!href) return null;
+  return (
+    <a href={href} className="mt-6 inline-flex h-[52px] items-center rounded-[14px] bg-[var(--accent)] px-6 font-semibold text-white">
+      {t("returnToPanel")}
+    </a>
   );
 }
 
@@ -316,8 +355,6 @@ function BlockView({ block, lang, onNext, onDecline, log, seed }: { block: Block
       );
     case "media":
       return <MediaBlockView block={block} lang={lang} onNext={() => onNext()} log={log} />;
-    case "end":
-      return <EndView block={block} lang={lang} />;
     default:
       return null;
   }
@@ -359,15 +396,10 @@ function MediaBlockView({ block, lang, onNext, log }: { block: Extract<Block, { 
   );
 }
 
-function EndView({ block, lang }: { block: Extract<Block, { type: "end" }>; lang: Lang }) {
+function EndView({ block, lang, returnTo }: { block: Extract<Block, { type: "end" }>; lang: Lang; returnTo?: string }) {
   const t = useTranslations("run");
-  useEffect(() => {
-    if (!block.redirect) return;
-    const id = window.setTimeout(() => {
-      if (/^https?:\/\//.test(block.redirect!)) window.location.href = block.redirect!;
-    }, 4000);
-    return () => window.clearTimeout(id);
-  }, [block.redirect]);
+  // The panel return link from the study's settings, or the end page's own link (older studies).
+  const href = returnTo ?? (block.redirect && /^https:\/\//.test(block.redirect) ? block.redirect : undefined);
   return (
     <Card>
       <h1 className="text-2xl font-semibold">{tx(block.title, lang)}</h1>
@@ -382,7 +414,7 @@ function EndView({ block, lang }: { block: Extract<Block, { type: "end" }>; lang
           </p>
         </div>
       )}
-      <p className="mt-6 text-sm text-[#5C6066]">{t("finished")}</p>
+      {href ? <ReturnLink href={href} /> : <p className="mt-6 text-sm text-[#5C6066]">{t("finished")}</p>}
     </Card>
   );
 }

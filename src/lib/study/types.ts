@@ -125,9 +125,29 @@ export type Study = {
   accent: string;
   /** Banner image above the form's title. */
   header?: MediaRef;
+  /** How the study runs once published: repeats, closing and panel return links. */
+  settings?: StudySettings;
   createdAt: string;
   updatedAt: string;
 };
+
+/**
+ * Who may take part and when, and where panel participants are sent back to. Return links may
+ * contain {pid}, replaced by the participant's panel ID.
+ */
+export type StudySettings = {
+  /** Allow repeats, or allow one attempt per device, per panel ID, or both. */
+  repeat: "allow" | "device" | "panel" | "both";
+  /** The link parameter that carries the panel ID (Prolific uses PROLIFIC_PID). */
+  panelParam: string;
+  returns: { completed?: string; screened?: string; declined?: string };
+  /** The study stops accepting participants after this moment (ISO date-time). */
+  closesAt?: string;
+  /** Closed by the researcher; reopening clears it. */
+  closed?: boolean;
+};
+
+export const DEFAULT_SETTINGS: StudySettings = { repeat: "both", panelParam: "pid", returns: {} };
 
 /* ------------------------------------------------------------ participants */
 

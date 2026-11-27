@@ -2,6 +2,18 @@
 
 Choices made during the rebuild, newest first. `docs/PLATFORM_BRIEF.md` is the functional specification; where a decision here changes it, the decision says so.
 
+## 2026-11-27 · Phase 1: studies run end to end from accounts
+
+Agreed flows are in `docs/LAB_FLOWS.md`. Built:
+
+- **Account storage.** Studies (`studies`), frozen published versions (`study_versions`), participant attempts (`sessions_run`) and uploads (`media`) live in the database. The studio requires sign-in. Studies left in a browser from before are offered once for import; their images are uploaded and they arrive as drafts.
+- **Media** go to Vercel Blob (store `asdaa-lab-media`, Frankfurt, public, created 2026-11-27) straight from the browser through `/api/media/upload`; images up to 5 MB, videos up to 50 MB. On a developer's computer without `BLOB_READ_WRITE_TOKEN`, files go to a local folder instead. The free plan allows 1 GB stored and 10 GB transferred a month, so long videos are better as links.
+- **Publishing.** Publish freezes the draft as version 1, 2, …; participants get the newest version and each response records its version. "Publish changes" appears only when the study's content changed; run settings (repeats, panel ID name, return links, closing date, Close/Reopen) apply at once without republishing. "Unpublish" became Close/Reopen.
+- **Participants.** Anonymous link; the link's language decides the study language. Each attempt gets a private token kept in the participant's browser, so closing and reopening continues where they stopped and nobody else can write to it. Repeat rule per study (device, panel ID, both, or allowed). Three panel return links (completed, screened out, declined) with `{pid}` filled in. Unfinished attempts are kept and marked.
+- **Data.** Responses tab can include unfinished responses, shows counts by outcome, and deletes one or all responses. Account page deletes the account with all studies, responses and uploaded files after the researcher types their email.
+- **Wording.** The shop and forms pages mark the experimental engine as being built.
+- **Checked locally:** import with an image, publish and republish, participant start, completion and panel return, repeat by device and by panel ID, resume with token, wrong token refused, closing and reopening, settings not flagging unpublished changes, deleting responses, deleting the account; production build passes.
+
 ## 2026-11-23 · Research assistant (small), shorter homepage, About page
 
 - **Assistant, kept small on purpose** (owner: "like Anara but on a very small scale … help read and design the studies"). A panel in the studio and tools pages. It reads only what a page offers: the open study's wording and structure (`src/lib/assistant/outline.ts`), never responses or uploaded analysis files. It helps with study outlines, question wording, checks, translation, and finding things on the platform. No paper library yet.

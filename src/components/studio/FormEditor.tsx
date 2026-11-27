@@ -11,7 +11,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 import { MediaView } from "@/components/run/Media";
 import { QUESTION_TYPES, newBlock, newQuestion, starterShop } from "@/lib/study/defaults";
-import { repo } from "@/lib/study/repo";
+import { MEDIA_LIMITS, repo } from "@/lib/study/repo";
 import type { Block, L10n, Lang, MediaRef, Option, Question, QuestionType, Study } from "@/lib/study/types";
 import { uid, variableName } from "@/lib/study/util";
 
@@ -97,10 +97,14 @@ function useUpload(onError: (msg: string) => void, tooBig: string) {
         const f = e.target.files?.[0];
         e.target.value = "";
         if (!f) return;
-        const limit = f.type.startsWith("video") ? 100 : 10;
-        if (f.size > limit * 1024 * 1024) return onError(tooBig);
+        const limit = f.type.startsWith("video") ? MEDIA_LIMITS.video : MEDIA_LIMITS.image;
+        if (f.size > limit) return onError(tooBig);
         onError("");
-        cb.current(await repo.putMedia(f, f.name));
+        try {
+          cb.current(await repo.putMedia(f, f.name));
+        } catch {
+          onError(tooBig);
+        }
       }}
     />
   );

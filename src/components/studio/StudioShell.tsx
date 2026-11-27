@@ -2,10 +2,11 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import { AssistantPanel } from "@/components/assistant/AssistantPanel";
+import { AccountLink } from "@/components/auth/AccountLink";
 import { Wordmark } from "@/components/site/Logo";
 import { Link, usePathname } from "@/i18n/navigation";
 
-/** The researcher studio frame: dark, with the brand, language switch and the storage notice. */
+/** The researcher studio frame: dark, with the brand, account, language switch and the storage notice. */
 export function StudioShell({ children }: { children: React.ReactNode }) {
   const t = useTranslations("studio");
   const nav = useTranslations("nav");
@@ -21,12 +22,15 @@ export function StudioShell({ children }: { children: React.ReactNode }) {
         <Link href="/studio" className="tracked font-mono text-xs uppercase tracking-[0.16em] text-signal hover:text-signal-soft">
           {t("title")}
         </Link>
-        <Link href={path} locale={other} lang={other} className="ms-auto px-3 py-3 text-sm hover:text-signal">
-          {nav("otherLanguage")}
-        </Link>
+        <div className="ms-auto flex items-center gap-1">
+          <AccountLink />
+          <Link href={path} locale={other} lang={other} className="px-3 py-3 text-sm hover:text-signal">
+            {nav("otherLanguage")}
+          </Link>
+        </div>
       </header>
       <p className="flex items-center gap-2 border-b border-line bg-carbon px-4 py-2 text-[13px] text-dim sm:px-8">
-        <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-warn" />
+        <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-ok" />
         {t("local")}
       </p>
       {children}

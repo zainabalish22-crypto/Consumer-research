@@ -111,7 +111,8 @@
     "brand": "Brand {n}",
     "ai": "AI",
     "authentic": "authentic",
-    "note": "The square marker repeats the colour, so the pattern reads without colour too."
+    "note": "The square marker repeats the colour, so the pattern reads without colour too.",
+    "building": "Being built"
   },
   "data": {
     "fig": "Fig. 04 · Data out",
@@ -154,7 +155,7 @@
   },
   "studio": {
     "title": "Studio",
-    "local": "Saved in this browser only. Nothing is sent anywhere until a database is connected.",
+    "local": "Saved to your account. Participants' answers are stored securely and only you can see them.",
     "home": "Home",
     "studies": "Studies",
     "newForm": "New form",
@@ -333,7 +334,8 @@
       "url": "or paste an image address",
       "remove": "Remove",
       "none": "No image",
-      "tooBig": "Files over 8 MB are not accepted yet."
+      "tooBig": "Images up to 5 MB, videos up to 50 MB. For a longer video, paste a link (e.g. YouTube) instead.",
+      "failed": "The upload failed. Check your connection and try again."
     },
     "settings": {
       "name": "Study name (only you see this)",
@@ -389,7 +391,12 @@
       "notAnswered": "Not answered",
       "screened": "Screened out",
       "basket": "Basket at checkout",
-      "empty": "No responses yet. Open Preview to try the form; test sessions appear here when you tick “Include test sessions”."
+      "empty": "No responses yet. Open Preview to try the form; test sessions appear here when you tick “Include test sessions”.",
+      "includeUnfinished": "Include unfinished",
+      "breakdown": "{completed} completed · {unfinished} unfinished · {screened} screened out · {declined} declined",
+      "deleteAll": "Delete all responses",
+      "confirmDeleteAll": "Permanently delete {n, plural, one {# response} other {# responses}}? This cannot be undone.",
+      "confirmDeleteOne": "Permanently delete this response? This cannot be undone."
     },
     "form": {
       "formTitle": "Form title",
@@ -454,12 +461,51 @@
       "removeStep": "Remove this step",
       "removeSection": "Remove this page and its questions",
       "editShop": "Edit the shop",
-      "tooBig": "This file is too large (images up to 10 MB, videos up to 100 MB).",
+      "tooBig": "Images up to 5 MB, videos up to 50 MB. For a longer video, paste a link (e.g. YouTube) instead.",
       "untitled": "Untitled question",
       "requiredNote": "* Indicates a required question",
       "consentText": "Consent text",
       "endMessage": "Message after submitting",
       "pageBreak": "Participants press Next to continue to this page."
+    },
+    "loadFailed": "Your studies could not be loaded. Refresh the page to try again.",
+    "closedBadge": "Closed",
+    "unfinished": "{n} unfinished",
+    "unpublishedChanges": "Unpublished changes",
+    "saveFailed": "Not saved. Check your connection.",
+    "publishChanges": "Publish changes (version {v})",
+    "confirmRepublish": "Publish your changes as version {v}? New participants will get version {v}; responses already collected keep the version they answered.",
+    "close": "Close study",
+    "reopen": "Reopen study",
+    "panelLinkNote": "For a panel such as Prolific, add the participant's ID to the link: ?{param}=ID. Participants need no account.",
+    "import": {
+      "title": "{n, plural, one {# study} other {# studies}} found in this browser",
+      "body": "These were made before studies were saved to accounts. Import them into your account to keep them and run them with participants. Their images and videos are uploaded; they arrive as drafts to publish again.",
+      "import": "Import into my account",
+      "importing": "Importing {done} of {total}…",
+      "dismiss": "Not now",
+      "done": "{n, plural, one {# study imported.} other {# studies imported.}}",
+      "failed": "{n, plural, one {# could not be imported; try again later.} other {# could not be imported; try again later.}}"
+    },
+    "run": {
+      "title": "Running the study",
+      "repeat": "Taking part more than once",
+      "repeatBoth": "Once per device and once per panel ID",
+      "repeatDevice": "Once per device",
+      "repeatPanel": "Once per panel ID",
+      "repeatAllow": "Allow repeats",
+      "panelParam": "Panel ID name in the link",
+      "panelParamHint": "The name your panel uses for the participant's ID, e.g. PROLIFIC_PID. Default: pid.",
+      "returns": "Panel return links",
+      "returnsHint": "Where participants are sent after each outcome (optional). Use '{pid}' where the participant's ID belongs.",
+      "return": {
+        "completed": "Completed",
+        "screened": "Screened out",
+        "declined": "Declined consent"
+      },
+      "httpsOnly": "Use a full address starting with https://",
+      "closesAt": "Closing date (optional)",
+      "closesAtHint": "After this moment the link shows that the study is closed. You can also close it by hand at the top."
     }
   },
   "run": {
@@ -516,7 +562,15 @@
     "requiredNote": "* Indicates a required question",
     "screened": "Thank you for your interest. Based on your answers, you are not eligible for this study.",
     "zoom": "View larger",
-    "close": "Close"
+    "close": "Close",
+    "returnToPanel": "Return to the panel",
+    "stop": {
+      "notFound": "This study is not available.",
+      "notPublished": "This study is not open yet.",
+      "closed": "This study is closed and no longer accepts participants. Thank you for your interest.",
+      "repeat": "You have already taken part in this study. Thank you.",
+      "offline": "The study could not be loaded. Check your connection and open the link again."
+    }
   },
   "tools": {
     "title": "Tools",
@@ -938,5 +992,17 @@
         "An optional research assistant helps you design studies. It reads your study's wording, never participants' answers."
       ]
     }
+  },
+  "account": {
+    "title": "Your account",
+    "name": "Name",
+    "email": "Email",
+    "passwordNote": "Password changes and resets by email come once the platform's email is set up.",
+    "deleteTitle": "Delete your account",
+    "deleteBody": "This permanently deletes your account, all your studies, every response collected, and the images and videos you uploaded. It cannot be undone. Download anything you need first.",
+    "deleteConfirm": "Type your email ({email}) to confirm",
+    "deleteFailed": "The account could not be deleted. Try again.",
+    "deleteButton": "Delete my account permanently",
+    "deleting": "Deleting…"
   }
 }

@@ -14,6 +14,7 @@
     "@neondatabase/serverless": "^1.2.0",
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.2",
+    "@vercel/blob": "^2.9.0",
     "next": "15.5.29",
     "next-intl": "^4.14.9",
     "react": "19.1.0",

@@ -3,7 +3,7 @@
 /** Studio controls in the Asdaa Lab dark style: labelled, keyboard-friendly, 44 px targets. */
 import { useTranslations } from "next-intl";
 import { useId, useRef, useState } from "react";
-import { repo } from "@/lib/study/repo";
+import { MEDIA_LIMITS, repo } from "@/lib/study/repo";
 import type { L10n, Lang, MediaRef } from "@/lib/study/types";
 import { useMediaUrl } from "@/lib/study/useMedia";
 
@@ -187,9 +187,13 @@ export function MediaInput({ label, value, onChange, accept = "image/*" }: { lab
                 const f = e.target.files?.[0];
                 e.target.value = "";
                 if (!f) return;
-                if (f.size > 8 * 1024 * 1024) return setError(t("tooBig"));
+                if (f.size > (f.type.startsWith("video") ? MEDIA_LIMITS.video : MEDIA_LIMITS.image)) return setError(t("tooBig"));
                 setError("");
-                onChange(await repo.putMedia(f, f.name));
+                try {
+                  onChange(await repo.putMedia(f, f.name));
+                } catch {
+                  setError(t("failed"));
+                }
               }}
             />
             <Button onClick={() => file.current?.click()}>{t("upload")}</Button>

@@ -37,9 +37,9 @@ export function AccountLink({ withSignUp = false }: { withSignUp?: boolean }) {
   return (
     <form action={signOut} className="flex items-center gap-2 text-sm">
       <input type="hidden" name="locale" value={locale} />
-      <span dir="ltr" className="hidden max-w-[180px] truncate text-dim sm:inline" title={user.email}>
+      <Link href="/account" dir="ltr" className="hidden max-w-[180px] truncate text-dim hover:text-photon sm:inline" title={user.email}>
         {user.email}
-      </span>
+      </Link>
       <button type="submit" className="min-h-11 px-3 hover:text-signal">
         {t("signOut")}
       </button>
